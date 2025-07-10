@@ -8,6 +8,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
+/**
+ * 题库相关接口
+ */
 @RestController
 @RequestMapping("/api/question")
 public class QuestionController {
@@ -16,11 +19,17 @@ public class QuestionController {
     @Autowired
     private CategoryService categoryService;
 
+    /**
+     * 获取所有题目分类
+     */
     @GetMapping("/categories")
     public List<Category> getCategories() {
         return categoryService.getAllCategories();
     }
 
+    /**
+     * 搜索题目
+     */
     @GetMapping("/search")
     public List<Question> search(
         @RequestParam(required = false) String keyword,
@@ -32,11 +41,17 @@ public class QuestionController {
         return questionService.search(keyword, categoryId, type, page, size);
     }
 
+    /**
+     * 随机获取题目
+     */
     @GetMapping("/random")
     public Question getRandomQuestion(@RequestParam(required = false) Long categoryId) {
         return questionService.getRandomQuestion(categoryId);
     }
 
+    /**
+     * 顺序刷题
+     */
     @GetMapping("/sequence")
     public List<Question> getSequenceQuestions(
         @RequestParam(required = false) Long categoryId,
@@ -46,6 +61,9 @@ public class QuestionController {
         return questionService.getSequenceQuestions(categoryId, page, size);
     }
 
+    /**
+     * 专项刷题
+     */
     @GetMapping("/special")
     public List<Question> getSpecialQuestions(@RequestParam Long categoryId) {
         return questionService.getSpecialQuestions(categoryId);

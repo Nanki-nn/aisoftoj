@@ -1,5 +1,5 @@
 server:
-  port: 8888
+  port: 8080
 
 spring:
   datasource:
@@ -7,7 +7,24 @@ spring:
     username: root
     password: abc123456
     driver-class-name: com.mysql.cj.jdbc.Driver
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
 
 mybatis-plus:
   mapper-locations: classpath:mapper/*.xml
-  type-aliases-package: com.yourcompany.examapp.entity 
+  type-aliases-package: com.nan.aisoftoj.entity
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+
+# 文件上传配置
+file:
+  upload:
+    path: ./uploads/
+    url-prefix: /uploads/
+
+logging:
+  level:
+    com.nan.aisoftoj: debug 
