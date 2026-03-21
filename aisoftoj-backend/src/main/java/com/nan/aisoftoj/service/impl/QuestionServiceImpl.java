@@ -1,92 +1,65 @@
 package com.nan.aisoftoj.service.impl;
 
-import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
-import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.nan.aisoftoj.dto.GetQuestionDetailDTO;
+import com.nan.aisoftoj.dto.QuestionRecordRequest;
 import com.nan.aisoftoj.entity.Question;
 import com.nan.aisoftoj.mapper.QuestionMapper;
 import com.nan.aisoftoj.service.QuestionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+
 import java.util.List;
-import java.util.Random;
 
 @Service
 public class QuestionServiceImpl implements QuestionService {
+    
     @Autowired
     private QuestionMapper questionMapper;
 
+
     @Override
-    public List<Question> search(String keyword, Long categoryId, Integer type, int page, int size) {
-        LambdaQueryWrapper<Question> wrapper = Wrappers.lambdaQuery();
-        
-        // 关键词搜索
-        if (keyword != null && !keyword.isEmpty()) {
-            wrapper.like(Question::getContent, keyword);
-        }
-        
-        // 分类筛选
-        if (categoryId != null) {
-            wrapper.eq(Question::getCategoryId, categoryId);
-        }
-        
-        // 题型筛选
-        if (type != null) {
-            wrapper.eq(Question::getType, type);
-        }
-        
-        // 分页
-        int offset = (page - 1) * size;
-        wrapper.last("LIMIT " + offset + "," + size);
-        
-        return questionMapper.selectList(wrapper);
+    public List<Question> getQuestionsByPaperId(Integer paperId) {
+        // 这里应该查询试卷关联的题目列表
+
+
+        return questionMapper.selectQuestionsByPaperId(paperId);
     }
 
     @Override
-    public Question getRandomQuestion(Long categoryId) {
-        LambdaQueryWrapper<Question> wrapper = Wrappers.lambdaQuery();
-        
-        if (categoryId != null) {
-            wrapper.eq(Question::getCategoryId, categoryId);
+    public GetQuestionDetailDTO getQuestionById(Integer questionId, Boolean withAnswer) {
+        Question question = questionMapper.selectById(questionId);
+        // 如果不包含答案，则清空答案字段
+        if (!withAnswer && question != null) {
+            question.setAnswer(null);
         }
-        
-        List<Question> list = questionMapper.selectList(wrapper);
-        if (list == null || list.isEmpty()) {
+
+        if (question == null) {
             return null;
         }
-        
-        int idx = new Random().nextInt(list.size());
-        return list.get(idx);
+
+        GetQuestionDetailDTO questionDetailDTO = new GetQuestionDetailDTO();
+        questionDetailDTO.setId(question.getId());
+        questionDetailDTO.setName(question.getName());
+        questionDetailDTO.setIntro(question.getIntro());
+        questionDetailDTO.setAnalysis(question.getAnalysis());
+        questionDetailDTO.setQuestionType(question.getQuestionType());
+        questionDetailDTO.setDifficulty(question.getDifficulty());
+        questionDetailDTO.setReadCt(question.getReadCt());
+        questionDetailDTO.setAnswer(question.getAnswer());
+        return questionDetailDTO;
     }
 
     @Override
-    public List<Question> getSequenceQuestions(Long categoryId, int page, int size) {
-        LambdaQueryWrapper<Question> wrapper = Wrappers.lambdaQuery();
-        
-        if (categoryId != null) {
-            wrapper.eq(Question::getCategoryId, categoryId);
-        }
-        
-        // 按ID顺序排列
-        wrapper.orderByAsc(Question::getId);
-        
-        // 分页
-        int offset = (page - 1) * size;
-        wrapper.last("LIMIT " + offset + "," + size);
-        
-        return questionMapper.selectList(wrapper);
+    public boolean updateQuestionRecord(QuestionRecordRequest request) {
+        // 这里应该更新题目答题记录
+        return true; // 示例返回值
     }
 
     @Override
-    public List<Question> getSpecialQuestions(Long categoryId) {
-        LambdaQueryWrapper<Question> wrapper = Wrappers.lambdaQuery();
-        
-        if (categoryId != null) {
-            wrapper.eq(Question::getCategoryId, categoryId);
-        }
-        
-        // 专项刷题：可以添加特殊条件，比如只获取中等难度以上的题目
-        wrapper.ge(Question::getDifficulty, 2);
-        
-        return questionMapper.selectList(wrapper);
+    public List<Question> listByPaperId(Integer paperId) {
+        return questionMapper.selectQuestionsByPaperId(paperId);
     }
-} 
+
+
+}

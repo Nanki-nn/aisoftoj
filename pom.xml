@@ -6,7 +6,7 @@
     <groupId>com.nan</groupId>
     <artifactId>aisoftoj</artifactId>
     <version>0.0.1-SNAPSHOT</version>
-    <packaging>jar</packaging>
+    <packaging>pom</packaging>
     <name>aisoftoj</name>
     <description>软考刷题系统</description>
 

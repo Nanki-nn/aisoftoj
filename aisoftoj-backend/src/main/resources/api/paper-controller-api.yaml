@@ -1,0 +1,507 @@
+swagger: 1.0
+info:
+  title: 刷题模块API文档
+  description: 刷题模块相关接口文档
+  version: 1.0.0
+host: localhost:8080
+basePath: /
+schemes:
+  - http
+consumes:
+  - application/json
+produces:
+  - application/json
+
+tags:
+  - name: PaperController
+    description: 试卷相关接口
+
+paths:
+  /paper/list:
+    get:
+      tags:
+        - PaperController
+      summary: 获取某科目的所有试卷
+      description: 获取某科目的所有试卷
+      operationId: getPapers
+      parameters:
+        - name: subjectId
+          in: query
+          description: 科目ID
+          required: false
+          type: integer
+          format: int32
+        - name: cateId
+          in: query
+          description: 试卷分类ID
+          required: false
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: 成功
+          schema:
+            $ref: '#/definitions/ResultDTOListPaperDTO'
+        "400":
+          description: 请求参数错误
+        "500":
+          description: 服务器内部错误
+
+  /paper/detail/{paperId]:
+    get:
+      tags:
+        - PaperController
+      summary: 获取试卷的所有题目
+      description: 根据试卷ID获取该试卷的所有题目
+      operationId: getPaperQuestions
+      parameters:
+        - name: paperId
+          in: path
+          description: 试卷ID
+          required: true
+          type: integer
+          format: int32
+      responses:
+        200:
+          description: 成功返回题目列表
+          schema:
+            $ref: #/definitions/ResultDTO_List_Question__
+        400:
+          description: 请求参数错误
+        404:
+          description: 试卷不存在
+        500:
+          description: 服务器内部错误
+
+  /paper/question/{questionId}:
+    get:
+      tags:
+        - PaperController
+      summary: 获取题目详情
+      description: 根据题目ID获取题目详情，可通过withAnswer参数控制是否返回答案
+      operationId: getQuestionDetail
+      parameters:
+        - name: questionId
+          in: path
+          description: 题目ID
+          required: true
+          type: integer
+          format: int32
+        - name: withAnswer
+          in: query
+          description: 是否包含答案
+          required: false
+          type: boolean
+          default: false
+      responses:
+        200:
+          description: 成功返回题目详情
+          schema:
+            $ref: #/definitions/ResultDTO_Question_
+        400:
+          description: 请求参数错误
+        404:
+          description: 题目不存在
+        500:
+          description: 服务器内部错误
+
+  /paper/question/record:
+    patch:
+      tags:
+        - PaperController
+      summary: 变更题目记录表
+      description: 更新用户的题目答题记录
+      operationId: updateQuestionRecord
+      parameters:
+        - name: body
+          in: body
+          description: 题目记录更新请求
+          required: true
+          schema:
+            $ref: #/definitions/QuestionRecordRequest
+      responses:
+        200:
+          description: 成功更新题目记录
+          schema:
+            $ref: #/definitions/ResultDTO_Boolean_
+        400:
+          description: 请求参数错误
+        500:
+          description: 服务器内部错误
+
+  /paper/submit:
+    post:
+      tags:
+        - PaperController
+      summary: 交卷
+      description: 用户提交试卷，计算得分并保存答题记录
+      operationId: submitPaper
+      parameters:
+        - name: body
+          in: body
+          description: 试卷提交请求
+          required: true
+          schema:
+            $ref: #/definitions/PaperSubmitRequest
+      responses:
+        200:
+          description: 成功提交试卷
+          schema:
+            $ref: #/definitions/ResultDTO_PaperSubmitResponse_
+        400:
+          description: 请求参数错误
+        500:
+          description: 服务器内部错误
+
+definitions:
+  ResultDTO_List_Paper__:
+    type: object
+    properties:
+      code:
+        type: integer
+        format: int32
+        description: 状态码
+      message:
+        type: string
+        description: 消息
+      data:
+        type: array
+        items:
+          $ref: #/definitions/Paper
+        description: 数据
+      timestamp:
+        type: integer
+        format: int64
+        description: 时间戳
+
+  PaperDTO:
+    type: object
+    properties:
+      id:
+        type: integer
+        format: int32
+      paperCateId:
+        type: integer
+        format: int32
+      subjectId:
+        type: integer
+        format: int32
+      name:
+        type: string
+      orderNum:
+        type: integer
+        format: int32
+      questionTotal:
+        type: integer
+        format: int32
+      readCt:
+        type: integer
+        format: int32
+      status:
+        type: boolean
+      deleted:
+        type: boolean
+      createTime:
+        type: string
+        format: date-time
+      updateTime:
+        type: string
+        format: date-time
+      hasOngoingRecord:
+        type: boolean
+      progress:
+        type: integer
+        format: int32
+      totalQuestions:
+        type: integer
+        format: int32
+      lastAttemptTime:
+        type: string
+        format: date-time
+
+  ResultDTOListPaperDTO:
+    type: object
+    properties:
+      code:
+        type: integer
+        format: int32
+      message:
+        type: string
+      data:
+        type: array
+        items:
+          $ref: '#/definitions/PaperDTO'
+      timestamp:
+        type: integer
+        format: int64
+
+  ResultDTO_List_Question__:
+    type: object
+    properties:
+      code:
+        type: integer
+        format: int32
+        description: 状态码
+      message:
+        type: string
+        description: 消息
+      data:
+        type: array
+        items:
+          $ref: #/definitions/Question
+        description: 数据
+      timestamp:
+        type: integer
+        format: int64
+        description: 时间戳
+
+  ResultDTO_Question_:
+    type: object
+    properties:
+      code:
+        type: integer
+        format: int32
+        description: 状态码
+      message:
+        type: string
+        description: 消息
+      data:
+        $ref: #/definitions/Question
+      timestamp:
+        type: integer
+        format: int64
+        description: 时间戳
+
+  ResultDTO_Boolean_:
+    type: object
+    properties:
+      code:
+        type: integer
+        format: int32
+        description: 状态码
+      message:
+        type: string
+        description: 消息
+      data:
+        type: boolean
+        description: 数据
+      timestamp:
+        type: integer
+        format: int64
+        description: 时间戳
+
+  ResultDTO_PaperSubmitResponse_:
+    type: object
+    properties:
+      code:
+        type: integer
+        format: int32
+        description: 状态码
+      message:
+        type: string
+        description: 消息
+      data:
+        $ref: #/definitions/PaperSubmitResponse
+      timestamp:
+        type: integer
+        format: int64
+        description: 时间戳
+
+  Paper:
+    type: object
+    properties:
+      id:
+        type: integer
+        format: int32
+        description: 主键
+      paperCateId:
+        type: integer
+        format: int32
+        description: 试卷分类ID 1-综合题 2-案例题 3-论文题
+      subjectId:
+        type: integer
+        format: int32
+        description: 科目ID
+      name:
+        type: string
+        description: 试卷名称
+      orderNum:
+        type: integer
+        format: int32
+        description: 顺序号,升序排序
+      questionTotal:
+        type: integer
+        format: int32
+        description: 题目总数
+      readCt:
+        type: integer
+        format: int32
+        description: 阅读数/完成次数
+      status:
+        type: boolean
+        description: 状态：0-未发布，1-已发布
+      deleted:
+        type: boolean
+        description: 删除标志（0-未删除，1-已删除）
+      createTime:
+        type: string
+        format: date-time
+        description: 创建时间
+      updateTime:
+        type: string
+        format: date-time
+        description: 更新时间
+
+  PaperRecord:
+    type: object
+    properties:
+      id:
+        type: integer
+        format: int64
+        description: 主键
+      userId:
+        type: integer
+        format: int32
+        description: 用户ID
+      paperId:
+        type: integer
+        format: int32
+        description: 试卷ID
+      startTime:
+        type: string
+        format: date-time
+        description: 开始答题时间
+      endTime:
+        type: string
+        format: date-time
+        description: 结束时间（未完成时为默认值）
+      score:
+        type: number
+        format: double
+        description: 用户得分
+      totalScore:
+        type: number
+        format: double
+        description: 试卷总分
+      status:
+        type: integer
+        format: int32
+        description: 状态: 0-未完成, 1-已完成
+      createTime:
+        type: string
+        format: date-time
+        description: 创建时间
+      updateTime:
+        type: string
+        format: date-time
+        description: 更新时间
+
+  Question:
+    type: object
+    properties:
+      id:
+        type: integer
+        format: int32
+        description: 主键
+      content:
+        type: string
+        description: 题目内容
+      options:
+        type: string
+        description: 选项（JSON格式存储）
+      answer:
+        type: string
+        description: 答案
+      categoryId:
+        type: integer
+        format: int32
+        description: 分类ID
+      createTime:
+        type: string
+        format: date-time
+        description: 创建时间
+      updateTime:
+        type: string
+        format: date-time
+        description: 更新时间
+
+  QuestionRecordRequest:
+    type: object
+    properties:
+      recordId:
+        type: integer
+        format: int64
+        description: 关联的试卷答题记录ID
+      questionId:
+        type: integer
+        format: int32
+        description: 题目ID
+      userAnswer:
+        type: string
+        description: 用户答案
+      isCorrect:
+        type: boolean
+        description: 是否正确
+      spendTime:
+        type: integer
+        format: int32
+        description: 本题耗时（秒）
+
+  PaperSubmitRequest:
+    type: object
+    properties:
+      userId:
+        type: integer
+        format: int32
+        description: 用户ID
+      paperId:
+        type: integer
+        format: int32
+        description: 试卷ID
+      startTime:
+        type: string
+        format: date-time
+        description: 开始答题时间
+      endTime:
+        type: string
+        format: date-time
+        description: 结束时间
+      answers:
+        type: array
+        items:
+          $ref: #/definitions/QuestionAnswer
+
+  QuestionAnswer:
+    type: object
+    properties:
+      questionId:
+        type: integer
+        format: int32
+        description: 题目ID
+      userAnswer:
+        type: string
+        description: 用户答案
+      spendTime:
+        type: integer
+        format: int32
+        description: 本题耗时（秒）
+
+  PaperSubmitResponse:
+    type: object
+    properties:
+      recordId:
+        type: integer
+        format: int64
+        description: 答题记录ID
+      score:
+        type: number
+        format: double
+        description: 用户得分
+      totalScore:
+        type: number
+        format: double
+        description: 试卷总分
+      status:
+        type: integer
+        format: int32
+        description: 状态 0-未完成, 1-已完成

@@ -1,11 +1,20 @@
 package com.nan.aisoftoj.service;
 
+import com.baomidou.mybatisplus.extension.service.IService;
+import com.nan.aisoftoj.dto.GetQuestionDetailDTO;
+import com.nan.aisoftoj.dto.QuestionRecordRequest;
 import com.nan.aisoftoj.entity.Question;
+
 import java.util.List;
 
 public interface QuestionService {
-    List<Question> search(String keyword, Long categoryId, Integer type, int page, int size);
-    Question getRandomQuestion(Long categoryId);
-    List<Question> getSequenceQuestions(Long categoryId, int page, int size);
-    List<Question> getSpecialQuestions(Long categoryId);
-} 
+
+    List<Question> getQuestionsByPaperId(Integer paperId);
+
+    GetQuestionDetailDTO getQuestionById(Integer questionId, Boolean withAnswer);
+
+    boolean updateQuestionRecord(QuestionRecordRequest request);
+
+    List<Question> listByPaperId(Integer paperId);
+
+}
