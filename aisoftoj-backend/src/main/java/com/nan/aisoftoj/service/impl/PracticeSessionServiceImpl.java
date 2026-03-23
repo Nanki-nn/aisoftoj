@@ -1,5 +1,4 @@
 package com.nan.aisoftoj.service.impl;
-import cn.hutool.core.lang.TypeReference;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nan.aisoftoj.consts.PracticeSessionState;
@@ -18,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -95,14 +95,14 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
 
 
 
-    private List<QuestionDTO> getQuestionDTOS(List<Question> questions) {
+	private List<QuestionDTO> getQuestionDTOS(List<Question> questions) {
 		return questions.stream()
 				.map(question -> {
 					QuestionDTO questionDTO = new QuestionDTO();
 					questionDTO.setId(question.getId());
 					questionDTO.setName(question.getName());
 					questionDTO.setIntro(question.getIntro());
-					questionDTO.setOptions(JSONUtil.toList(question.getOptions(), Option.class));
+					questionDTO.setOptions(parseOptions(question.getOptions()));
 					questionDTO.setAnswer(question.getAnswer());
 					questionDTO.setAnalysis(question.getAnalysis());
 					questionDTO.setQuestionType(question.getQuestionType());
@@ -110,6 +110,34 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
 					return questionDTO;
 				})
 				.collect(Collectors.toList());
+    }
+
+    private List<Option> parseOptions(String rawOptions) {
+        if (rawOptions == null || rawOptions.trim().isEmpty()) {
+            return new ArrayList<>();
+        }
+        if (!JSONUtil.isTypeJSONArray(rawOptions)) {
+            return new ArrayList<>();
+        }
+
+        try {
+            List<Option> optionList = JSONUtil.toList(rawOptions, Option.class);
+            if (!optionList.isEmpty() && optionList.get(0).getValueStr() != null) {
+                return optionList;
+            }
+        } catch (Exception ignored) {
+        }
+
+        List<String> values = JSONUtil.toList(rawOptions, String.class);
+        List<Option> options = new ArrayList<>();
+        for (int i = 0; i < values.size(); i++) {
+            Option option = new Option();
+            option.setKeyStr(String.valueOf((char) ('A' + i)));
+            option.setValueStr(values.get(i));
+            option.setOrderNum(i + 1);
+            options.add(option);
+        }
+        return options;
     }
 
 

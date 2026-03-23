@@ -45,8 +45,12 @@ public class PaperServiceImpl implements PaperService {
             PaperDTO dto = new PaperDTO();
             // Copy all properties from Paper to PaperDTO
             dto.setId(paper.getId());
+            dto.setFrontMockId(paper.getFrontMockId());
             dto.setPaperCateId(paper.getPaperCateId());
             dto.setPaperSubjectId(paper.getSubjectId());
+            dto.setSubjectName(paper.getSubjectName());
+            dto.setPaperYear(paper.getPaperYear());
+            dto.setPaperMonth(paper.getPaperMonth());
             dto.setName(paper.getName());
             dto.setOrderNum(paper.getOrderNum());
             dto.setQuestionTotal(paper.getQuestionTotal());
@@ -54,11 +58,17 @@ public class PaperServiceImpl implements PaperService {
             dto.setIsDeleted(paper.getIsDeleted());
             dto.setCreateTime(paper.getCreateTime());
             dto.setUpdateTime(paper.getUpdateTime());
+            dto.setCompletedCount(paper.getCompletedCount());
             // 3. Check if this paper has an ongoing record
             Integer doingSessionId = doingPaperIds.contains(paper.getId()) ? paper.getId() : null;
             dto.setDoingSessionId(doingSessionId);
             // 4. Set paper status based on whether it has an ongoing record
-            dto.setPaperStatus(doingSessionId == null ? PaperStatus.NOT_STARTED : PaperStatus.IN_PROGRESS);
+            String paperStatus = paper.getMockStatus();
+            if (paperStatus == null || paperStatus.isEmpty()) {
+                paperStatus = doingSessionId == null ? PaperStatus.NOT_STARTED : PaperStatus.IN_PROGRESS;
+            }
+            dto.setPaperStatus(paperStatus);
+            dto.setProgress(paper.getCompletedCount() == null ? 0 : paper.getCompletedCount());
             return dto;
         }).collect(Collectors.toList());
     }
@@ -86,8 +96,12 @@ public class PaperServiceImpl implements PaperService {
             PaperDTO dto = new PaperDTO();
             // Copy all properties from Paper to PaperDTO
             dto.setId(paper.getId());
+            dto.setFrontMockId(paper.getFrontMockId());
             dto.setPaperCateId(paper.getPaperCateId());
             dto.setPaperSubjectId(paper.getSubjectId());
+            dto.setSubjectName(paper.getSubjectName());
+            dto.setPaperYear(paper.getPaperYear());
+            dto.setPaperMonth(paper.getPaperMonth());
             dto.setName(paper.getName());
             dto.setOrderNum(paper.getOrderNum());
             dto.setQuestionTotal(paper.getQuestionTotal());
@@ -95,11 +109,17 @@ public class PaperServiceImpl implements PaperService {
             dto.setIsDeleted(paper.getIsDeleted());
             dto.setCreateTime(paper.getCreateTime());
             dto.setUpdateTime(paper.getUpdateTime());
+            dto.setCompletedCount(paper.getCompletedCount());
             // 3. Check if this paper has an ongoing record
             Integer doingSessionId = doingPaperIds.contains(paper.getId()) ? paper.getId() : null;
             dto.setDoingSessionId(doingSessionId);
             // 4. Set paper status based on whether it has an ongoing record
-            dto.setPaperStatus(doingSessionId == null ? PaperStatus.NOT_STARTED : PaperStatus.IN_PROGRESS);
+            String paperStatus = paper.getMockStatus();
+            if (paperStatus == null || paperStatus.isEmpty()) {
+                paperStatus = doingSessionId == null ? PaperStatus.NOT_STARTED : PaperStatus.IN_PROGRESS;
+            }
+            dto.setPaperStatus(paperStatus);
+            dto.setProgress(paper.getCompletedCount() == null ? 0 : paper.getCompletedCount());
             return dto;
         }).collect(Collectors.toList());
     }

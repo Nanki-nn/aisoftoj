@@ -1,0 +1,17 @@
+.DS_Store
+.idea/workspace.xml
+.idea/dataSources.local.xml
+.vscode/
+
+target/
+*/target/
+
+aisoftoj-front/node_modules/
+aisoftoj-front/build/
+aisoftoj-front/.vite/
+
+docs/
+aisoftoj-front/README.md
+aisoftoj-front/TEST_GUIDE.md
+aisoftoj-front/src/Attributions.md
+aisoftoj-front/src/guidelines/

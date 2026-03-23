@@ -19,10 +19,17 @@ public class PaperDTO {
     @TableId(type = IdType.AUTO)
     private Integer id;
 
+    private String frontMockId;
 
     private Integer paperSubjectId;
 
+    private String subjectName;
+
     private Integer paperCateId;
+
+    private Integer paperYear;
+
+    private Integer paperMonth;
 
     private String name;
 
@@ -46,6 +53,8 @@ public class PaperDTO {
      * 做题进度（已完成题目数）
      */
     private Integer progress;
+
+    private Integer completedCount;
 
 
     private Boolean isDeleted;
