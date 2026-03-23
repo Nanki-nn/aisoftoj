@@ -46,6 +46,11 @@ type StartSessionRes = {
   practiceSessionId: number;
   paperId: number;
   paperName: string;
+  paper?: {
+    subjectName?: string;
+    paperCateId?: number;
+    questionTotal?: number;
+  };
   questionList: BackendQuestionDTO[];
 };
 
@@ -53,6 +58,10 @@ type GetSessionRes = {
   id: number;
   paperId: number;
   paperName: string;
+  paper?: {
+    subjectName?: string;
+    paperCateId?: number;
+  };
   questionList: BackendQuestionDTO[];
 };
 
@@ -154,21 +163,29 @@ export async function fetchPapers(): Promise<ExamPaper[]> {
   }));
 }
 
-export async function startPaperSession(paperId: string): Promise<ExamSession> {
+export async function startPaperSession(
+  paperId: string,
+  examMode: ExamSession['examMode'] = 'practice'
+): Promise<ExamSession> {
   const data = await request<StartSessionRes>('/session/start', {
     method: 'POST',
-    body: JSON.stringify({ paperId: Number(paperId) }),
+    body: JSON.stringify({
+      paperId: Number(paperId),
+      mode: examMode === 'exam' ? 2 : 1,
+    }),
   });
 
   return {
     id: String(data.practiceSessionId),
-    subject: data.paperName,
-    category: '综合知识',
+    paperId: String(data.paperId),
+    paperName: data.paperName,
+    subject: data.paper?.subjectName || data.paperName,
+    category: mapPaperCate(data.paper?.paperCateId || 1),
     questions: data.questionList.map(mapQuestion),
     answers: {},
     startTime: new Date(),
     isCompleted: false,
-    examMode: 'practice',
+    examMode,
   };
 }
 
@@ -184,12 +201,31 @@ export async function continuePracticeSession(sessionId: string): Promise<ExamSe
   const data = await request<GetSessionRes>(`/session/${sessionId}`);
   return {
     id: String(data.id),
-    subject: data.paperName,
-    category: '综合知识',
+    paperId: String(data.paperId),
+    paperName: data.paperName,
+    subject: data.paper?.subjectName || data.paperName,
+    category: mapPaperCate(data.paper?.paperCateId || 1),
     questions: data.questionList.map(mapQuestion),
     answers: {},
     startTime: new Date(),
     isCompleted: false,
     examMode: 'practice',
   };
+}
+
+export async function submitPracticeSession(
+  sessionId: string,
+  answers: Record<string, string | string[]>
+): Promise<void> {
+  await request(`/session/submit/${sessionId}`, {
+    method: 'POST',
+    body: JSON.stringify({
+      endTime: new Date().toISOString(),
+      answers: Object.entries(answers).map(([questionId, userAnswer]) => ({
+        questionId: Number(questionId),
+        userAnswer: Array.isArray(userAnswer) ? userAnswer.join(',') : userAnswer,
+        spendTime: 0,
+      })),
+    }),
+  });
 }

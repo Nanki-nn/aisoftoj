@@ -19,7 +19,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -41,6 +43,9 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
 
         // 从请求中获取试卷ID
         Integer paperId =  startPracticeSessionReq.getPaperId();
+        String sessionMode = startPracticeSessionReq.getMode() != null && startPracticeSessionReq.getMode() == 2
+                ? "exam"
+                : "practice";
 
         //校验paperId是否存在
         Paper paper = paperService.getById(paperId);
@@ -53,6 +58,7 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
                 new LambdaQueryWrapper<PracticeSession>()
                         .eq(PracticeSession::getPaperId, paperId)
                         .eq(PracticeSession::getUserId, 1)
+                        .eq(PracticeSession::getExamMode, sessionMode)
                         .eq(PracticeSession::getStatus, PracticeSessionState.DOING.getCode())
         );
         if (practiceSession != null) {
@@ -65,6 +71,8 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
         insertPracticeSession.setPaperId(paperId);
         insertPracticeSession.setUserId(1);
         insertPracticeSession.setStartTime(new Date());
+        insertPracticeSession.setExamMode(sessionMode);
+        insertPracticeSession.setAnsweredCount(0);
         insertPracticeSession.setStatus(PracticeSessionState.DOING.getCode());
         insertPracticeSession.setTotalScore(BigDecimal.valueOf(75));
         // 插入记录到数据库
@@ -178,6 +186,7 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
         resDTO.setId(practiceSession.getId());
         resDTO.setUserId(practiceSession.getUserId());
         resDTO.setPaperId(practiceSession.getPaperId());
+        resDTO.setExamMode(practiceSession.getExamMode());
         resDTO.setPaperName(paper.getName());
         resDTO.setPaper(paper);
 
@@ -196,38 +205,106 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
 
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public PaperSubmitResponse submitPracticeSession(Integer practiceSessionId, PaperSubmitRequest request) {
-        // 这里应该实现具体的交卷逻辑
-        // 1. 校验试卷记录是否存在
-        // 2. 计算分数
-        // 3. 更新试卷记录状态
-        // 4. 返回结果
+        PracticeSession practiceSession = practiceSessionMapper.selectById(practiceSessionId);
+        if (practiceSession == null) {
+            throw new IllegalArgumentException("试卷会话记录不存在");
+        }
 
-//        // 1. 校验试卷记录是否存在
-//        PaperRecord paperRecord = paperRecordMapper.selectById(paperRecordId);
-//        if (paperRecord == null) {
-//            throw new IllegalArgumentException("试卷记录不存在");
-//        }
-//
-//
-//        // 3. 更新试卷记录状态
-//        PaperRecord updatePaperRecord = new PaperRecord();
-//        updatePaperRecord.setId(paperRecordId);
-//        updatePaperRecord.setStatus(1);
-//        updatePaperRecord.setEndTime(new Date());
-//        updatePaperRecord.setScore(BigDecimal.valueOf(11));
-//        paperRecordMapper.updateById(updatePaperRecord);
-//
-//
-//        // 4. 返回结果
-//        PaperSubmitResponse response = new PaperSubmitResponse();
-//        response.setScore(updatePaperRecord.getScore());
-//        response.setTotalScore(updatePaperRecord.getTotalScore());
-//        response.setStatus(updatePaperRecord.getStatus());
+        List<Question> questions = questionService.listByPaperId(practiceSession.getPaperId());
+        if (questions.isEmpty()) {
+            throw new IllegalArgumentException("试卷不存在题目");
+        }
 
-//        return response;
+        Map<Integer, Question> questionMap = questions.stream()
+                .collect(Collectors.toMap(Question::getId, question -> question));
+        Map<Integer, PaperSubmitRequest.QuestionAnswer> answerMap = new HashMap<>();
+        if (request != null && request.getAnswers() != null) {
+            for (PaperSubmitRequest.QuestionAnswer answer : request.getAnswers()) {
+                if (answer.getQuestionId() != null) {
+                    answerMap.put(answer.getQuestionId(), answer);
+                }
+            }
+        }
 
+        BigDecimal score = BigDecimal.ZERO;
+        int answeredCount = 0;
 
-        return null;
+        List<PracticeSessionQuestionRecord> records = practiceSessionQuestionRecordMapper.selectList(
+                new LambdaQueryWrapper<PracticeSessionQuestionRecord>()
+                        .eq(PracticeSessionQuestionRecord::getSessionId, practiceSessionId)
+        );
+
+        for (PracticeSessionQuestionRecord record : records) {
+            Question question = questionMap.get(record.getQuestionId());
+            if (question == null) {
+                continue;
+            }
+
+            PaperSubmitRequest.QuestionAnswer submitAnswer = answerMap.get(record.getQuestionId());
+            String userAnswer = submitAnswer == null ? "" : submitAnswer.getUserAnswer();
+            boolean isCorrect = isCorrectAnswer(question.getAnswer(), userAnswer);
+            if (submitAnswer != null && userAnswer != null && !userAnswer.trim().isEmpty()) {
+                answeredCount++;
+            }
+
+            PracticeSessionQuestionRecord updateRecord = new PracticeSessionQuestionRecord();
+            updateRecord.setId(record.getId());
+            updateRecord.setUserAnswer(userAnswer);
+            updateRecord.setIsSubmitted(submitAnswer != null);
+            updateRecord.setIsCorrect(isCorrect);
+            updateRecord.setSpendTime(submitAnswer == null ? 0 : submitAnswer.getSpendTime());
+            practiceSessionQuestionRecordMapper.updateById(updateRecord);
+
+            if (isCorrect) {
+                score = score.add(BigDecimal.ONE);
+            }
+        }
+
+        PracticeSession updateSession = new PracticeSession();
+        updateSession.setId(practiceSessionId);
+        updateSession.setStatus(PracticeSessionState.FINISHED.getCode());
+        updateSession.setAnsweredCount(answeredCount);
+        updateSession.setEndTime(request != null && request.getEndTime() != null ? request.getEndTime() : new Date());
+        updateSession.setScore(score);
+        updateSession.setTotalScore(BigDecimal.valueOf(questions.size()));
+        practiceSessionMapper.updateById(updateSession);
+
+        PaperSubmitResponse response = new PaperSubmitResponse();
+        response.setRecordId(Long.valueOf(practiceSessionId));
+        response.setScore(score);
+        response.setTotalScore(BigDecimal.valueOf(questions.size()));
+        response.setStatus(PracticeSessionState.FINISHED.getCode());
+        return response;
+    }
+
+    private boolean isCorrectAnswer(String standardAnswer, String userAnswer) {
+        if (standardAnswer == null || standardAnswer.trim().isEmpty()) {
+            return false;
+        }
+        if (userAnswer == null || userAnswer.trim().isEmpty()) {
+            return false;
+        }
+
+        String normalizedStandard = standardAnswer.trim();
+        String normalizedUser = userAnswer.trim();
+        if (!normalizedStandard.contains(",")) {
+            return normalizedStandard.equalsIgnoreCase(normalizedUser);
+        }
+
+        List<String> standardAnswers = List.of(normalizedStandard.split(","))
+                .stream()
+                .map(String::trim)
+                .filter(item -> !item.isEmpty())
+                .sorted()
+                .collect(Collectors.toList());
+        List<String> userAnswers = List.of(normalizedUser.split(","))
+                .stream()
+                .map(String::trim)
+                .filter(item -> !item.isEmpty())
+                .sorted()
+                .collect(Collectors.toList());
+        return standardAnswers.equals(userAnswers);
     }
 }

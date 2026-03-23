@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Progress } from './ui/progress';
@@ -21,6 +21,19 @@ import {
 } from 'lucide-react';
 import { ExamSession as ExamSessionType, Question } from '../types/exam';
 
+function sanitizeQuestionHtml(html: string): string {
+  if (!html) {
+    return '';
+  }
+
+  return html
+    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, '')
+    .replace(/\son\w+="[^"]*"/gi, '')
+    .replace(/\son\w+='[^']*'/gi, '')
+    .replace(/javascript:/gi, '');
+}
+
 interface ExamSessionProps {
   session: ExamSessionType;
   onUpdateAnswer: (questionId: string, answer: string | string[]) => void;
@@ -34,6 +47,8 @@ export function ExamSession({
   onCompleteExam, 
   onBackToConfig 
 }: ExamSessionProps) {
+  const questionCardRef = useRef<HTMLDivElement | null>(null);
+  const hasMountedRef = useRef(false);
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0); // 已用时间（秒）
@@ -122,6 +137,21 @@ export function ExamSession({
       setFillDraft('');
     }
   }, [currentQuestion.id, currentQuestion.type, session.answers]);
+
+  useEffect(() => {
+    if (!hasMountedRef.current) {
+      hasMountedRef.current = true;
+      return;
+    }
+
+    const top = questionCardRef.current?.getBoundingClientRect().top;
+    if (typeof top === 'number') {
+      window.scrollTo({
+        top: Math.max(0, window.scrollY + top - 96),
+        behavior: 'smooth',
+      });
+    }
+  }, [currentQuestionIndex]);
 
   const formatTime = (seconds: number): string => {
     const mins = Math.floor(seconds / 60);
@@ -398,7 +428,7 @@ export function ExamSession({
       <div className="max-w-7xl mx-auto px-4 py-6">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* 左侧：题目区域 */}
-          <div className="lg:col-span-2">
+          <div ref={questionCardRef} className="lg:col-span-2">
             <Card className="bg-white shadow-sm border border-slate-200">
               <CardHeader className="border-b border-slate-100 pb-4">
                 <div className="space-y-3">
@@ -467,9 +497,12 @@ export function ExamSession({
                     )}
                   </div>
 
-                  <div className="leading-relaxed text-slate-700">
-                    {currentQuestion.question}
-                  </div>
+                  <div
+                    className="leading-relaxed text-slate-700 [&_font[color='red']]:font-semibold [&_font[color='blue']]:font-semibold [&_u]:underline"
+                    dangerouslySetInnerHTML={{
+                      __html: sanitizeQuestionHtml(currentQuestion.question),
+                    }}
+                  />
 
                   {/* 选项区域 */}
                   <div className="space-y-3">

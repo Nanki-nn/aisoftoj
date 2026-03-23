@@ -15,6 +15,8 @@ public class GETPracticeSessionRes {
 
     private int paperId;
 
+    private String examMode;
+
     /**
      * 试卷名称
      */

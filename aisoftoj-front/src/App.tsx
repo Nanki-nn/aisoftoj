@@ -12,7 +12,7 @@ import { useExamSession } from './hooks/useExamSession';
 import { useAuth } from './hooks/useAuth';
 import { ExamConfig as ExamConfigType } from './types/exam';
 import { ExamPaper } from './data/examPapers';
-import { continuePracticeSession, startPaperSession } from './lib/api';
+import { continuePracticeSession, startPaperSession, submitPracticeSession } from './lib/api';
 
 const ROUTES = {
   home: '/',
@@ -84,6 +84,7 @@ function ResultRoute({
 
 export default function App() {
   const [lastConfig, setLastConfig] = useState<ExamConfigType | null>(null);
+  const [examConfigDraft, setExamConfigDraft] = useState<Partial<ExamConfigType> | null>(null);
   const {
     currentSession,
     startExam,
@@ -112,6 +113,7 @@ export default function App() {
 
   const handleStartPaper = async (paper: ExamPaper) => {
     try {
+      setExamConfigDraft(null);
       const session = await startPaperSession(paper.id);
       setSession(session);
       navigate(`${ROUTES.examSessionBase}/${session.id}`);
@@ -120,17 +122,29 @@ export default function App() {
     }
   };
 
-  const handleStartExam = (config: ExamConfigType) => {
+  const handleStartExam = async (config: ExamConfigType) => {
     try {
       setLastConfig(config);
-      const session = startExam(config);
+      setExamConfigDraft(config);
+      const session = config.paperId
+        ? await startPaperSession(config.paperId, config.examMode)
+        : startExam(config);
       navigate(`${ROUTES.examSessionBase}/${session.id}`);
     } catch (error) {
       alert('开始考试失败：' + (error as Error).message);
     }
   };
 
-  const handleCompleteExam = () => {
+  const handleCompleteExam = async () => {
+    if (currentSession && !String(currentSession.id).startsWith('exam_')) {
+      try {
+        await submitPracticeSession(currentSession.id, currentSession.answers);
+      } catch (error) {
+        alert('交卷失败：' + (error as Error).message);
+        return;
+      }
+    }
+
     const session = completeExam();
     if (session) {
       navigate(`${ROUTES.examResultBase}/${session.id}`);
@@ -138,23 +152,55 @@ export default function App() {
   };
 
   const handleRestartExam = () => {
-    if (lastConfig) {
-      handleStartExam(lastConfig);
+    const restartConfig =
+      currentSession
+        ? {
+            paperId: currentSession.paperId,
+            paperName: currentSession.paperName || currentSession.subject,
+            subject: currentSession.subject,
+            category: currentSession.category,
+            questionCount: currentSession.questions.length,
+            examMode: currentSession.examMode,
+            randomOrder: false,
+          }
+        : lastConfig;
+
+    if (!restartConfig) {
+      navigate(ROUTES.examConfig);
+      return;
     }
+
+    setExamConfigDraft(restartConfig);
+    navigate(ROUTES.examConfig);
   };
 
   const handleBackToHome = () => {
     resetSession();
+    setExamConfigDraft(null);
     navigate(ROUTES.home);
   };
 
   const handleBackToConfig = () => {
     resetSession();
+    setExamConfigDraft(null);
     navigate(ROUTES.home);
   };
 
   const handleContinuePractice = () => {
+    const continueConfig =
+      currentSession
+        ? {
+            paperId: currentSession.paperId,
+            paperName: currentSession.paperName || currentSession.subject,
+            subject: currentSession.subject,
+            category: currentSession.category,
+            questionCount: currentSession.questions.length,
+            examMode: 'practice' as const,
+            randomOrder: false,
+          }
+        : null;
     resetSession();
+    setExamConfigDraft(continueConfig);
     navigate(ROUTES.examConfig);
   };
 
@@ -223,7 +269,10 @@ export default function App() {
           }
         />
         <Route path={ROUTES.wrongQuestions} element={<WrongQuestions onBack={handleBackToHome} />} />
-        <Route path={ROUTES.examConfig} element={<ExamConfig onStartExam={handleStartExam} />} />
+        <Route
+          path={ROUTES.examConfig}
+          element={<ExamConfig onStartExam={handleStartExam} initialConfig={examConfigDraft} />}
+        />
         <Route
           path={`${ROUTES.examSessionBase}/:sessionId`}
           element={

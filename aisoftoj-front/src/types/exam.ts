@@ -15,6 +15,8 @@ export interface Question {
 
 export interface ExamSession {
   id: string;
+  paperId?: string;
+  paperName?: string;
   subject: string;
   category: string;
   questions: Question[];
@@ -40,6 +42,8 @@ export interface UserStats {
 }
 
 export interface ExamConfig {
+  paperId?: string;
+  paperName?: string;
   subject: string;
   category: string;
   questionCount: number;

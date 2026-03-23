@@ -11,10 +11,11 @@ import { ExamConfig as ExamConfigType } from '../types/exam';
 import { subjects, getCategoriesBySubject, filterQuestions } from '../data/questions';
 
 interface ExamConfigProps {
-  onStartExam: (config: ExamConfigType) => void;
+  onStartExam: (config: ExamConfigType) => void | Promise<void>;
+  initialConfig?: Partial<ExamConfigType> | null;
 }
 
-export function ExamConfig({ onStartExam }: ExamConfigProps) {
+export function ExamConfig({ onStartExam, initialConfig = null }: ExamConfigProps) {
   const [config, setConfig] = useState<Partial<ExamConfigType>>({
     questionCount: 20,
     timeLimit: 60,
@@ -24,6 +25,29 @@ export function ExamConfig({ onStartExam }: ExamConfigProps) {
   
   const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
+  const isPaperRestart = Boolean(config.paperId);
+
+  React.useEffect(() => {
+    if (!initialConfig) {
+      return;
+    }
+
+    const subject = initialConfig.subject || '';
+    const categories = subject ? getCategoriesBySubject(subject) : [];
+
+    setSelectedSubject(subject);
+    setAvailableCategories(categories);
+    setConfig(prev => ({
+      ...prev,
+      ...initialConfig,
+      subject,
+      category: initialConfig.category || '',
+      questionCount: initialConfig.questionCount || prev.questionCount,
+      timeLimit: initialConfig.timeLimit ?? prev.timeLimit,
+      randomOrder: initialConfig.randomOrder ?? prev.randomOrder,
+      examMode: initialConfig.examMode || prev.examMode,
+    }));
+  }, [initialConfig]);
 
   const handleSubjectChange = (subject: string) => {
     setSelectedSubject(subject);
@@ -33,13 +57,19 @@ export function ExamConfig({ onStartExam }: ExamConfigProps) {
   };
 
   const handleStartExam = () => {
-    if (!config.subject || !config.category || !config.questionCount || !config.examMode) {
+    if (
+      !config.questionCount ||
+      !config.examMode ||
+      (!isPaperRestart && (!config.subject || !config.category))
+    ) {
       return;
     }
 
     const examConfig: ExamConfigType = {
-      subject: config.subject,
-      category: config.category,
+      paperId: config.paperId,
+      paperName: config.paperName,
+      subject: config.subject || '',
+      category: config.category || '',
       questionCount: config.questionCount,
       timeLimit: config.timeLimit,
       difficulty: config.difficulty,
@@ -51,6 +81,7 @@ export function ExamConfig({ onStartExam }: ExamConfigProps) {
   };
 
   const getAvailableQuestionCount = () => {
+    if (isPaperRestart) return config.questionCount || 0;
     if (!config.subject || !config.category) return 0;
     return filterQuestions(config.subject, config.category, config.difficulty).length;
   };
@@ -118,46 +149,59 @@ export function ExamConfig({ onStartExam }: ExamConfigProps) {
             </div>
           </div>
 
-          {/* 科目选择 */}
-          <div className="space-y-2">
-            <Label htmlFor="subject" className="flex items-center gap-2">
-              <BookOpen className="w-4 h-4" />
-              考试科目
-            </Label>
-            <Select value={selectedSubject} onValueChange={handleSubjectChange}>
-              <SelectTrigger>
-                <SelectValue placeholder="请选择考试科目" />
-              </SelectTrigger>
-              <SelectContent>
-                {subjects.map(subject => (
-                  <SelectItem key={subject} value={subject}>
-                    {subject}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </div>
-
-          {/* 分类选择 */}
-          {availableCategories.length > 0 && (
-            <div className="space-y-2">
-              <Label htmlFor="category">知识分类</Label>
-              <Select 
-                value={config.category || ''} 
-                onValueChange={(category) => setConfig(prev => ({ ...prev, category }))}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="请选择知识分类" />
-                </SelectTrigger>
-                <SelectContent>
-                  {availableCategories.map(category => (
-                    <SelectItem key={category} value={category}>
-                      {category}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+          {isPaperRestart ? (
+            <div className="rounded-xl border border-slate-200 bg-slate-50 p-4">
+              <div className="mb-2 text-sm text-slate-500">当前重开试卷</div>
+              <div className="text-slate-900">{config.paperName || config.subject}</div>
+              <div className="mt-2 flex flex-wrap gap-2 text-sm text-slate-600">
+                <Badge variant="secondary">{config.category || '综合知识'}</Badge>
+                <Badge variant="outline">{config.questionCount || 0} 题</Badge>
+              </div>
             </div>
+          ) : (
+            <>
+              {/* 科目选择 */}
+              <div className="space-y-2">
+                <Label htmlFor="subject" className="flex items-center gap-2">
+                  <BookOpen className="w-4 h-4" />
+                  考试科目
+                </Label>
+                <Select value={selectedSubject} onValueChange={handleSubjectChange}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="请选择考试科目" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {subjects.map(subject => (
+                      <SelectItem key={subject} value={subject}>
+                        {subject}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+
+              {/* 分类选择 */}
+              {availableCategories.length > 0 && (
+                <div className="space-y-2">
+                  <Label htmlFor="category">知识分类</Label>
+                  <Select
+                    value={config.category || ''}
+                    onValueChange={(category) => setConfig(prev => ({ ...prev, category }))}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="请选择知识分类" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {availableCategories.map(category => (
+                        <SelectItem key={category} value={category}>
+                          {category}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+              )}
+            </>
           )}
 
           {/* 难度选择 */}
@@ -239,11 +283,15 @@ export function ExamConfig({ onStartExam }: ExamConfigProps) {
           {/* 开始考试按钮 */}
           <Button 
             onClick={handleStartExam}
-            disabled={!config.subject || !config.category || !config.questionCount || availableCount === 0}
+            disabled={
+              !config.questionCount ||
+              !config.examMode ||
+              (!isPaperRestart && (!config.subject || !config.category || availableCount === 0))
+            }
             className="w-full"
             size="lg"
           >
-            开始答题
+            {isPaperRestart ? '按当前模式重新开始' : '开始答题'}
           </Button>
         </CardContent>
       </Card>

@@ -13,7 +13,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 import java.util.stream.Collectors;
 
 @Service
@@ -31,12 +33,16 @@ public class PaperServiceImpl implements PaperService {
         List<Paper> papers = paperMapper.selectList(Wrappers.lambdaQuery(Paper.class)
                 .eq(Paper::getIsDeleted, false));
 
-        //2.查询是否有正在进行的会话记录
-        Set<Integer> doingPaperIds = practiceSessionMapper.selectList(Wrappers.lambdaQuery(PracticeSession.class)
-                           .eq(PracticeSession::getIsDeleted, false)
-                           .eq(PracticeSession::getUserId, 1)
-                           .eq(PracticeSession::getStatus, PracticeSessionState.DOING.getCode()))
-                .stream()
+        List<PracticeSession> sessions = practiceSessionMapper.selectList(Wrappers.lambdaQuery(PracticeSession.class)
+                .eq(PracticeSession::getIsDeleted, false)
+                .eq(PracticeSession::getUserId, 1));
+
+        Set<Integer> doingPaperIds = sessions.stream()
+                .filter(session -> PracticeSessionState.DOING.getCode() == session.getStatus())
+                .map(PracticeSession::getPaperId)
+                .collect(Collectors.toSet());
+        Set<Integer> finishedPaperIds = sessions.stream()
+                .filter(session -> PracticeSessionState.FINISHED.getCode() == session.getStatus())
                 .map(PracticeSession::getPaperId)
                 .collect(Collectors.toSet());
 
@@ -62,13 +68,19 @@ public class PaperServiceImpl implements PaperService {
             // 3. Check if this paper has an ongoing record
             Integer doingSessionId = doingPaperIds.contains(paper.getId()) ? paper.getId() : null;
             dto.setDoingSessionId(doingSessionId);
-            // 4. Set paper status based on whether it has an ongoing record
-            String paperStatus = paper.getMockStatus();
-            if (paperStatus == null || paperStatus.isEmpty()) {
-                paperStatus = doingSessionId == null ? PaperStatus.NOT_STARTED : PaperStatus.IN_PROGRESS;
+            // 4. Prefer real practice-session state over any stale imported mock status.
+            String paperStatus;
+            if (doingPaperIds.contains(paper.getId())) {
+                paperStatus = PaperStatus.IN_PROGRESS;
+            } else if (finishedPaperIds.contains(paper.getId())) {
+                paperStatus = PaperStatus.COMPLETED;
+            } else {
+                paperStatus = PaperStatus.NOT_STARTED;
             }
             dto.setPaperStatus(paperStatus);
-            dto.setProgress(paper.getCompletedCount() == null ? 0 : paper.getCompletedCount());
+            dto.setProgress(PaperStatus.COMPLETED.equals(paperStatus)
+                    ? paper.getQuestionTotal()
+                    : (paper.getCompletedCount() == null ? 0 : paper.getCompletedCount()));
             return dto;
         }).collect(Collectors.toList());
     }
@@ -82,12 +94,16 @@ public class PaperServiceImpl implements PaperService {
                 .eq(subjectId != null, Paper::getSubjectId, subjectId)
                 .eq(cateId != null, Paper::getPaperCateId, cateId));
 
-        //2.查询是否有正在进行的会话记录
-        Set<Integer> doingPaperIds = practiceSessionMapper.selectList(Wrappers.lambdaQuery(PracticeSession.class)
-                           .eq(PracticeSession::getIsDeleted, false)
-                           .eq(PracticeSession::getUserId, 1)
-                           .eq(PracticeSession::getStatus, PracticeSessionState.DOING.getCode()))
-                .stream()
+        List<PracticeSession> sessions = practiceSessionMapper.selectList(Wrappers.lambdaQuery(PracticeSession.class)
+                .eq(PracticeSession::getIsDeleted, false)
+                .eq(PracticeSession::getUserId, 1));
+
+        Set<Integer> doingPaperIds = sessions.stream()
+                .filter(session -> PracticeSessionState.DOING.getCode() == session.getStatus())
+                .map(PracticeSession::getPaperId)
+                .collect(Collectors.toSet());
+        Set<Integer> finishedPaperIds = sessions.stream()
+                .filter(session -> PracticeSessionState.FINISHED.getCode() == session.getStatus())
                 .map(PracticeSession::getPaperId)
                 .collect(Collectors.toSet());
 
@@ -113,13 +129,18 @@ public class PaperServiceImpl implements PaperService {
             // 3. Check if this paper has an ongoing record
             Integer doingSessionId = doingPaperIds.contains(paper.getId()) ? paper.getId() : null;
             dto.setDoingSessionId(doingSessionId);
-            // 4. Set paper status based on whether it has an ongoing record
-            String paperStatus = paper.getMockStatus();
-            if (paperStatus == null || paperStatus.isEmpty()) {
-                paperStatus = doingSessionId == null ? PaperStatus.NOT_STARTED : PaperStatus.IN_PROGRESS;
+            String paperStatus;
+            if (doingPaperIds.contains(paper.getId())) {
+                paperStatus = PaperStatus.IN_PROGRESS;
+            } else if (finishedPaperIds.contains(paper.getId())) {
+                paperStatus = PaperStatus.COMPLETED;
+            } else {
+                paperStatus = PaperStatus.NOT_STARTED;
             }
             dto.setPaperStatus(paperStatus);
-            dto.setProgress(paper.getCompletedCount() == null ? 0 : paper.getCompletedCount());
+            dto.setProgress(PaperStatus.COMPLETED.equals(paperStatus)
+                    ? paper.getQuestionTotal()
+                    : (paper.getCompletedCount() == null ? 0 : paper.getCompletedCount()));
             return dto;
         }).collect(Collectors.toList());
     }

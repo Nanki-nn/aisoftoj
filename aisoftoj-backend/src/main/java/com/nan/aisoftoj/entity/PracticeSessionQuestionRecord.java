@@ -4,7 +4,6 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import lombok.Data;
 
-import java.math.BigDecimal;
 import java.util.Date;
 
 @Data
@@ -31,19 +30,19 @@ public class PracticeSessionQuestionRecord {
     private String userAnswer;
 
     /**
+     * 是否已提交
+     */
+    private Boolean isSubmitted;
+
+    /**
      * 是否正确
      */
     private Boolean isCorrect;
 
     /**
-     * 得分
+     * 本题耗时（秒）
      */
-    private BigDecimal score;
-
-    /**
-     * 题目总分
-     */
-    private BigDecimal totalScore;
+    private Integer spendTime;
 
     /**
      * 创建时间

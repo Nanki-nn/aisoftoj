@@ -183,6 +183,29 @@ export function ExamResult({ session, onRestartExam, onBackToHome, onContinuePra
           </CardContent>
         </Card>
 
+        <Card className="mb-6 border-blue-100 bg-white/95 shadow-sm">
+          <CardContent className="flex flex-col gap-3 pt-6 sm:flex-row sm:items-center sm:justify-between">
+            <div>
+              <div className="text-sm text-slate-500">考试完成后常用操作</div>
+              <div className="text-slate-800">重新作答、继续练习和返回首页都放在这里，首屏就能点。</div>
+            </div>
+            <div className="flex flex-col gap-3 sm:flex-row">
+              <Button onClick={onRestartExam} variant="outline" className="flex items-center gap-2">
+                <RotateCcw className="w-4 h-4" />
+                重新答题
+              </Button>
+              <Button onClick={onContinuePractice} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700">
+                <BookMarked className="w-4 h-4" />
+                继续刷题
+              </Button>
+              <Button onClick={onBackToHome} variant="outline" className="flex items-center gap-2">
+                <Home className="w-4 h-4" />
+                返回首页
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* 答题详情 */}
         <Card className="mb-6">
           <CardHeader>

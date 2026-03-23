@@ -34,6 +34,16 @@ public class PracticeSession {
      * 结束时间（未完成时为默认值）
      */
     private Date endTime;
+
+    /**
+     * 会话模式: practice/exam
+     */
+    private String examMode;
+
+    /**
+     * 已答题数
+     */
+    private Integer answeredCount;
     
     /**
      * 用户得分
