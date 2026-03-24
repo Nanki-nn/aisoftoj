@@ -15,7 +15,6 @@ import org.springframework.stereotype.Service;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Stream;
 import java.util.stream.Collectors;
 
 @Service
@@ -37,6 +36,13 @@ public class PaperServiceImpl implements PaperService {
                 .eq(PracticeSession::getIsDeleted, false)
                 .eq(PracticeSession::getUserId, 1));
 
+        Map<Integer, Integer> doingSessionIdByPaperId = sessions.stream()
+                .filter(session -> PracticeSessionState.DOING.getCode() == session.getStatus())
+                .collect(Collectors.toMap(
+                        PracticeSession::getPaperId,
+                        PracticeSession::getId,
+                        (existing, replacement) -> replacement
+                ));
         Set<Integer> doingPaperIds = sessions.stream()
                 .filter(session -> PracticeSessionState.DOING.getCode() == session.getStatus())
                 .map(PracticeSession::getPaperId)
@@ -65,9 +71,7 @@ public class PaperServiceImpl implements PaperService {
             dto.setCreateTime(paper.getCreateTime());
             dto.setUpdateTime(paper.getUpdateTime());
             dto.setCompletedCount(paper.getCompletedCount());
-            // 3. Check if this paper has an ongoing record
-            Integer doingSessionId = doingPaperIds.contains(paper.getId()) ? paper.getId() : null;
-            dto.setDoingSessionId(doingSessionId);
+            dto.setDoingSessionId(doingSessionIdByPaperId.get(paper.getId()));
             // 4. Prefer real practice-session state over any stale imported mock status.
             String paperStatus;
             if (doingPaperIds.contains(paper.getId())) {
@@ -98,6 +102,13 @@ public class PaperServiceImpl implements PaperService {
                 .eq(PracticeSession::getIsDeleted, false)
                 .eq(PracticeSession::getUserId, 1));
 
+        Map<Integer, Integer> doingSessionIdByPaperId = sessions.stream()
+                .filter(session -> PracticeSessionState.DOING.getCode() == session.getStatus())
+                .collect(Collectors.toMap(
+                        PracticeSession::getPaperId,
+                        PracticeSession::getId,
+                        (existing, replacement) -> replacement
+                ));
         Set<Integer> doingPaperIds = sessions.stream()
                 .filter(session -> PracticeSessionState.DOING.getCode() == session.getStatus())
                 .map(PracticeSession::getPaperId)
@@ -126,9 +137,7 @@ public class PaperServiceImpl implements PaperService {
             dto.setCreateTime(paper.getCreateTime());
             dto.setUpdateTime(paper.getUpdateTime());
             dto.setCompletedCount(paper.getCompletedCount());
-            // 3. Check if this paper has an ongoing record
-            Integer doingSessionId = doingPaperIds.contains(paper.getId()) ? paper.getId() : null;
-            dto.setDoingSessionId(doingSessionId);
+            dto.setDoingSessionId(doingSessionIdByPaperId.get(paper.getId()));
             String paperStatus;
             if (doingPaperIds.contains(paper.getId())) {
                 paperStatus = PaperStatus.IN_PROGRESS;

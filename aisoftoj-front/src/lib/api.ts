@@ -19,6 +19,7 @@ type PaperDTO = {
   paperMonth?: number;
   questionTotal: number;
   readCt: number;
+  doingSessionId?: number | null;
   paperStatus?: 'not_started' | 'in_progress' | 'completed';
   progress?: number;
   completedCount?: number;
@@ -160,6 +161,7 @@ export async function fetchPapers(): Promise<ExamPaper[]> {
     viewCount: paper.readCt || 0,
     status: paper.paperStatus || 'not_started',
     completedCount: paper.completedCount ?? paper.progress ?? 0,
+    doingSessionId: paper.doingSessionId ? String(paper.doingSessionId) : null,
   }));
 }
 

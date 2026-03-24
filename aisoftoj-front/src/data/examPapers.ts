@@ -10,6 +10,7 @@ export interface ExamPaper {
   viewCount: number;
   status: 'not_started' | 'in_progress' | 'completed';
   completedCount?: number;
+  doingSessionId?: string | null;
 }
 
 export const examPapers: ExamPaper[] = [

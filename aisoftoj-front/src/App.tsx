@@ -111,10 +111,26 @@ export default function App() {
     }
   }, [location.pathname, currentSession, navigate]);
 
+  const choosePaperMode = (): 'practice' | 'exam' => {
+    const isExamMode = window.confirm('点击“确定”以考试模式开始；点击“取消”则进入练习模式。');
+    return isExamMode ? 'exam' : 'practice';
+  };
+
   const handleStartPaper = async (paper: ExamPaper) => {
+    if (paper.status === 'in_progress' && paper.doingSessionId) {
+      try {
+        const session = await continuePracticeSession(paper.doingSessionId);
+        setSession(session);
+        navigate(`${ROUTES.examSessionBase}/${session.id}`);
+        return;
+      } catch (error) {
+        alert('继续练习失败：' + (error as Error).message);
+        return;
+      }
+    }
+
     try {
-      setExamConfigDraft(null);
-      const session = await startPaperSession(paper.id);
+      const session = await startPaperSession(paper.id, choosePaperMode());
       setSession(session);
       navigate(`${ROUTES.examSessionBase}/${session.id}`);
     } catch (error) {
@@ -152,21 +168,33 @@ export default function App() {
   };
 
   const handleRestartExam = () => {
-    const restartConfig =
-      currentSession
-        ? {
-            paperId: currentSession.paperId,
-            paperName: currentSession.paperName || currentSession.subject,
-            subject: currentSession.subject,
-            category: currentSession.category,
-            questionCount: currentSession.questions.length,
-            examMode: currentSession.examMode,
-            randomOrder: false,
-          }
-        : lastConfig;
+    const restartConfig = currentSession?.paperId
+      ? {
+          paperId: currentSession.paperId,
+          paperName: currentSession.paperName || currentSession.subject,
+          subject: currentSession.subject,
+          category: currentSession.category,
+          questionCount: currentSession.questions.length,
+          examMode: currentSession.examMode,
+          randomOrder: false,
+        }
+      : lastConfig;
 
     if (!restartConfig) {
       navigate(ROUTES.examConfig);
+      return;
+    }
+
+    if (restartConfig.paperId) {
+      void (async () => {
+        try {
+          const session = await startPaperSession(restartConfig.paperId!, choosePaperMode());
+          setSession(session);
+          navigate(`${ROUTES.examSessionBase}/${session.id}`);
+        } catch (error) {
+          alert('开始考试失败：' + (error as Error).message);
+        }
+      })();
       return;
     }
 
@@ -187,19 +215,30 @@ export default function App() {
   };
 
   const handleContinuePractice = () => {
-    const continueConfig =
-      currentSession
-        ? {
-            paperId: currentSession.paperId,
-            paperName: currentSession.paperName || currentSession.subject,
-            subject: currentSession.subject,
-            category: currentSession.category,
-            questionCount: currentSession.questions.length,
-            examMode: 'practice' as const,
-            randomOrder: false,
-          }
-        : null;
+    const continueConfig = currentSession?.paperId
+      ? {
+          paperId: currentSession.paperId,
+          paperName: currentSession.paperName || currentSession.subject,
+          subject: currentSession.subject,
+          category: currentSession.category,
+          questionCount: currentSession.questions.length,
+          examMode: 'practice' as const,
+          randomOrder: false,
+        }
+      : null;
     resetSession();
+    if (continueConfig?.paperId) {
+      void (async () => {
+        try {
+          const session = await startPaperSession(continueConfig.paperId!, 'practice');
+          setSession(session);
+          navigate(`${ROUTES.examSessionBase}/${session.id}`);
+        } catch (error) {
+          alert('继续练习失败：' + (error as Error).message);
+        }
+      })();
+      return;
+    }
     setExamConfigDraft(continueConfig);
     navigate(ROUTES.examConfig);
   };
