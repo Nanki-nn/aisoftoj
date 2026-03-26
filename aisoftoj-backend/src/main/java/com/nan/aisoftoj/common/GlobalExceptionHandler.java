@@ -1,9 +1,9 @@
 package com.nan.aisoftoj.common;
 
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.ResponseBody;
-import org.springframework.web.context.request.WebRequest;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -14,6 +14,15 @@ public class GlobalExceptionHandler {
     @ResponseBody
     public ErrorResponse handleIllegalArgumentException(HttpServletRequest request, IllegalArgumentException ex) {
         return new ErrorResponse(400, ex.getMessage(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    @ResponseBody
+    public ErrorResponse handleMethodArgumentNotValidException(HttpServletRequest request, MethodArgumentNotValidException ex) {
+        String message = ex.getBindingResult().getFieldErrors().isEmpty()
+                ? "请求参数不合法"
+                : ex.getBindingResult().getFieldErrors().get(0).getDefaultMessage();
+        return new ErrorResponse(400, message, request.getRequestURI());
     }
 
     @ExceptionHandler(Exception.class)

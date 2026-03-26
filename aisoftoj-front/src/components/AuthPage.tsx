@@ -1,334 +1,183 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Alert, AlertDescription } from './ui/alert';
-import { 
-  GraduationCap, 
-  Mail, 
-  Lock, 
-  Phone,
+import {
+  GraduationCap,
+  Mail,
+  Lock,
   Eye,
   EyeOff,
   AlertCircle,
-  Smartphone,
-  QrCode,
+  User,
+  Phone,
   ArrowRight,
   BookOpen,
   Trophy,
-  Target
+  Target,
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import { LoginForm } from '../types/user';
+import { LoginForm, RegisterForm } from '../types/user';
 
 interface AuthPageProps {
   onLoginSuccess: () => void;
 }
 
+const defaultLoginForm: LoginForm = {
+  email: '',
+  password: '',
+  rememberMe: false,
+};
+
+const defaultRegisterForm: RegisterForm = {
+  username: '',
+  email: '',
+  password: '',
+  confirmPassword: '',
+  nickname: '',
+  phone: '',
+  agreeToTerms: true,
+};
+
 export function AuthPage({ onLoginSuccess }: AuthPageProps) {
-  const { login, isLoading, error } = useAuth();
-  const [loginMethod, setLoginMethod] = useState<'email' | 'phone' | 'wechat'>('phone');
+  const { login, register, isLoading, error } = useAuth();
+  const [mode, setMode] = useState<'login' | 'register'>('login');
   const [showPassword, setShowPassword] = useState(false);
-  const [countdown, setCountdown] = useState(0);
-  const [wechatQRCode, setWechatQRCode] = useState('');
-  
-  const [emailLoginForm, setEmailLoginForm] = useState<LoginForm>({
-    email: '',
-    password: '',
-    rememberMe: false
-  });
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [loginForm, setLoginForm] = useState<LoginForm>(defaultLoginForm);
+  const [registerForm, setRegisterForm] = useState<RegisterForm>(defaultRegisterForm);
 
-  const [phoneLoginForm, setPhoneLoginForm] = useState({
-    phone: '',
-    code: ''
-  });
-
-  // 倒计时逻辑
-  useEffect(() => {
-    if (countdown > 0) {
-      const timer = setTimeout(() => setCountdown(countdown - 1), 1000);
-      return () => clearTimeout(timer);
-    }
-  }, [countdown]);
-
-  // 模拟生成微信二维码
-  useEffect(() => {
-    const qrData = `weixin://login?uuid=${Date.now()}`;
-    setWechatQRCode(`https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${encodeURIComponent(qrData)}`);
-  }, []);
-
-  const handleEmailLogin = async (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    const success = await login(emailLoginForm);
+    const success = await login(loginForm);
     if (success) {
       onLoginSuccess();
     }
   };
 
-  const handlePhoneLogin = async (e: React.FormEvent) => {
+  const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (phoneLoginForm.phone === '13800138000' && phoneLoginForm.code === '123456') {
-      const success = await login({ email: 'student@example.com', password: '123456', rememberMe: false });
-      if (success) {
-        onLoginSuccess();
-      }
-    } else {
-      alert('手机号或验证码错误');
+    const success = await register(registerForm);
+    if (success) {
+      onLoginSuccess();
     }
-  };
-
-  const handleSendCode = () => {
-    if (!phoneLoginForm.phone) {
-      alert('请输入手机号');
-      return;
-    }
-    if (!/^1[3-9]\d{9}$/.test(phoneLoginForm.phone)) {
-      alert('请输入正确的手机号');
-      return;
-    }
-    setCountdown(60);
-    alert('验证码已发送（演示：123456）');
-  };
-
-  const handleWechatScan = () => {
-    setTimeout(async () => {
-      const success = await login({ email: 'student@example.com', password: '123456', rememberMe: false });
-      if (success) {
-        onLoginSuccess();
-      }
-    }, 2000);
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-slate-50 to-cyan-50 flex items-center justify-center p-4">
       <div className="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-        {/* 左侧展示区域 */}
         <div className="hidden lg:block">
-          <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-white/20">
+          <div className="bg-white/85 backdrop-blur-sm rounded-3xl p-8 shadow-lg border border-white/50">
             <div className="text-center mb-8">
               <div className="flex items-center justify-center gap-3 mb-4">
                 <GraduationCap className="w-12 h-12 text-blue-600" />
-                <h1 className="text-3xl font-bold text-slate-800">软考刷题平台</h1>
+                <h1 className="text-3xl font-bold text-slate-800">知构 · Zhigou Prep</h1>
               </div>
-              <p className="text-lg text-slate-600">
-                专业的软考备考平台，助你轻松通过考试
-              </p>
+              <p className="text-lg text-slate-600">真实题库、错题沉淀和 AI 学习分析，围绕软考备考一站式展开。</p>
             </div>
 
-            <div className="space-y-6">
-              <div className="flex items-center gap-4 p-4 bg-blue-50 rounded-xl">
+            <div className="space-y-5">
+              <div className="flex items-center gap-4 rounded-2xl bg-blue-50 p-4">
                 <BookOpen className="w-8 h-8 text-blue-600" />
                 <div>
-                  <h3 className="text-slate-800 font-semibold mb-1">海量题库</h3>
-                  <p className="text-slate-600 text-sm">精选历年真题，覆盖所有考试科目</p>
+                  <div className="font-semibold text-slate-800">题库持续沉淀</div>
+                  <div className="text-sm text-slate-600">支持历年真题导入、结构化整理和刷题训练。</div>
                 </div>
               </div>
-
-              <div className="flex items-center gap-4 p-4 bg-emerald-50 rounded-xl">
+              <div className="flex items-center gap-4 rounded-2xl bg-emerald-50 p-4">
                 <Trophy className="w-8 h-8 text-emerald-600" />
                 <div>
-                  <h3 className="text-slate-800 font-semibold mb-1">智能分析</h3>
-                  <p className="text-slate-600 text-sm">个性化学习报告，精准定位薄弱环节</p>
+                  <div className="font-semibold text-slate-800">学习记录可追踪</div>
+                  <div className="text-sm text-slate-600">登录后保留做题历史、错题统计和个人资料。</div>
                 </div>
               </div>
-
-              <div className="flex items-center gap-4 p-4 bg-amber-50 rounded-xl">
+              <div className="flex items-center gap-4 rounded-2xl bg-amber-50 p-4">
                 <Target className="w-8 h-8 text-amber-600" />
                 <div>
-                  <h3 className="text-slate-800 font-semibold mb-1">高效备考</h3>
-                  <p className="text-slate-600 text-sm">科学的学习计划，提升备考效率</p>
+                  <div className="font-semibold text-slate-800">为后续 AI 能力留接口</div>
+                  <div className="text-sm text-slate-600">后续可以继续接知识图谱、错因分析和学习建议。</div>
                 </div>
               </div>
-            </div>
-
-            <div className="mt-8 text-center">
-              <p className="text-slate-500 text-sm">
-                已有 <span className="text-blue-600 font-semibold">10,000+</span> 用户通过平台成功备考
-              </p>
             </div>
           </div>
         </div>
 
-        {/* 右侧登录区域 */}
-        <div className="w-full max-w-md mx-auto">
-          {/* 移动端Logo */}
-          <div className="text-center mb-6 lg:hidden">
+        <div className="w-full max-w-xl mx-auto">
+          <div className="text-center mb-8 lg:hidden">
             <div className="flex items-center justify-center gap-3 mb-2">
               <GraduationCap className="w-10 h-10 text-blue-600" />
-              <h1 className="text-2xl font-bold text-slate-800">软考刷题平台</h1>
+              <h1 className="text-2xl font-bold text-slate-800">知构</h1>
             </div>
-            <p className="text-slate-600 text-sm">专业的软考备考平台</p>
+            <p className="text-slate-600 text-sm">Zhigou Prep</p>
           </div>
 
-          {/* 登录卡片 */}
-          <Card className="bg-white shadow-xl border-0">
-            <CardContent className="p-8">
+          <Card className="border-0 bg-white shadow-xl">
+            <CardContent className="p-8 sm:p-10">
+              <div className="mb-8 space-y-4">
+                <div>
+                  <h2 className="text-2xl font-semibold text-slate-900">
+                    {mode === 'login' ? '登录账号' : '创建账号'}
+                  </h2>
+                  <p className="mt-2 text-sm leading-6 text-slate-500">
+                    {mode === 'login'
+                      ? '登录后可同步刷题记录、错题统计和个人学习进度。'
+                      : '先完成基础注册，后续再逐步完善个人资料。'}
+                  </p>
+                </div>
+
+                <div className="flex rounded-xl bg-slate-100 p-1">
+                  <button
+                    type="button"
+                    onClick={() => setMode('login')}
+                    className={`flex-1 rounded-lg px-4 py-2.5 text-sm transition-colors ${mode === 'login' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+                  >
+                    登录
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setMode('register')}
+                    className={`flex-1 rounded-lg px-4 py-2.5 text-sm transition-colors ${mode === 'register' ? 'bg-white text-slate-900 shadow-sm' : 'text-slate-500'}`}
+                  >
+                    注册
+                  </button>
+                </div>
+              </div>
+
               {error && (
-                <Alert className="mb-6 border-red-200 bg-red-50">
+                <Alert className="mb-8 border-red-200 bg-red-50">
                   <AlertCircle className="h-4 w-4 text-red-600" />
-                  <AlertDescription className="text-red-800">
-                    {error}
-                  </AlertDescription>
+                  <AlertDescription className="text-red-800">{error}</AlertDescription>
                 </Alert>
               )}
 
-              {/* 登录方式切换 */}
-              <div className="flex items-center justify-center gap-4 mb-8">
-                <button
-                  onClick={() => setLoginMethod('wechat')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
-                    loginMethod === 'wechat'
-                      ? 'text-blue-600 font-semibold'
-                      : 'text-slate-600 hover:text-slate-800'
-                  }`}
-                >
-                  <QrCode className="w-5 h-5" />
-                  微信
-                </button>
-                <div className="w-px h-6 bg-slate-200"></div>
-                <button
-                  onClick={() => setLoginMethod('phone')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
-                    loginMethod === 'phone'
-                      ? 'text-blue-600 font-semibold'
-                      : 'text-slate-600 hover:text-slate-800'
-                  }`}
-                >
-                  <Smartphone className="w-5 h-5" />
-                  手机号
-                </button>
-                <div className="w-px h-6 bg-slate-200"></div>
-                <button
-                  onClick={() => setLoginMethod('email')}
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
-                    loginMethod === 'email'
-                      ? 'text-blue-600 font-semibold'
-                      : 'text-slate-600 hover:text-slate-800'
-                  }`}
-                >
-                  <Mail className="w-5 h-5" />
-                  邮箱
-                </button>
-              </div>
-
-              {/* 微信扫码登录 */}
-              {loginMethod === 'wechat' && (
-                <div className="space-y-6">
-                  <div className="flex items-center gap-3 text-blue-600 mb-6">
-                    <span className="text-xl font-medium">通过微信登录</span>
-                    <ArrowRight className="w-6 h-6" />
+              {mode === 'login' ? (
+                <form onSubmit={handleLogin} className="space-y-8">
+                  <div className="flex items-center gap-3 text-blue-600">
+                    <span className="text-xl font-medium">邮箱登录</span>
+                    <ArrowRight className="w-5 h-5" />
                   </div>
 
-                  <div className="flex flex-col items-center justify-center py-4">
-                    <div className="bg-white p-4 rounded-xl shadow-sm border-2 border-slate-100 mb-6">
-                      <img 
-                        src={wechatQRCode} 
-                        alt="微信登录二维码" 
-                        className="w-48 h-48"
-                      />
-                    </div>
-                    <p className="text-sm text-slate-600 mb-4">请使用微信扫描二维码登录</p>
-                    
-                    <Button 
-                      onClick={handleWechatScan}
-                      className="w-full bg-green-600 hover:bg-green-700 text-white text-lg h-14 rounded-xl"
-                      disabled={isLoading}
-                    >
-                      <QrCode className="w-5 h-5 mr-2" />
-                      {isLoading ? '登录中...' : '模拟扫码登录'}
-                    </Button>
-                    
-                    <p className="text-xs text-slate-400 mt-4">点击上方按钮模拟扫码登录</p>
-                  </div>
-                </div>
-              )}
-
-              {/* 手机号验证码登录 */}
-              {loginMethod === 'phone' && (
-                <form onSubmit={handlePhoneLogin} className="space-y-6">
-                  <div className="flex items-center gap-3 text-blue-600 mb-6">
-                    <span className="text-xl font-medium">通过手机号登录</span>
-                    <ArrowRight className="w-6 h-6" />
-                  </div>
-
-                  <div className="space-y-4">
-                    <Input
-                      type="tel"
-                      placeholder="请输入手机号码"
-                      value={phoneLoginForm.phone}
-                      onChange={(e) => setPhoneLoginForm(prev => ({ ...prev, phone: e.target.value }))}
-                      maxLength={11}
-                      className="h-14 text-base bg-slate-50 border-slate-200 rounded-xl"
-                      required
-                    />
-
-                    <div className="flex gap-3">
+                  <div className="space-y-5">
+                    <div className="relative">
+                      <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                       <Input
-                        type="text"
-                        placeholder="请输入验证码"
-                        value={phoneLoginForm.code}
-                        onChange={(e) => setPhoneLoginForm(prev => ({ ...prev, code: e.target.value }))}
-                        maxLength={6}
-                        className="flex-1 h-14 text-base bg-slate-50 border-slate-200 rounded-xl"
+                        type="email"
+                        placeholder="请输入邮箱地址"
+                        value={loginForm.email}
+                        onChange={(e) => setLoginForm(prev => ({ ...prev, email: e.target.value }))}
+                        className="h-12 rounded-xl border-slate-200 bg-slate-50 pl-11"
                         required
                       />
-                      <Button
-                        type="button"
-                        onClick={handleSendCode}
-                        disabled={countdown > 0}
-                        className="min-w-[140px] h-14 text-base rounded-xl bg-white hover:bg-slate-50 text-slate-700 border border-slate-200"
-                      >
-                        {countdown > 0 ? `${countdown}秒后重试` : '发送验证码'}
-                      </Button>
                     </div>
-                  </div>
-
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white text-lg h-14 rounded-xl shadow-lg"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <span className="flex items-center gap-2">
-                        <span className="animate-spin">⏳</span>
-                        登录中...
-                      </span>
-                    ) : (
-                      '登录'
-                    )}
-                  </Button>
-
-                  <p className="text-center text-sm text-slate-500">
-                    演示手机号：13800138000 / 验证码：123456
-                  </p>
-                </form>
-              )}
-
-              {/* 邮箱登录 */}
-              {loginMethod === 'email' && (
-                <form onSubmit={handleEmailLogin} className="space-y-6">
-                  <div className="flex items-center gap-3 text-blue-600 mb-6">
-                    <span className="text-xl font-medium">通过邮箱登录</span>
-                    <ArrowRight className="w-6 h-6" />
-                  </div>
-
-                  <div className="space-y-4">
-                    <Input
-                      type="email"
-                      placeholder="请输入邮箱地址"
-                      value={emailLoginForm.email}
-                      onChange={(e) => setEmailLoginForm(prev => ({ ...prev, email: e.target.value }))}
-                      className="h-14 text-base bg-slate-50 border-slate-200 rounded-xl"
-                      required
-                    />
-
                     <div className="relative">
+                      <Lock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
                       <Input
-                        type={showPassword ? "text" : "password"}
+                        type={showPassword ? 'text' : 'password'}
                         placeholder="请输入密码"
-                        value={emailLoginForm.password}
-                        onChange={(e) => setEmailLoginForm(prev => ({ ...prev, password: e.target.value }))}
-                        className="h-14 text-base bg-slate-50 border-slate-200 rounded-xl pr-12"
+                        value={loginForm.password}
+                        onChange={(e) => setLoginForm(prev => ({ ...prev, password: e.target.value }))}
+                        className="h-12 rounded-xl border-slate-200 bg-slate-50 pl-11 pr-12"
                         required
                       />
                       <Button
@@ -336,40 +185,142 @@ export function AuthPage({ onLoginSuccess }: AuthPageProps) {
                         variant="ghost"
                         size="sm"
                         className="absolute right-2 top-1/2 -translate-y-1/2"
-                        onClick={() => setShowPassword(!showPassword)}
+                        onClick={() => setShowPassword(prev => !prev)}
                       >
-                        {showPassword ? <EyeOff className="w-5 h-5 text-slate-400" /> : <Eye className="w-5 h-5 text-slate-400" />}
+                        {showPassword ? <EyeOff className="w-4 h-4 text-slate-400" /> : <Eye className="w-4 h-4 text-slate-400" />}
                       </Button>
                     </div>
                   </div>
 
-                  <Button 
-                    type="submit" 
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white text-lg h-14 rounded-xl shadow-lg"
-                    disabled={isLoading}
-                  >
-                    {isLoading ? (
-                      <span className="flex items-center gap-2">
-                        <span className="animate-spin">⏳</span>
-                        登录中...
-                      </span>
-                    ) : (
-                      '登录'
-                    )}
-                  </Button>
+                  <div className="space-y-4 pt-1">
+                    <Button type="submit" className="h-12 w-full rounded-xl bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
+                      {isLoading ? '登录中...' : '登录'}
+                    </Button>
+                    <div className="text-center text-sm text-slate-500">
+                      还没有账号？可以直接切换到“注册”
+                    </div>
+                  </div>
+                </form>
+              ) : (
+                <form onSubmit={handleRegister} className="space-y-8">
+                  <div className="flex items-center gap-3 text-blue-600">
+                    <span className="text-xl font-medium">注册账号</span>
+                    <ArrowRight className="w-5 h-5" />
+                  </div>
 
-                  <p className="text-center text-sm text-slate-500">
-                    演示账号：student@example.com / 123456
-                  </p>
+                  <div className="space-y-6">
+                    <div>
+                      <div className="mb-3 text-sm font-medium text-slate-700">基础信息</div>
+                      <div className="grid gap-4">
+                        <div className="relative">
+                          <User className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                          <Input
+                            placeholder="用户名"
+                            value={registerForm.username}
+                            onChange={(e) => setRegisterForm(prev => ({ ...prev, username: e.target.value }))}
+                            className="h-12 rounded-xl border-slate-200 bg-slate-50 pl-11"
+                            required
+                          />
+                        </div>
+                        <div className="relative">
+                          <User className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                          <Input
+                            placeholder="昵称"
+                            value={registerForm.nickname}
+                            onChange={(e) => setRegisterForm(prev => ({ ...prev, nickname: e.target.value }))}
+                            className="h-12 rounded-xl border-slate-200 bg-slate-50 pl-11"
+                            required
+                          />
+                        </div>
+                        <div className="relative">
+                          <Mail className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                          <Input
+                            type="email"
+                            placeholder="邮箱"
+                            value={registerForm.email}
+                            onChange={(e) => setRegisterForm(prev => ({ ...prev, email: e.target.value }))}
+                            className="h-12 rounded-xl border-slate-200 bg-slate-50 pl-11"
+                            required
+                          />
+                        </div>
+                        <div className="relative">
+                          <Phone className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                          <Input
+                            placeholder="手机号（可选）"
+                            value={registerForm.phone || ''}
+                            onChange={(e) => setRegisterForm(prev => ({ ...prev, phone: e.target.value }))}
+                            className="h-12 rounded-xl border-slate-200 bg-slate-50 pl-11"
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <div>
+                      <div className="mb-3 text-sm font-medium text-slate-700">设置密码</div>
+                      <div className="grid gap-4">
+                        <div className="relative">
+                          <Lock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                          <Input
+                            type={showPassword ? 'text' : 'password'}
+                            placeholder="密码（至少 6 位）"
+                            value={registerForm.password}
+                            onChange={(e) => setRegisterForm(prev => ({ ...prev, password: e.target.value }))}
+                            className="h-12 rounded-xl border-slate-200 bg-slate-50 pl-11 pr-12"
+                            required
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-2 top-1/2 -translate-y-1/2"
+                            onClick={() => setShowPassword(prev => !prev)}
+                          >
+                            {showPassword ? <EyeOff className="w-4 h-4 text-slate-400" /> : <Eye className="w-4 h-4 text-slate-400" />}
+                          </Button>
+                        </div>
+                        <div className="relative">
+                          <Lock className="absolute left-4 top-1/2 h-4 w-4 -translate-y-1/2 text-slate-400" />
+                          <Input
+                            type={showConfirmPassword ? 'text' : 'password'}
+                            placeholder="确认密码"
+                            value={registerForm.confirmPassword}
+                            onChange={(e) => setRegisterForm(prev => ({ ...prev, confirmPassword: e.target.value }))}
+                            className="h-12 rounded-xl border-slate-200 bg-slate-50 pl-11 pr-12"
+                            required
+                          />
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="sm"
+                            className="absolute right-2 top-1/2 -translate-y-1/2"
+                            onClick={() => setShowConfirmPassword(prev => !prev)}
+                          >
+                            {showConfirmPassword ? <EyeOff className="w-4 h-4 text-slate-400" /> : <Eye className="w-4 h-4 text-slate-400" />}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="space-y-4 pt-1">
+                    <label className="flex items-start gap-3 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3 text-sm text-slate-600">
+                      <input
+                        type="checkbox"
+                        checked={registerForm.agreeToTerms}
+                        onChange={(e) => setRegisterForm(prev => ({ ...prev, agreeToTerms: e.target.checked }))}
+                        className="mt-0.5"
+                      />
+                      <span>我已阅读并同意用户协议与隐私政策</span>
+                    </label>
+
+                    <Button type="submit" className="h-12 w-full rounded-xl bg-blue-600 hover:bg-blue-700" disabled={isLoading}>
+                      {isLoading ? '注册中...' : '注册并登录'}
+                    </Button>
+                  </div>
                 </form>
               )}
             </CardContent>
           </Card>
-
-          {/* 底部提示 */}
-          <div className="text-center mt-6 text-xs text-slate-500">
-            <p>登录即表示同意 <a href="#" className="text-blue-600 hover:underline">用户协议</a> 和 <a href="#" className="text-blue-600 hover:underline">隐私政策</a></p>
-          </div>
         </div>
       </div>
     </div>

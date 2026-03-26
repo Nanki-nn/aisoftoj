@@ -1,6 +1,7 @@
 import { ExamPaper } from '../data/examPapers';
 import { ExamSession, Question } from '../types/exam';
 import { PracticeRecord, PracticeSessionRecord } from '../types/record';
+import { LoginForm, RegisterForm, User } from '../types/user';
 
 const API_BASE_URL = 'http://localhost:8080';
 
@@ -9,6 +10,13 @@ type ApiResult<T> = {
   message: string;
   data: T;
   timestamp: number;
+};
+
+type ApiError = {
+  code?: number;
+  message?: string;
+  path?: string;
+  timestamp?: number;
 };
 
 type PaperDTO = {
@@ -64,6 +72,13 @@ type GetSessionRes = {
     paperCateId?: number;
   };
   questionList: BackendQuestionDTO[];
+};
+
+type AuthUserDTO = User;
+
+type AuthResponse = {
+  token: string;
+  user: AuthUserDTO;
 };
 
 function mapPaperCate(cateId: number): ExamPaper['category'] {
@@ -137,15 +152,52 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
     ...init,
   });
 
+  const payload = await response.json().catch(() => null as ApiResult<T> | ApiError | null);
+
   if (!response.ok) {
-    throw new Error(`请求失败: ${response.status}`);
+    const errorPayload = payload as ApiError | null;
+    throw new Error(errorPayload?.message || `请求失败: ${response.status}`);
   }
 
-  const result: ApiResult<T> = await response.json();
-  if (result.code !== 200) {
-    throw new Error(result.message || '请求失败');
+  const result = payload as ApiResult<T>;
+  if (!result || result.code !== 200) {
+    throw new Error((payload as ApiError | null)?.message || result?.message || '请求失败');
   }
   return result.data;
+}
+
+export async function loginByEmail(form: LoginForm): Promise<AuthResponse> {
+  return request<AuthResponse>('/auth/login', {
+    method: 'POST',
+    body: JSON.stringify({
+      email: form.email,
+      password: form.password,
+    }),
+  });
+}
+
+export async function registerByEmail(form: RegisterForm): Promise<AuthResponse> {
+  return request<AuthResponse>('/auth/register', {
+    method: 'POST',
+    body: JSON.stringify(form),
+  });
+}
+
+export async function fetchCurrentUser(token: string): Promise<User> {
+  return request<User>('/auth/me', {
+    headers: {
+      Authorization: token,
+    },
+  });
+}
+
+export async function logoutAuth(token: string): Promise<void> {
+  await request('/auth/logout', {
+    method: 'POST',
+    headers: {
+      Authorization: token,
+    },
+  });
 }
 
 export async function fetchPapers(): Promise<ExamPaper[]> {
