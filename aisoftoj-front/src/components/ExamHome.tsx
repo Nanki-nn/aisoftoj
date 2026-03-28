@@ -6,10 +6,10 @@ import { Progress } from './ui/progress';
 import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 import {
-  BookOpen, 
-  Clock, 
-  Eye, 
-  Play, 
+  BookOpen,
+  Clock,
+  Eye,
+  Play,
   RotateCcw,
   Trophy,
   Target,
@@ -21,6 +21,7 @@ import {
   FileText,
   ChevronRight,
   Star,
+  Github,
   User,
   LogOut,
   Settings,
@@ -46,6 +47,15 @@ export function ExamHome({ onStartPaper, onShowProfile, onShowAuth, onShowPracti
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { user, logout, isAuthenticated } = useAuth();
+
+  // 距离 2026 上半年软考首日（5月23日）的天数，每次渲染自动更新
+  const daysToExam = useMemo(() => {
+    const examDate = new Date('2026-05-23');
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    examDate.setHours(0, 0, 0, 0);
+    return Math.ceil((examDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -144,7 +154,7 @@ export function ExamHome({ onStartPaper, onShowProfile, onShowAuth, onShowPracti
             <div className="flex items-center gap-6">
               <div className="flex items-center gap-2">
                 <GraduationCap className="w-8 h-8 text-blue-600" />
-                <h1 className="text-xl text-slate-800">软考刷题平台</h1>
+                <h1 className="text-xl text-slate-800">知构软考刷题平台</h1>
               </div>
               <div className="hidden md:flex items-center gap-2">
                 {supportedSubjects.slice(0, 2).map(subject => (
@@ -165,10 +175,29 @@ export function ExamHome({ onStartPaper, onShowProfile, onShowAuth, onShowPracti
             <div className="flex items-center gap-4">
               <div className="flex items-center gap-2 bg-amber-100 text-amber-800 px-4 py-2 rounded-lg border border-amber-200">
                 <Calendar className="w-4 h-4" />
-                <span className="hidden sm:inline">距离考试还有</span>
-                <span className="font-semibold">36天</span>
+                {daysToExam > 0 ? (
+                  <>
+                    <span className="hidden sm:inline">距离软考还有</span>
+                    <span className="font-semibold">{daysToExam}天</span>
+                  </>
+                ) : daysToExam === 0 ? (
+                  <span className="font-semibold">今天就是考试日，加油！</span>
+                ) : (
+                  <span className="font-semibold">2026上半年软考已结束</span>
+                )}
               </div>
-              
+
+              {/* GitHub Star */}
+              <a
+                href="https://github.com/Nanki-nn/aisoftoj"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-white/60 text-slate-500 hover:text-slate-900 hover:bg-white hover:border-slate-300 text-sm transition-all"
+              >
+                <Github className="w-4 h-4 shrink-0" />
+                <span>项目开源 · 欢迎 Star 支持</span>
+              </a>
+
               {/* 用户头像和菜单 */}
               {isAuthenticated && user ? (
                 <DropdownMenu>

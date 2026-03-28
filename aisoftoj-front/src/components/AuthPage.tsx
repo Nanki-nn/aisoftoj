@@ -72,7 +72,7 @@ export function AuthPage({ onLoginSuccess }: AuthPageProps) {
             <div className="text-center mb-8">
               <div className="flex items-center justify-center gap-3 mb-4">
                 <GraduationCap className="w-12 h-12 text-blue-600" />
-                <h1 className="text-3xl font-bold text-slate-800">知构 · Zhigou Prep</h1>
+                <h1 className="text-3xl font-bold text-slate-800">知构软考刷题平台</h1>
               </div>
               <p className="text-lg text-slate-600">真实题库、错题沉淀和 AI 学习分析，围绕软考备考一站式展开。</p>
             </div>
@@ -107,9 +107,8 @@ export function AuthPage({ onLoginSuccess }: AuthPageProps) {
           <div className="text-center mb-8 lg:hidden">
             <div className="flex items-center justify-center gap-3 mb-2">
               <GraduationCap className="w-10 h-10 text-blue-600" />
-              <h1 className="text-2xl font-bold text-slate-800">知构</h1>
+              <h1 className="text-2xl font-bold text-slate-800">知构软考刷题平台</h1>
             </div>
-            <p className="text-slate-600 text-sm">Zhigou Prep</p>
           </div>
 
           <Card className="border-0 bg-white shadow-xl">
