@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Progress } from './ui/progress';
@@ -11,17 +12,18 @@ import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Label } from './ui/label';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
-import { 
-  Clock, 
-  ChevronLeft, 
-  ChevronRight, 
-  Flag, 
-  CheckCircle, 
+import {
+  Clock,
+  ChevronLeft,
+  ChevronRight,
+  Flag,
+  CheckCircle,
   AlertCircle,
   Timer,
   BookOpen,
   ArrowLeft
 } from 'lucide-react';
+import { BrandLogo } from './BrandLogo';
 import { ExamSession as ExamSessionType, Question } from '../types/exam';
 
 function sanitizeQuestionHtml(html: string): string {
@@ -134,7 +136,7 @@ export function ExamSession({
       setMultipleDraft([]);
     }
 
-    if (currentQuestion.type === 'fill') {
+    if (currentQuestion.type === 'fill' || currentQuestion.type === 'essay') {
       setFillDraft(typeof currentAnswer === 'string' ? currentAnswer : '');
     } else {
       setFillDraft('');
@@ -172,14 +174,6 @@ export function ExamSession({
       return;
     }
     handleAnswerChange(multipleDraft);
-  };
-
-  const handleConfirmFillAnswer = () => {
-    if (!fillDraft.trim()) {
-      alert('请输入答案后再确认');
-      return;
-    }
-    handleAnswerChange(fillDraft.trim());
   };
 
   const handlePrevious = () => {
@@ -372,58 +366,28 @@ export function ExamSession({
 
       case 'fill':
         return (
-          <div className="space-y-4">
-            <Alert className="border-slate-200 bg-slate-50">
-              <AlertDescription className="text-slate-700">
-                填空题输入完成后点击“确认答案”，系统再记录本题答案。
-              </AlertDescription>
-            </Alert>
-            <Input
-              value={fillDraft}
-              onChange={(e) => setFillDraft(e.target.value)}
-              placeholder="请输入答案"
-              className="mt-4 p-4"
-            />
-            <div className="flex flex-wrap items-center gap-3">
-              <Button onClick={handleConfirmFillAnswer} className="bg-blue-600 hover:bg-blue-700">
-                {currentAnswer ? '更新答案' : '确认答案'}
-              </Button>
-              <Button variant="outline" onClick={() => setFillDraft(typeof currentAnswer === 'string' ? currentAnswer : '')}>
-                撤销修改
-              </Button>
-              {fillDraft !== (typeof currentAnswer === 'string' ? currentAnswer : '') && (
-                <span className="text-sm text-amber-600">未确认</span>
-              )}
-            </div>
-          </div>
+          <Input
+            value={fillDraft}
+            onChange={(e) => {
+              setFillDraft(e.target.value);
+              handleAnswerChange(e.target.value);
+            }}
+            placeholder="请输入答案"
+            className="mt-4 p-4"
+          />
         );
 
       case 'essay':
         return (
-          <div className="space-y-4">
-            <Alert className="border-slate-200 bg-slate-50">
-              <AlertDescription className="text-slate-700">
-                简答/案例题，请在下方输入你的答案，完成后点击"确认答案"。
-              </AlertDescription>
-            </Alert>
-            <Textarea
-              value={fillDraft}
-              onChange={(e) => setFillDraft(e.target.value)}
-              placeholder="请输入你的答案..."
-              className="min-h-[200px] p-4 text-sm leading-relaxed"
-            />
-            <div className="flex flex-wrap items-center gap-3">
-              <Button onClick={handleConfirmFillAnswer} className="bg-blue-600 hover:bg-blue-700">
-                {currentAnswer ? '更新答案' : '确认答案'}
-              </Button>
-              <Button variant="outline" onClick={() => setFillDraft(typeof currentAnswer === 'string' ? currentAnswer : '')}>
-                撤销修改
-              </Button>
-              {fillDraft !== (typeof currentAnswer === 'string' ? currentAnswer : '') && (
-                <span className="text-sm text-amber-600">未确认</span>
-              )}
-            </div>
-          </div>
+          <Textarea
+            value={fillDraft}
+            onChange={(e) => {
+              setFillDraft(e.target.value);
+              handleAnswerChange(e.target.value);
+            }}
+            placeholder="请输入你的答案..."
+            className="min-h-[200px] p-4 text-sm leading-relaxed"
+          />
         );
 
       default:
@@ -437,10 +401,14 @@ export function ExamSession({
       <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
-            <Button variant="ghost" onClick={onBackToConfig} className="flex items-center gap-2">
-              <ArrowLeft className="w-4 h-4" />
-              返回
-            </Button>
+            <div className="flex items-center gap-3">
+              <BrandLogo />
+              <span className="text-slate-300">|</span>
+              <Button variant="ghost" size="sm" onClick={onBackToConfig} className="flex items-center gap-1 text-slate-600">
+                <ArrowLeft className="w-4 h-4" />
+                返回
+              </Button>
+            </div>
             <h1 className="text-lg text-slate-800">
               {session.subject} - {session.category}
             </h1>
@@ -641,12 +609,14 @@ export function ExamSession({
                       }`}>
                         解析
                       </div>
-                      <div className={`leading-relaxed ${
+                      <div className={`markdown-body text-sm ${
                         isAnswerCorrect(session.answers[currentQuestion.id], currentQuestion.correctAnswer)
                           ? 'text-green-700'
                           : 'text-red-700'
                       }`}>
-                        {currentQuestion.explanation}
+                        <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+                          {currentQuestion.explanation}
+                        </ReactMarkdown>
                       </div>
                     </div>
                   </div>
@@ -690,14 +660,18 @@ export function ExamSession({
                     const isCurrent = questionIndex === currentQuestionIndex;
                     const isMarked = markedQuestions.has(questionIndex);
                     
-                    // 判断答案是否正确
-                    const isCorrect = isAnswered ? isAnswerCorrect(userAnswer, question.correctAnswer) : false;
+                    // essay 类型无法自动判断正误
+                    const canAutoGrade = question.type !== 'essay';
+                    const isCorrect = isAnswered && canAutoGrade ? isAnswerCorrect(userAnswer, question.correctAnswer) : false;
 
                     let buttonClasses = 'w-full aspect-square rounded text-sm transition-all font-medium flex items-center justify-center min-h-[32px] ';
-                    
+
                     // 背景和文字颜色
                     if (isAnswered) {
-                      if (isCorrect) {
+                      if (!canAutoGrade) {
+                        // essay 类型：已答但不判断正误，显示蓝色
+                        buttonClasses += 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 ';
+                      } else if (isCorrect) {
                         buttonClasses += 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 ';
                       } else {
                         buttonClasses += 'bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 ';
@@ -771,6 +745,10 @@ export function ExamSession({
                     <div className="flex items-center gap-2 text-slate-600">
                       <span className="inline-block h-3 w-3 rounded border border-red-200 bg-red-50"></span>
                       错误
+                    </div>
+                    <div className="flex items-center gap-2 text-slate-600">
+                      <span className="inline-block h-3 w-3 rounded border border-blue-200 bg-blue-50"></span>
+                      已答
                     </div>
                     <div className="flex items-center gap-2 text-slate-600">
                       <span className="inline-block h-3 w-3 rounded ring-2 ring-orange-500"></span>

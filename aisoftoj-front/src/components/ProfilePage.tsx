@@ -27,6 +27,7 @@ import {
   Activity
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
+import { BrandLogo } from './BrandLogo';
 import { User as UserType, UserStats } from '../types/user';
 
 interface ProfilePageProps {
@@ -142,10 +143,14 @@ export function ProfilePage({ onBack }: ProfilePageProps) {
       <div className="bg-white/70 backdrop-blur-sm border-b border-slate-200/50 sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <Button variant="ghost" onClick={onBack} className="flex items-center gap-2">
-              <ArrowLeft className="w-4 h-4" />
-              返回首页
-            </Button>
+            <div className="flex items-center gap-3">
+              <BrandLogo />
+              <span className="text-slate-300">|</span>
+              <Button variant="ghost" size="sm" onClick={onBack} className="flex items-center gap-1 text-slate-600">
+                <ArrowLeft className="w-4 h-4" />
+                返回首页
+              </Button>
+            </div>
             <h1 className="text-xl text-slate-800">个人中心</h1>
             <Button variant="outline" onClick={logout}>
               退出登录

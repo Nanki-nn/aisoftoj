@@ -4,6 +4,7 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { ArrowLeft } from 'lucide-react';
+import { BrandLogo } from './BrandLogo';
 import { importanceLevels } from '../types/record';
 import { PracticeRecord } from '../types/record';
 import { fetchWrongQuestions } from '../lib/api';
@@ -54,12 +55,14 @@ export function WrongQuestions({ onBack }: WrongQuestionsProps) {
       <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Button variant="ghost" onClick={onBack} className="flex items-center gap-2">
+            <div className="flex items-center gap-3">
+              <BrandLogo />
+              <span className="text-slate-300">|</span>
+              <Button variant="ghost" size="sm" onClick={onBack} className="flex items-center gap-1 text-slate-600">
                 <ArrowLeft className="w-4 h-4" />
                 返回
               </Button>
-              <div className="text-slate-500">题库列表 {'>'} 错题记录</div>
+              <span className="text-slate-400 text-sm">题库列表 {'>'} 错题记录</span>
             </div>
           </div>
         </div>

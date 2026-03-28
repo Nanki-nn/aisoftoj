@@ -30,7 +30,7 @@ import {
 } from 'lucide-react';
 import { supportedSubjects, supportedCategories, ExamPaper } from '../data/examPapers';
 import { useAuth } from '../hooks/useAuth';
-import { fetchPapers } from '../lib/api';
+import { fetchPapers, fetchPracticeHistory, fetchWrongQuestions } from '../lib/api';
 
 interface ExamHomeProps {
   onStartPaper: (paper: ExamPaper) => void;
@@ -46,6 +46,8 @@ export function ExamHome({ onStartPaper, onShowProfile, onShowAuth, onShowPracti
   const [papers, setPapers] = useState<ExamPaper[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [totalAnswered, setTotalAnswered] = useState(0);
+  const [wrongCount, setWrongCount] = useState(0);
   const { user, logout, isAuthenticated } = useAuth();
 
   // 距离 2026 上半年软考首日（5月23日）的天数，每次渲染自动更新
@@ -77,6 +79,23 @@ export function ExamHome({ onStartPaper, onShowProfile, onShowAuth, onShowPracti
         }
       });
 
+    fetchPracticeHistory()
+      .then((history) => {
+        if (isMounted) {
+          const total = history.reduce((sum, s) => sum + (s.answeredCount || 0), 0);
+          setTotalAnswered(total);
+        }
+      })
+      .catch(() => {/* 未登录时忽略 */});
+
+    fetchWrongQuestions()
+      .then((wrongs) => {
+        if (isMounted) {
+          setWrongCount(wrongs.length);
+        }
+      })
+      .catch(() => {/* 未登录时忽略 */});
+
     return () => {
       isMounted = false;
     };
@@ -91,15 +110,6 @@ export function ExamHome({ onStartPaper, onShowProfile, onShowAuth, onShowPracti
         return b.month - a.month;
       });
   }, [papers, selectedCategory, selectedSubject]);
-
-  const userStats = useMemo(() => {
-    const totalQuestions = papers.reduce((sum, paper) => sum + (paper.completedCount || 0), 0);
-    const accuracyBase = papers.length ? Math.round((totalQuestions / Math.max(papers.reduce((sum, paper) => sum + paper.questionCount, 0), 1)) * 100) : 0;
-    return {
-      totalQuestions,
-      accuracy: accuracyBase || 0,
-    };
-  }, [papers]);
 
   const getStatusButton = (paper: ExamPaper) => {
     switch (paper.status) {
@@ -253,31 +263,31 @@ export function ExamHome({ onStartPaper, onShowProfile, onShowAuth, onShowPracti
                     <Trophy className="w-4 h-4 mr-2" />
                     开始练习
                   </Button>
-                  <Button variant="outline" className="border-slate-200 hover:bg-slate-50">
+                  <Button variant="outline" className="border-slate-200 hover:bg-slate-50" onClick={onShowProfile}>
                     <Target className="w-4 h-4 mr-2" />
                     查看进度
                   </Button>
                 </div>
               </div>
               <div className="grid grid-cols-2 gap-4">
-                <Card 
+                <Card
                   className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 cursor-pointer hover:shadow-xl transition-all transform hover:scale-105"
                   onClick={onShowPracticeHistory}
                 >
                   <CardContent className="p-6 text-center">
                     <History className="w-8 h-8 mx-auto mb-2" />
                     <h3 className="mb-1">刷题记录</h3>
-                    <p className="text-2xl">{userStats.totalQuestions}+</p>
+                    <p className="text-2xl">{totalAnswered}</p>
                   </CardContent>
                 </Card>
-                <Card 
+                <Card
                   className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-0 cursor-pointer hover:shadow-xl transition-all transform hover:scale-105"
                   onClick={onShowWrongQuestions}
                 >
                   <CardContent className="p-6 text-center">
                     <AlertCircle className="w-8 h-8 mx-auto mb-2" />
                     <h3 className="mb-1">错题记录</h3>
-                    <p className="text-2xl">{userStats.accuracy}%</p>
+                    <p className="text-2xl">{wrongCount}</p>
                   </CardContent>
                 </Card>
               </div>

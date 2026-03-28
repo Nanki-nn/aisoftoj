@@ -1,16 +1,19 @@
 import React from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
+import rehypeRaw from 'rehype-raw';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
 import { Separator } from './ui/separator';
 import { Alert, AlertDescription } from './ui/alert';
-import { 
-  Trophy, 
-  Target, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
+import {
+  Trophy,
+  Target,
+  Clock,
+  CheckCircle,
+  XCircle,
   AlertCircle,
   BookOpen,
   RotateCcw,
@@ -18,6 +21,7 @@ import {
   BookMarked,
   ArrowLeft
 } from 'lucide-react';
+import { BrandLogo } from './BrandLogo';
 import { ExamSession, Question } from '../types/exam';
 
 interface ExamResultProps {
@@ -29,6 +33,9 @@ interface ExamResultProps {
 }
 
 export function ExamResult({ session, onRestartExam, onBackToHome, onContinuePractice, onBackToExam }: ExamResultProps) {
+  // 所有题目都是主观题（essay）时，不进行自动评分
+  const isSubjectiveExam = session.questions.every(q => q.type === 'essay');
+
   const calculateResults = () => {
     let correctCount = 0;
     const questionResults: Array<{
@@ -41,21 +48,21 @@ export function ExamResult({ session, onRestartExam, onBackToHome, onContinuePra
       const userAnswer = session.answers[question.id];
       let isCorrect = false;
 
-      if (userAnswer !== undefined) {
+      if (!isSubjectiveExam && userAnswer !== undefined) {
         if (question.type === 'multiple') {
-          const correctAnswers = Array.isArray(question.correctAnswer) 
-            ? question.correctAnswer 
+          const correctAnswers = Array.isArray(question.correctAnswer)
+            ? question.correctAnswer
             : [question.correctAnswer];
           const userAnswers = Array.isArray(userAnswer) ? userAnswer : [userAnswer];
           isCorrect = correctAnswers.length === userAnswers.length &&
                      correctAnswers.every(answer => userAnswers.includes(answer));
-        } else {
+        } else if (question.type !== 'essay') {
           isCorrect = userAnswer === question.correctAnswer;
         }
       }
 
       if (isCorrect) correctCount++;
-      
+
       questionResults.push({
         question,
         userAnswer: userAnswer || '',
@@ -64,7 +71,7 @@ export function ExamResult({ session, onRestartExam, onBackToHome, onContinuePra
     });
 
     const accuracy = Math.round((correctCount / session.questions.length) * 100);
-    const duration = session.endTime 
+    const duration = session.endTime
       ? Math.floor((session.endTime.getTime() - session.startTime.getTime()) / 1000 / 60)
       : 0;
 
@@ -73,7 +80,8 @@ export function ExamResult({ session, onRestartExam, onBackToHome, onContinuePra
 
   const { correctCount, accuracy, duration, questionResults } = calculateResults();
   const wrongCount = session.questions.length - correctCount;
-  const unansweredCount = session.questions.length - questionResults.filter(result => result.userAnswer && (Array.isArray(result.userAnswer) ? result.userAnswer.length > 0 : true)).length;
+  const answeredCount = questionResults.filter(result => result.userAnswer && (Array.isArray(result.userAnswer) ? result.userAnswer.length > 0 : true)).length;
+  const unansweredCount = session.questions.length - answeredCount;
 
   const getScoreColor = (score: number) => {
     if (score >= 80) return 'text-green-600';
@@ -109,14 +117,16 @@ export function ExamResult({ session, onRestartExam, onBackToHome, onContinuePra
       <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
-            <Button variant="ghost" onClick={onBackToExam} className="flex items-center gap-2">
-              <ArrowLeft className="w-4 h-4" />
-              返回刷题
-            </Button>
-            <h1 className="text-lg text-slate-800">
-              考试结果
-            </h1>
-            <div className="w-20"></div> {/* 占位符，保持标题居中 */}
+            <div className="flex items-center gap-3">
+              <BrandLogo />
+              <span className="text-slate-300">|</span>
+              <Button variant="ghost" size="sm" onClick={onBackToExam} className="flex items-center gap-1 text-slate-600">
+                <ArrowLeft className="w-4 h-4" />
+                返回刷题
+              </Button>
+            </div>
+            <h1 className="text-lg text-slate-800">考试结果</h1>
+            <div className="w-20"></div>
           </div>
         </div>
       </div>
@@ -132,20 +142,27 @@ export function ExamResult({ session, onRestartExam, onBackToHome, onContinuePra
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-              <div className="text-center">
-                <div className={`text-4xl mb-2 ${getScoreColor(accuracy)}`}>
-                  {accuracy}分
+              {isSubjectiveExam ? (
+                <div className="text-center">
+                  <div className="text-2xl mb-2 text-slate-500">主观题</div>
+                  <div className="text-muted-foreground">待人工评分</div>
                 </div>
-                <div className="text-muted-foreground">
-                  {getScoreLevel(accuracy)}
+              ) : (
+                <div className="text-center">
+                  <div className={`text-4xl mb-2 ${getScoreColor(accuracy)}`}>
+                    {accuracy}分
+                  </div>
+                  <div className="text-muted-foreground">
+                    {getScoreLevel(accuracy)}
+                  </div>
                 </div>
-              </div>
+              )}
               <div className="text-center">
                 <div className="text-2xl mb-2">
-                  {correctCount}/{session.questions.length}
+                  {isSubjectiveExam ? `${answeredCount}/${session.questions.length}` : `${correctCount}/${session.questions.length}`}
                 </div>
                 <div className="text-muted-foreground">
-                  正确题数
+                  {isSubjectiveExam ? '已作答题数' : '正确题数'}
                 </div>
               </div>
 
@@ -160,8 +177,8 @@ export function ExamResult({ session, onRestartExam, onBackToHome, onContinuePra
               </div>
             </div>
 
-            <Progress value={accuracy} className="h-3 mb-4" />
-            
+            {!isSubjectiveExam && <Progress value={accuracy} className="h-3 mb-4" />}
+
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
               <div className="flex items-center gap-2">
                 <BookOpen className="w-4 h-4" />
@@ -171,14 +188,29 @@ export function ExamResult({ session, onRestartExam, onBackToHome, onContinuePra
                 <Target className="w-4 h-4" />
                 <span>{session.category}</span>
               </div>
-              <div className="flex items-center gap-2">
-                <CheckCircle className="w-4 h-4 text-green-600" />
-                <span>{correctCount} 道正确</span>
-              </div>
-              <div className="flex items-center gap-2">
-                <XCircle className="w-4 h-4 text-red-600" />
-                <span>{wrongCount} 道错误</span>
-              </div>
+              {isSubjectiveExam ? (
+                <>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-blue-600" />
+                    <span>{answeredCount} 道已答</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <XCircle className="w-4 h-4 text-slate-400" />
+                    <span>{unansweredCount} 道未答</span>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-600" />
+                    <span>{correctCount} 道正确</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <XCircle className="w-4 h-4 text-red-600" />
+                    <span>{wrongCount} 道错误</span>
+                  </div>
+                </>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -213,60 +245,95 @@ export function ExamResult({ session, onRestartExam, onBackToHome, onContinuePra
           </CardHeader>
           <CardContent>
             <div className="space-y-6">
-              {questionResults.map((result, index) => (
-                <div key={result.question.id} className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <div className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center">
-                        {result.isCorrect ? (
-                          <CheckCircle className="w-5 h-5 text-green-600" />
+              {questionResults.map((result, index) => {
+                const isEssay = result.question.type === 'essay';
+                const hasAnswer = result.userAnswer && (Array.isArray(result.userAnswer) ? result.userAnswer.length > 0 : result.userAnswer !== '');
+                return (
+                  <div key={result.question.id} className="space-y-3">
+                    <div className="flex items-start gap-3">
+                      <div className="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center">
+                        {isEssay ? (
+                          hasAnswer
+                            ? <CheckCircle className="w-5 h-5 text-blue-500" />
+                            : <XCircle className="w-5 h-5 text-slate-400" />
                         ) : (
-                          <XCircle className="w-5 h-5 text-red-600" />
+                          result.isCorrect
+                            ? <CheckCircle className="w-5 h-5 text-green-600" />
+                            : <XCircle className="w-5 h-5 text-red-600" />
                         )}
-                    </div>
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span>第 {index + 1} 题</span>
-                        <Badge variant={result.isCorrect ? 'default' : 'destructive'}>
-                          {result.isCorrect ? '正确' : '错误'}
-                        </Badge>
-                        <Badge variant="outline">
-                          {result.question.difficulty === 'easy' ? '简单' : 
-                           result.question.difficulty === 'medium' ? '中等' : '困难'}
-                        </Badge>
                       </div>
-                      <p className="mb-3">{result.question.question}</p>
-                      
-                      <div className="bg-muted p-3 rounded-lg mb-2">
-                        <div className="flex items-start gap-2">
-                          <span className="font-medium text-sm">你的答案：</span>
-                          <span className={result.isCorrect ? 'text-green-600' : 'text-red-600'}>
-                            {formatUserAnswer(result.userAnswer, result.question.type === 'multiple')}
-                          </span>
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          <span>第 {index + 1} 题</span>
+                          {isEssay ? (
+                            <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                              {hasAnswer ? '已作答' : '未作答'}
+                            </Badge>
+                          ) : (
+                            <Badge variant={result.isCorrect ? 'default' : 'destructive'}>
+                              {result.isCorrect ? '正确' : '错误'}
+                            </Badge>
+                          )}
+                          <Badge variant="outline">
+                            {result.question.difficulty === 'easy' ? '简单' :
+                             result.question.difficulty === 'medium' ? '中等' : '困难'}
+                          </Badge>
                         </div>
-                      </div>
-                      
-                      {!result.isCorrect && (
-                        <div className="bg-green-50 p-3 rounded-lg mb-2">
+                        <p className="mb-3">{result.question.question}</p>
+
+                        <div className="bg-muted p-3 rounded-lg mb-2">
                           <div className="flex items-start gap-2">
-                            <span className="font-medium text-sm">正确答案：</span>
-                            <span className="text-green-600">
-                              {formatCorrectAnswer(result.question.correctAnswer, result.question.type === 'multiple')}
+                            <span className="font-medium text-sm">你的答案：</span>
+                            <span className={isEssay ? 'text-slate-700 whitespace-pre-wrap' : (result.isCorrect ? 'text-green-600' : 'text-red-600')}>
+                              {formatUserAnswer(result.userAnswer, result.question.type === 'multiple')}
                             </span>
                           </div>
                         </div>
-                      )}
-                      
-                      <Alert>
-                        <AlertCircle className="h-4 w-4" />
-                        <AlertDescription>
-                          <strong>解析：</strong>{result.question.explanation}
-                        </AlertDescription>
-                      </Alert>
+
+                        {!isEssay && !result.isCorrect && (
+                          <div className="bg-green-50 p-3 rounded-lg mb-2">
+                            <div className="flex items-start gap-2">
+                              <span className="font-medium text-sm">正确答案：</span>
+                              <span className="text-green-600">
+                                {formatCorrectAnswer(result.question.correctAnswer, result.question.type === 'multiple')}
+                              </span>
+                            </div>
+                          </div>
+                        )}
+
+                        {isEssay ? (
+                          result.question.explanation && (
+                            <Alert className="border-blue-200 bg-blue-50">
+                              <AlertCircle className="h-4 w-4 text-blue-600" />
+                              <AlertDescription className="text-blue-800">
+                                <strong>参考要点：</strong>
+                                <div className="markdown-body text-sm mt-1">
+                                  <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+                                    {result.question.explanation}
+                                  </ReactMarkdown>
+                                </div>
+                              </AlertDescription>
+                            </Alert>
+                          )
+                        ) : (
+                          <Alert>
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertDescription>
+                              <strong>解析：</strong>
+                              <div className="markdown-body text-sm mt-1">
+                                <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+                                  {result.question.explanation}
+                                </ReactMarkdown>
+                              </div>
+                            </AlertDescription>
+                          </Alert>
+                        )}
+                      </div>
                     </div>
+                    {index < questionResults.length - 1 && <Separator />}
                   </div>
-                  {index < questionResults.length - 1 && <Separator />}
-                </div>
-              ))}
+                );
+              })}
             </div>
           </CardContent>
         </Card>
