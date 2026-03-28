@@ -1,4 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Progress } from './ui/progress';
@@ -8,6 +10,7 @@ import { Checkbox } from './ui/checkbox';
 import { RadioGroup, RadioGroupItem } from './ui/radio-group';
 import { Label } from './ui/label';
 import { Input } from './ui/input';
+import { Textarea } from './ui/textarea';
 import { 
   Clock, 
   ChevronLeft, 
@@ -395,6 +398,34 @@ export function ExamSession({
           </div>
         );
 
+      case 'essay':
+        return (
+          <div className="space-y-4">
+            <Alert className="border-slate-200 bg-slate-50">
+              <AlertDescription className="text-slate-700">
+                简答/案例题，请在下方输入你的答案，完成后点击"确认答案"。
+              </AlertDescription>
+            </Alert>
+            <Textarea
+              value={fillDraft}
+              onChange={(e) => setFillDraft(e.target.value)}
+              placeholder="请输入你的答案..."
+              className="min-h-[200px] p-4 text-sm leading-relaxed"
+            />
+            <div className="flex flex-wrap items-center gap-3">
+              <Button onClick={handleConfirmFillAnswer} className="bg-blue-600 hover:bg-blue-700">
+                {currentAnswer ? '更新答案' : '确认答案'}
+              </Button>
+              <Button variant="outline" onClick={() => setFillDraft(typeof currentAnswer === 'string' ? currentAnswer : '')}>
+                撤销修改
+              </Button>
+              {fillDraft !== (typeof currentAnswer === 'string' ? currentAnswer : '') && (
+                <span className="text-sm text-amber-600">未确认</span>
+              )}
+            </div>
+          </div>
+        );
+
       default:
         return null;
     }
@@ -497,12 +528,20 @@ export function ExamSession({
                     )}
                   </div>
 
-                  <div
-                    className="leading-relaxed text-slate-700 [&_font[color='red']]:font-semibold [&_font[color='blue']]:font-semibold [&_u]:underline"
-                    dangerouslySetInnerHTML={{
-                      __html: sanitizeQuestionHtml(currentQuestion.question),
-                    }}
-                  />
+                  {currentQuestion.isMarkdown ? (
+                    <div className="markdown-body leading-relaxed text-slate-700">
+                      <ReactMarkdown remarkPlugins={[remarkGfm]}>
+                        {currentQuestion.question}
+                      </ReactMarkdown>
+                    </div>
+                  ) : (
+                    <div
+                      className="leading-relaxed text-slate-700 [&_font[color='red']]:font-semibold [&_font[color='blue']]:font-semibold [&_u]:underline"
+                      dangerouslySetInnerHTML={{
+                        __html: sanitizeQuestionHtml(currentQuestion.question),
+                      }}
+                    />
+                  )}
 
                   {/* 选项区域 */}
                   <div className="space-y-3">

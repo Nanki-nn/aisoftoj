@@ -123,20 +123,17 @@ function parseCorrectAnswer(answer: string, type: Question['type']): string | st
   return answer;
 }
 
-function extractQuestionTitle(intro: string, fallback: string): string {
-  const firstLine = intro?.split('\n')[0]?.trim();
-  return firstLine || fallback;
-}
-
-function mapQuestion(question: BackendQuestionDTO): Question {
-  const type = mapQuestionType(question.questionType);
+function mapQuestion(question: BackendQuestionDTO, paperCateId = 1): Question {
+  const isMarkdown = paperCateId === 2 || paperCateId === 3;
+  const type = isMarkdown ? 'essay' : mapQuestionType(question.questionType);
   return {
     id: String(question.id),
     type,
     subject: '',
     category: '',
     difficulty: mapDifficulty(question.difficulty),
-    question: extractQuestionTitle(question.intro, question.name),
+    question: question.intro || question.name,
+    isMarkdown,
     options: question.options?.map(option => option.valueStr) ?? [],
     correctAnswer: parseCorrectAnswer(question.answer, type),
     explanation: question.analysis || '',
@@ -235,7 +232,7 @@ export async function startPaperSession(
     paperName: data.paperName,
     subject: data.paper?.subjectName || data.paperName,
     category: mapPaperCate(data.paper?.paperCateId || 1),
-    questions: data.questionList.map(mapQuestion),
+    questions: data.questionList.map(q => mapQuestion(q, data.paper?.paperCateId ?? 1)),
     answers: {},
     startTime: new Date(),
     isCompleted: false,
@@ -259,7 +256,7 @@ export async function continuePracticeSession(sessionId: string): Promise<ExamSe
     paperName: data.paperName,
     subject: data.paper?.subjectName || data.paperName,
     category: mapPaperCate(data.paper?.paperCateId || 1),
-    questions: data.questionList.map(mapQuestion),
+    questions: data.questionList.map(q => mapQuestion(q, data.paper?.paperCateId ?? 1)),
     answers: {},
     startTime: new Date(),
     isCompleted: false,

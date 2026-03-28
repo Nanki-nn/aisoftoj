@@ -2,11 +2,12 @@
 
 export interface Question {
   id: string;
-  type: 'single' | 'multiple' | 'fill' | 'judge';
+  type: 'single' | 'multiple' | 'fill' | 'judge' | 'essay';
   subject: string;
   category: string;
   difficulty: 'easy' | 'medium' | 'hard';
   question: string;
+  isMarkdown?: boolean;
   options?: string[];
   correctAnswer: string | string[];
   explanation: string;

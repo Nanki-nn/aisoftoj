@@ -187,3 +187,54 @@
 html {
   font-size: var(--font-size);
 }
+
+/* 案例分析 / 论文题目 Markdown 渲染样式 */
+.markdown-body h1,
+.markdown-body h2,
+.markdown-body h3 {
+  font-weight: 600;
+  margin-top: 1.25em;
+  margin-bottom: 0.5em;
+  color: #1e293b;
+}
+.markdown-body h2 { font-size: 1.1rem; }
+.markdown-body h3 { font-size: 1rem; }
+.markdown-body p {
+  margin-bottom: 0.75em;
+  line-height: 1.75;
+}
+.markdown-body hr {
+  border: none;
+  border-top: 1px solid #e2e8f0;
+  margin: 1.25em 0;
+}
+.markdown-body ul,
+.markdown-body ol {
+  padding-left: 1.5em;
+  margin-bottom: 0.75em;
+}
+.markdown-body li {
+  margin-bottom: 0.25em;
+  line-height: 1.75;
+}
+.markdown-body img {
+  max-width: 100%;
+  border-radius: 4px;
+  margin: 0.5em 0;
+}
+.markdown-body table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-bottom: 0.75em;
+  font-size: 0.9rem;
+}
+.markdown-body th,
+.markdown-body td {
+  border: 1px solid #e2e8f0;
+  padding: 6px 12px;
+  text-align: left;
+}
+.markdown-body th {
+  background: #f8fafc;
+  font-weight: 600;
+}
