@@ -62,6 +62,7 @@ export function ExamSession({
   const [answerCardPage, setAnswerCardPage] = useState(0);
   const [multipleDraft, setMultipleDraft] = useState<string[]>([]);
   const [fillDraft, setFillDraft] = useState('');
+  const [showAnswer, setShowAnswer] = useState(false);
 
   const currentQuestion = session.questions[currentQuestionIndex];
   const progress = ((currentQuestionIndex + 1) / session.questions.length) * 100;
@@ -141,6 +142,9 @@ export function ExamSession({
     } else {
       setFillDraft('');
     }
+    
+    // 切换题目时重置显示答案状态
+    setShowAnswer(false);
   }, [currentQuestion.id, currentQuestion.type, session.answers]);
 
   useEffect(() => {
@@ -405,8 +409,7 @@ export function ExamSession({
               <BrandLogo />
               <span className="text-slate-300">|</span>
               <Button variant="ghost" size="sm" onClick={onBackToConfig} className="flex items-center gap-1 text-slate-600">
-                <ArrowLeft className="w-4 h-4" />
-                返回
+                首页
               </Button>
             </div>
             <h1 className="text-lg text-slate-800">
@@ -519,14 +522,30 @@ export function ExamSession({
 
                 {/* 底部导航 */}
                 <div className="flex items-center justify-between pt-8 border-t border-slate-100 mt-8">
-                  <Button
-                    variant="outline"
-                    onClick={toggleMarkQuestion}
-                    className={markedQuestions.has(currentQuestionIndex) ? 'border-red-500 text-red-600' : ''}
-                  >
-                    <Flag className="w-4 h-4 mr-2" />
-                    {markedQuestions.has(currentQuestionIndex) ? '取消标记' : '标记'}
-                  </Button>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="outline"
+                      onClick={toggleMarkQuestion}
+                      className={markedQuestions.has(currentQuestionIndex) ? 'border-red-500 text-red-600' : ''}
+                    >
+                      <Flag className="w-4 h-4 mr-2" />
+                      {markedQuestions.has(currentQuestionIndex) ? '取消标记' : '标记'}
+                    </Button>
+                    
+                    {/* 练习模式下未答题时显示查看答案按钮 */}
+                    {session.examMode === 'practice' && !session.answers[currentQuestion.id] && (
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => setShowAnswer(true)}
+                        disabled={showAnswer}
+                        className="text-blue-700 hover:bg-blue-50 border-blue-300"
+                      >
+                        <BookOpen className="w-3.5 h-3.5 mr-1.5" />
+                        查看答案
+                      </Button>
+                    )}
+                  </div>
 
                   <div className="flex gap-2">
                     <Button
@@ -547,79 +566,118 @@ export function ExamSession({
                   </div>
                 </div>
 
-                {/* 练题模式下的解析显示 */}
-                {session.examMode === 'practice' && session.answers[currentQuestion.id] && (
-                  <div className={`mt-6 p-4 border-l-4 rounded-r-lg ${
-                    isAnswerCorrect(session.answers[currentQuestion.id], currentQuestion.correctAnswer)
-                      ? 'bg-green-50 border-green-500'
-                      : 'bg-red-50 border-red-500'
-                  }`}>
-                    <div className="flex items-start gap-2 mb-3">
-                      {isAnswerCorrect(session.answers[currentQuestion.id], currentQuestion.correctAnswer) ? (
-                        <CheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
-                      ) : (
-                        <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
-                      )}
-                      <div className="flex-1">
-                        <div className={`mb-1 ${
-                          isAnswerCorrect(session.answers[currentQuestion.id], currentQuestion.correctAnswer)
-                            ? 'text-green-900'
-                            : 'text-red-900'
-                        }`}>
-                          {isAnswerCorrect(session.answers[currentQuestion.id], currentQuestion.correctAnswer)
-                            ? '回答正确！'
-                            : '回答错误'
-                          }
-                        </div>
-                        <div className="space-y-2">
-                          <div className={`${
-                            isAnswerCorrect(session.answers[currentQuestion.id], currentQuestion.correctAnswer)
-                              ? 'text-green-800'
-                              : 'text-red-800'
-                          }`}>
-                            <span className="font-medium">你的答案：</span>
-                            <span className="ml-2">
-                              {Array.isArray(session.answers[currentQuestion.id]) 
-                                ? (session.answers[currentQuestion.id] as string[]).join(', ')
-                                : session.answers[currentQuestion.id]
-                              }
-                            </span>
-                          </div>
-                          <div className={`${
-                            isAnswerCorrect(session.answers[currentQuestion.id], currentQuestion.correctAnswer)
-                              ? 'text-green-800'
-                              : 'text-red-800'
-                          }`}>
-                            <span className="font-medium">正确答案：</span>
-                            <span className="ml-2">
-                              {Array.isArray(currentQuestion.correctAnswer) 
-                                ? currentQuestion.correctAnswer.join(', ')
-                                : currentQuestion.correctAnswer
-                              }
-                            </span>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    <div className="pl-7">
-                      <div className={`mb-1 ${
+                {/* 练字模式下的解析显示 */}
+                {/* 练习模式下的提示和解析 */}
+                {session.examMode === 'practice' && (
+                  <>
+                    {/* 已答题时显示答案解析 */}
+                    {session.answers[currentQuestion.id] && (
+                      <div className={`mt-6 p-4 border-l-4 rounded-r-lg ${
                         isAnswerCorrect(session.answers[currentQuestion.id], currentQuestion.correctAnswer)
-                          ? 'text-green-900'
-                          : 'text-red-900'
+                          ? 'bg-green-50 border-green-500'
+                          : 'bg-red-50 border-red-500'
                       }`}>
-                        解析
+                        <div className="flex items-start gap-2 mb-3">
+                          {isAnswerCorrect(session.answers[currentQuestion.id], currentQuestion.correctAnswer) ? (
+                            <CheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
+                          ) : (
+                            <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
+                          )}
+                          <div className="flex-1">
+                            <div className={`mb-1 ${
+                              isAnswerCorrect(session.answers[currentQuestion.id], currentQuestion.correctAnswer)
+                                ? 'text-green-900'
+                                : 'text-red-900'
+                            }`}>
+                              {isAnswerCorrect(session.answers[currentQuestion.id], currentQuestion.correctAnswer)
+                                ? '回答正确！'
+                                : '回答错误'
+                              }
+                            </div>
+                            <div className="space-y-2">
+                              <div className={`${
+                                isAnswerCorrect(session.answers[currentQuestion.id], currentQuestion.correctAnswer)
+                                  ? 'text-green-800'
+                                  : 'text-red-800'
+                              }`}>
+                                <span className="font-medium">你的答案：</span>
+                                <span className="ml-2">
+                                  {Array.isArray(session.answers[currentQuestion.id]) 
+                                    ? (session.answers[currentQuestion.id] as string[]).join(', ')
+                                    : session.answers[currentQuestion.id]
+                                  }
+                                </span>
+                              </div>
+                              <div className={`${
+                                isAnswerCorrect(session.answers[currentQuestion.id], currentQuestion.correctAnswer)
+                                  ? 'text-green-800'
+                                  : 'text-red-800'
+                              }`}>
+                                <span className="font-medium">正确答案：</span>
+                                <span className="ml-2">
+                                  {Array.isArray(currentQuestion.correctAnswer) 
+                                    ? currentQuestion.correctAnswer.join(', ')
+                                    : currentQuestion.correctAnswer
+                                  }
+                                </span>
+                              </div>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="pl-7">
+                          <div className={`mb-1 ${
+                            isAnswerCorrect(session.answers[currentQuestion.id], currentQuestion.correctAnswer)
+                              ? 'text-green-900'
+                              : 'text-red-900'
+                          }`}>
+                            解析
+                          </div>
+                          <div className={`markdown-body text-sm ${
+                            isAnswerCorrect(session.answers[currentQuestion.id], currentQuestion.correctAnswer)
+                              ? 'text-green-700'
+                              : 'text-red-700'
+                          }`}>
+                            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+                              {currentQuestion.explanation}
+                            </ReactMarkdown>
+                          </div>
+                        </div>
                       </div>
-                      <div className={`markdown-body text-sm ${
-                        isAnswerCorrect(session.answers[currentQuestion.id], currentQuestion.correctAnswer)
-                          ? 'text-green-700'
-                          : 'text-red-700'
-                      }`}>
-                        <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
-                          {currentQuestion.explanation}
-                        </ReactMarkdown>
+                    )}
+                                    
+                    {/* 未答题且已显示答案时显示解析 */}
+                    {!session.answers[currentQuestion.id] && showAnswer && (
+                      <div className="mt-6 p-4 border-l-4 rounded-r-lg bg-blue-50 border-blue-500">
+                        <div className="flex items-start gap-2 mb-3">
+                          <BookOpen className="w-5 h-5 text-blue-600 mt-0.5" />
+                          <div className="flex-1">
+                            <div className="mb-1 text-blue-900 font-medium">
+                              参考答案与解析
+                            </div>
+                            <div className="text-blue-800">
+                              <span className="font-medium">正确答案：</span>
+                              <span className="ml-2">
+                                {Array.isArray(currentQuestion.correctAnswer) 
+                                  ? currentQuestion.correctAnswer.join(', ')
+                                  : currentQuestion.correctAnswer
+                                }
+                              </span>
+                            </div>
+                          </div>
+                        </div>
+                        <div className="pl-7">
+                          <div className="mb-1 text-blue-900">
+                            解析
+                          </div>
+                          <div className="markdown-body text-sm text-blue-700">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+                              {currentQuestion.explanation}
+                            </ReactMarkdown>
+                          </div>
+                        </div>
                       </div>
-                    </div>
-                  </div>
+                    )}
+                  </>
                 )}
               </CardContent>
             </Card>

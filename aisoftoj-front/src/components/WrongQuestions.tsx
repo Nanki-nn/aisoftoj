@@ -59,8 +59,7 @@ export function WrongQuestions({ onBack }: WrongQuestionsProps) {
               <BrandLogo />
               <span className="text-slate-300">|</span>
               <Button variant="ghost" size="sm" onClick={onBack} className="flex items-center gap-1 text-slate-600">
-                <ArrowLeft className="w-4 h-4" />
-                返回
+                首页
               </Button>
               <span className="text-slate-400 text-sm">题库列表 {'>'} 错题记录</span>
             </div>

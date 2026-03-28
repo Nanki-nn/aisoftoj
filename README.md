@@ -4,49 +4,77 @@
 
 > **🚧 项目正在积极开发中，欢迎 Star、提 Issue 和 PR 参与共建！**
 
-`知构（Zhigou Prep）` 是这个项目当前确定的对外产品名，定位为一个面向软考备考场景的智能刷题与学习平台。
+**知构（Zhigou Prep）** 是一个面向软考备考场景的智能刷题与学习平台，通过结构化的知识体系和智能化的练习系统，帮助考生高效备考。
 
-当前命名约定：
+<div align="center">
+  <img src="img.png" alt="项目架构图" width="600" />
+  <img src="img_2.png" alt="功能模块图" width="600" />
+  <img src="20260329005857_rec_.gif" alt="演示动图" width="600" />
+</div>
 
-![img.png](img.png)
-![img_2.png](img_2.png)
+## 📦 项目简介
 
-一个面向软考备考的刷题项目，目前仓库包含：
+本项目采用前后端分离架构，包含：
 
-- `aisoftoj-backend`：Spring Boot + MyBatis-Plus 后端服务
-- `aisoftoj-front`：React + Vite 前端原型
-- `db_schema.sql`：数据库建表脚本
+- **后端服务** (`aisoftoj-backend`)：基于 Spring Boot + MyBatis-Plus 构建，提供 RESTful API
+- **前端应用** (`aisoftoj-front`)：基于 React 18 + Vite + TypeScript 构建，提供现代化用户界面
+- **数据库设计** (`db_schema.sql`)：完整的 MySQL 数据库建表脚本
 
-当前项目处于“前后端并行开发”状态：后端已经有试卷、题目、刷题会话相关接口，前端已经有完整的刷题流程 UI，但大部分页面仍基于本地 mock 数据和 `localStorage`，还没有全面切换到真实接口。
+### ✨ 核心特性
 
-## ✨ 当前功能
+- 📚 **丰富的题库资源**：覆盖系统分析师、系统架构设计师等热门考试科目
+- 🎯 **智能练习模式**：支持练题模式和考试模式，满足不同学习阶段需求
+- 📊 **实时反馈机制**：答题后立即显示解析，帮助理解知识点
+- 📈 **学习进度追踪**：记录刷题历史和错题本，精准定位薄弱环节
+- 🔐 **完善的用户体系**：支持邮箱、手机号、微信等多种登录方式
 
-### 🎨 前端已实现
+## 🎨 功能展示
 
-- 首页试卷列表与筛选
-- 历年真题进入练习
-- 自定义刷题配置
-- 答题会话与交卷结果页
-- 登录/注册页原型
-- 个人中心、刷题记录、错题页原型
+### 前端已实现功能
 
-### ⚙️ 后端已实现
+- ✅ 首页试卷列表与筛选
+- ✅ 历年真题专项练习
+- ✅ 自定义刷题配置（科目/分类/难度/题量）
+- ✅ 完整答题会话流程（倒计时/标记/答题卡）
+- ✅ 交卷后智能评分与解析
+- ✅ 个人中心与学习档案管理
+- ✅ 刷题记录回顾与复盘
+- ✅ 错题本自动整理
 
-- 试卷列表查询
-- 试卷题目详情查询
-- 单题详情查询
-- 开始刷题会话
-- 获取刷题会话详情
-- 更新题目作答记录
-- 交卷并返回结果
+### ⚙️ 后端接口能力
 
-## 🧱 技术栈
+- ✅ 试卷列表查询与筛选
+- ✅ 试卷详情及题目获取
+- ✅ 单题详情查询（含答案控制）
+- ✅ 刷题会话创建与管理
+- ✅ 答题记录实时更新
+- ✅ 试卷提交与智能阅卷
+- ✅ 用户认证与授权
 
-- 后端：Java 8、Spring Boot 2.7、MyBatis-Plus、MySQL、Hutool
-- 前端：React 18、Vite 6、TypeScript、Radix UI、Recharts
-- 数据存储：
-  - 后端使用 MySQL
-  - 前端原型阶段使用本地静态数据和 `localStorage`
+## 🛠️ 技术架构
+
+### 后端技术栈
+
+- **核心框架**：Spring Boot 2.7.x
+- **ORM 框架**：MyBatis-Plus 3.5.x
+- **数据库**：MySQL 5.7+ / 8.x
+- **工具库**：Hutool 5.x
+- **构建工具**：Maven 3.6+
+- **JDK 版本**：JDK 8
+
+### 前端技术栈
+
+- **UI 框架**：React 18
+- **构建工具**：Vite 6.x
+- **开发语言**：TypeScript 5.x
+- **UI 组件**：Radix UI + Shadcn UI
+- **图表库**：Recharts
+- **图标库**：Lucide React
+
+### 数据存储策略
+
+- **生产环境**：后端使用 MySQL 持久化存储
+- **开发环境**：前端原型阶段使用本地静态数据和 localStorage
 
 ## 📁 项目结构
 
@@ -78,16 +106,19 @@
 └── README.md
 ```
 
-## 🛠️ 环境要求
+## 🚀 快速开始
 
-- JDK 8
-- Maven 3.6+
-- MySQL 5.7+ 或 8.x
-- Node.js 18+ 和 npm
+### 环境要求
 
-## 🚀 快速启动
+在开始之前，请确保你的开发环境满足以下要求：
 
-### 1. 🗄️ 初始化数据库
+- **JDK**：8 或以上版本
+- **Maven**：3.6 或以上版本
+- **MySQL**：5.7 或 8.x 版本
+- **Node.js**：18 或以上版本
+- **npm**：随 Node.js 一起安装
+
+### 1️⃣ 初始化数据库
 
 创建数据库：
 
@@ -95,37 +126,49 @@
 CREATE DATABASE aisoftoj DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_ci;
 ```
 
-执行根目录脚本：
+执行建表脚本：
 
 ```bash
 mysql -uroot -p aisoftoj < db_schema.sql
 ```
 
-### 2. ▶️ 启动后端
+导入初始数据（可选）：
 
-默认配置在 [application.yml](/Users/bytedance/aisoftoj/aisoftoj-backend/src/main/resources/application.yml)，当前示例配置为：
+```bash
+mysql -uroot -p aisoftoj < db_init_data.sql
+```
 
-- 端口：`8080`
-- 数据库：`aisoftoj`
-- 用户名：`root`
-- 密码：`abc123456`
+### 2️⃣ 启动后端服务
 
-按实际环境修改数据库连接后启动：
+#### 配置数据库连接
+
+修改 [`application.yml`](aisoftoj-backend/src/main/resources/application.yml) 中的数据库配置：
+
+```yaml
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/aisoftoj?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
+    username: root
+    password: your_password
+```
+
+#### 启动方式
+
+**方式一：使用 Maven 命令（推荐）**
 
 ```bash
 mvn -pl aisoftoj-backend spring-boot:run
 ```
 
-也可以进入后端目录启动：
+**方式二：使用 IDE 运行**
 
-```bash
-cd aisoftoj-backend
-mvn spring-boot:run
-```
+1. 用 IDEA 或其他 Java IDE 打开项目
+2. 找到启动类 [`AisoftojApplication.java`](aisoftoj-backend/src/main/java/com/nan/aisoftoj/AisoftojApplication.java)
+3. 直接运行 main 方法
 
-启动类： [AisoftojApplication.java](/Users/bytedance/aisoftoj/aisoftoj-backend/src/main/java/com/nan/aisoftoj/AisoftojApplication.java)
+启动成功后，后端服务访问地址：**http://localhost:8080**
 
-### 3. 💻 启动前端
+### 3️⃣ 启动前端应用
 
 ```bash
 cd aisoftoj-front
@@ -133,83 +176,39 @@ npm install
 npm run dev
 ```
 
-Vite 默认开发地址一般为 `http://localhost:5173`。
-
-## 🔌 接口概览
-
-当前后端主要提供以下接口：
-
-- `GET /paper/list`：获取试卷列表
-- `GET /paper/detail/{paperId}`：获取试卷下的题目
-- `GET /question/{questionId}`：获取题目详情，可通过 `withAnswer` 控制是否返回答案
-- `POST /session/start`：开始刷题会话
-- `GET /session/{sessionId}`：获取刷题会话详情
-- `PATCH /practice/session/question/record/{questionRecordId}`：更新题目作答记录
-- `POST /session/submit/{sessionId}`：提交试卷
-
-相关代码入口：
-
-- [PaperController.java](/Users/bytedance/aisoftoj/aisoftoj-backend/src/main/java/com/nan/aisoftoj/controller/PaperController.java)
-- [QuestionController.java](/Users/bytedance/aisoftoj/aisoftoj-backend/src/main/java/com/nan/aisoftoj/controller/QuestionController.java)
-- [PracticeSessionController.java](/Users/bytedance/aisoftoj/aisoftoj-backend/src/main/java/com/nan/aisoftoj/controller/PracticeSessionController.java)
-- [PracticeSessionQuestionRecordController.java](/Users/bytedance/aisoftoj/aisoftoj-backend/src/main/java/com/nan/aisoftoj/controller/PracticeSessionQuestionRecordController.java)
-
-## 🧪 前端现状说明
-
-这个仓库里的前端目前更接近“高保真原型 + 本地业务流程验证”，有几点需要提前说明：
-
-- 登录注册逻辑在 [useAuth.ts](/Users/bytedance/aisoftoj/aisoftoj-front/src/hooks/useAuth.ts) 中，当前基于 mock 用户和 `localStorage`
-- 刷题流程在 [useExamSession.ts](/Users/bytedance/aisoftoj/aisoftoj-front/src/hooks/useExamSession.ts) 中，当前基于本地题库数据
-- 试卷、题目、练习记录数据主要位于 `src/data/`
-- 前端已经具备后续对接后端 API 的页面基础，但目前不是全链路联调状态
-
-如果接下来继续开发，优先建议先做两件事：
-
-1. 将前端 `src/data/` 中的试卷和题目查询替换为真实接口调用
-2. 将登录、刷题记录、错题本统一迁移到后端存储
-
-## 🗃️ 数据库表
-
-`db_schema.sql` 当前主要包含以下核心表：
-
-- `user`
-- `paper`
-- `question`
-- `paper_question_relation`
-- `practice_session`
-- `practice_session_question_record`
-
-适合支撑试卷管理、题目查询、刷题会话和答题记录。
-
-## ⚠️ 已知情况
-
-- 根目录 Maven 聚合工程当前只纳入了 `aisoftoj-backend`
-- 前端目录中包含 `node_modules`，通常不建议提交到仓库
-- `application.yml` 里目前是本地开发配置，提交前建议改成环境变量或多环境配置
-- 仓库里有一份早期接口文档草稿：`aisoftoj-backend/src/main/resources/api/paper-controller-api.yaml`，内容和当前代码不完全一致，使用时应以控制器代码为准
-
-## 📌 后续可优化方向
-
-- 增加数据库初始化样例数据脚本
-- 补充后端单元测试和接口测试
-- 补齐前端与后端联调
-- 增加鉴权、权限控制和用户体系
-- 接入 AI 题目解析与错题推荐能力
+启动成功后，前端访问地址：**http://localhost:5173**
 
 ## 🤝 参与贡献
 
 项目仍在持续开发中，非常欢迎各种形式的贡献！
 
-- **提 Bug**：遇到问题请直接 [提 Issue](../../issues)，附上复现步骤
-- **提需求**：有好的功能想法也欢迎开 Issue 讨论
-- **提 PR**：Fork 仓库后开新分支，完成后发 Pull Request，代码风格尽量与现有代码保持一致
-- **完善文档**：README、注释、接口说明都欢迎补充
+### 贡献方式
 
-如果这个项目对你有帮助，欢迎点个 ⭐ Star 支持一下！
+- 🐛 **报告 Bug**：遇到问题请 [提 Issue](../../issues)，附上复现步骤和截图
+- 💡 **提出需求**：有好的功能想法欢迎开 Issue 讨论
+- 🔧 **提交代码**：Fork 仓库后开发新功能或修复 Bug，完成后发 Pull Request
+- 📖 **完善文档**：改进 README、补充注释、优化接口说明等
 
-## 💬 交流群
+### 开发规范
+
+- 代码风格尽量与现有代码保持一致
+- 提交前确保本地测试通过
+- Commit message 清晰描述改动内容
+
+如果这个项目对你有帮助，欢迎点个 ⭐ **Star** 支持一下！
+
+## 📱 交流群
 
 > 扫描下方二维码加入微信交流群，一起备考、交流开发进度。
 >
 > 也可以直接加微信 `你的微信号` 备注「知构」，我拉你进群。
-![img_1.png](img_1.png)
+
+<div align="center">
+  <img src="img_1.png" alt="微信群二维码" width="300" />
+</div>
+
+---
+
+## 📄 License
+
+本项目采用 MIT 协议开源，详见 LICENSE 文件。

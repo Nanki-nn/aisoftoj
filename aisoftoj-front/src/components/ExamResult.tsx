@@ -121,8 +121,7 @@ export function ExamResult({ session, onRestartExam, onBackToHome, onContinuePra
               <BrandLogo />
               <span className="text-slate-300">|</span>
               <Button variant="ghost" size="sm" onClick={onBackToExam} className="flex items-center gap-1 text-slate-600">
-                <ArrowLeft className="w-4 h-4" />
-                返回刷题
+                首页
               </Button>
             </div>
             <h1 className="text-lg text-slate-800">考试结果</h1>

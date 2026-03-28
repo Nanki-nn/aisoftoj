@@ -56,8 +56,7 @@ export function PracticeHistory({ onBack, onContinue }: PracticeHistoryProps) {
             <BrandLogo />
             <span className="text-slate-300">|</span>
             <Button variant="ghost" size="sm" onClick={onBack} className="flex items-center gap-1 text-slate-600">
-              <ArrowLeft className="w-4 h-4" />
-              返回
+              首页
             </Button>
           </div>
         </div>

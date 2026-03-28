@@ -6,6 +6,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Switch } from './ui/switch';
 import { Badge } from './ui/badge';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from './ui/dialog';
 import { BookOpen, Clock, Shuffle, Target, FileText, GraduationCap } from 'lucide-react';
 import { ExamConfig as ExamConfigType } from '../types/exam';
 import { BrandLogo } from './BrandLogo';
@@ -26,6 +27,7 @@ export function ExamConfig({ onStartExam, initialConfig = null }: ExamConfigProp
   
   const [selectedSubject, setSelectedSubject] = useState<string>('');
   const [availableCategories, setAvailableCategories] = useState<string[]>([]);
+  const [showModeDialog, setShowModeDialog] = useState(false);
   const isPaperRestart = Boolean(config.paperId);
 
   React.useEffect(() => {
@@ -60,12 +62,16 @@ export function ExamConfig({ onStartExam, initialConfig = null }: ExamConfigProp
   const handleStartExam = () => {
     if (
       !config.questionCount ||
-      !config.examMode ||
       (!isPaperRestart && (!config.subject || !config.category))
     ) {
       return;
     }
 
+    // 弹出对话框让用户选择模式
+    setShowModeDialog(true);
+  };
+
+  const startExamWithMode = (mode: 'exam' | 'practice') => {
     const examConfig: ExamConfigType = {
       paperId: config.paperId,
       paperName: config.paperName,
@@ -75,10 +81,11 @@ export function ExamConfig({ onStartExam, initialConfig = null }: ExamConfigProp
       timeLimit: config.timeLimit,
       difficulty: config.difficulty,
       randomOrder: config.randomOrder || false,
-      examMode: config.examMode,
+      examMode: mode,
     };
 
     onStartExam(examConfig);
+    setShowModeDialog(false);
   };
 
   const getAvailableQuestionCount = () => {
@@ -293,7 +300,6 @@ export function ExamConfig({ onStartExam, initialConfig = null }: ExamConfigProp
             onClick={handleStartExam}
             disabled={
               !config.questionCount ||
-              !config.examMode ||
               (!isPaperRestart && (!config.subject || !config.category || availableCount === 0))
             }
             className="w-full"
@@ -301,6 +307,37 @@ export function ExamConfig({ onStartExam, initialConfig = null }: ExamConfigProp
           >
             {isPaperRestart ? '按当前模式重新开始' : '开始答题'}
           </Button>
+
+          {/* 模式选择对话框 */}
+          <Dialog open={showModeDialog} onOpenChange={setShowModeDialog}>
+            <DialogContent className="sm:max-w-md">
+              <DialogHeader>
+                <DialogTitle>选择答题模式</DialogTitle>
+                <DialogDescription>
+                  请选择你想要的答题模式
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter className="gap-2 sm:justify-center">
+                <DialogClose asChild>
+                  <Button 
+                    variant="outline" 
+                    onClick={() => startExamWithMode('practice')}
+                    className="flex-1"
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    取消（练习模式）
+                  </Button>
+                </DialogClose>
+                <Button 
+                  onClick={() => startExamWithMode('exam')}
+                  className="flex-1 bg-red-600 hover:bg-red-700"
+                >
+                  <GraduationCap className="w-4 h-4 mr-2" />
+                  确定（考试模式）
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
         </CardContent>
       </Card>
     </div>
