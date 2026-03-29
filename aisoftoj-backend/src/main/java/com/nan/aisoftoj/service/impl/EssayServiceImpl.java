@@ -18,6 +18,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.context.annotation.Lazy;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
@@ -49,6 +50,11 @@ public class EssayServiceImpl implements EssayService {
 
     @Value("${claude.model:claude-sonnet-4-6}")
     private String claudeModel;
+
+    // 通过代理自注入，确保 @Async 通过 Spring AOP 代理生效（避免自调用绕过代理的问题）
+    @Autowired
+    @Lazy
+    private EssayService self;
 
     @Autowired
     private EssaySubmissionMapper essaySubmissionMapper;
@@ -89,8 +95,8 @@ public class EssayServiceImpl implements EssayService {
         submission.setIsDeleted(0);
         essaySubmissionMapper.insert(submission);
 
-        // 触发异步批改
-        gradeAsync(submission.getId());
+        // 通过代理调用，确保 @Async 生效
+        self.gradeAsync(submission.getId());
 
         Map<String, Object> data = new HashMap<>();
         data.put("submissionId", submission.getId());
