@@ -2,6 +2,7 @@ package com.nan.aisoftoj.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.core.type.TypeReference;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nan.aisoftoj.dto.EssayHistoryItem;
 import com.nan.aisoftoj.dto.EssayResultResponse;
@@ -14,8 +15,7 @@ import com.nan.aisoftoj.mapper.EssayReviewMapper;
 import com.nan.aisoftoj.mapper.EssaySubmissionMapper;
 import com.nan.aisoftoj.mapper.QuestionMapper;
 import com.nan.aisoftoj.service.EssayService;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpEntity;
@@ -29,26 +29,15 @@ import org.springframework.web.client.RestTemplate;
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 public class EssayServiceImpl implements EssayService {
-
-    private static final Logger log = LoggerFactory.getLogger(EssayServiceImpl.class);
-
-    private static final String CLAUDE_API_URL = "https://api.anthropic.com/v1/messages";
-    private static final int CONTENT_MAX_LENGTH = 3000;
-
-    @Value("${claude.api-key:}")
-    private String apiKey;
-
-    @Value("${claude.model:claude-sonnet-4-6}")
-    private String claudeModel;
 
     @Autowired
     private EssaySubmissionMapper essaySubmissionMapper;
@@ -59,8 +48,16 @@ public class EssayServiceImpl implements EssayService {
     @Autowired
     private QuestionMapper questionMapper;
 
+    @Autowired
+    private RestTemplate restTemplate;
+
+    @Value("${claude.api-key}")
+    private String claudeApiKey;
+
+    @Value("${claude.model}")
+    private String claudeModel;
+
     private final ObjectMapper objectMapper = new ObjectMapper();
-    private final RestTemplate restTemplate = new RestTemplate();
 
     @Override
     public ResultDTO<?> submitEssay(EssaySubmitRequest req, Long userId) {
@@ -204,161 +201,144 @@ public class EssayServiceImpl implements EssayService {
         return ResultDTO.success(result);
     }
 
-    @Override
     @Async
+    @Override
     public void gradeAsync(Long submissionId) {
         EssaySubmission submission = essaySubmissionMapper.selectById(submissionId);
-        if (submission == null) {
-            log.warn("gradeAsync: submission {} not found", submissionId);
-            return;
-        }
+        if (submission == null) return;
 
-        // 获取题目正文
-        String questionText = "";
-        if (submission.getQuestionId() != null) {
-            Question question = questionMapper.selectById(submission.getQuestionId());
-            if (question != null && question.getIntro() != null) {
-                questionText = question.getIntro();
-            }
-        }
-
-        // 正文截断至 3000 字，控制 Token 成本
-        String content = submission.getContent();
-        if (content != null && content.length() > CONTENT_MAX_LENGTH) {
-            content = content.substring(0, CONTENT_MAX_LENGTH);
-        }
-
-        String rawResponse = null;
         try {
-            String prompt = buildPrompt(questionText, submission.getAbstractText(), content);
-            rawResponse = callClaudeApi(prompt);
+            // Fetch the question text
+            String questionText = "";
+            if (submission.getQuestionId() != null) {
+                Question question = questionMapper.selectById(submission.getQuestionId());
+                if (question != null && question.getIntro() != null) {
+                    questionText = question.getIntro();
+                }
+            }
 
-            String jsonStr = extractJson(rawResponse);
-            Map<String, Object> result = objectMapper.readValue(jsonStr, new TypeReference<Map<String, Object>>() {});
+            // Truncate content to 3000 chars to control token cost
+            String content = submission.getContent();
+            if (content != null && content.length() > 3000) {
+                content = content.substring(0, 3000) + "...（已截断）";
+            }
+            String abstractText = submission.getAbstractText() != null ? submission.getAbstractText() : "";
 
+            // Build prompt
+            String userPrompt = buildGradingPrompt(questionText, abstractText, content);
+
+            // Call Anthropic API
+            String responseJson = callClaudeApi(userPrompt);
+
+            // Parse response
+            JsonNode root = objectMapper.readTree(responseJson);
+            // The response content is in root["content"][0]["text"]
+            String textContent = root.path("content").get(0).path("text").asText();
+
+            // Extract JSON from the text (Claude might wrap it in markdown code blocks)
+            String jsonStr = extractJson(textContent);
+            JsonNode scores = objectMapper.readTree(jsonStr);
+
+            // Build and save EssayReview
             EssayReview review = new EssayReview();
             review.setSubmissionId(submissionId);
-            review.setScoreAbstract(toBigDecimal(result.get("score_abstract")));
-            review.setScoreStructure(toBigDecimal(result.get("score_structure")));
-            review.setScoreRelevance(toBigDecimal(result.get("score_relevance")));
-            review.setScoreDepth(toBigDecimal(result.get("score_depth")));
-            review.setScoreEvidence(toBigDecimal(result.get("score_evidence")));
-            review.setScoreLanguage(toBigDecimal(result.get("score_language")));
-            review.setTotalScore(toBigDecimal(result.get("total_score")));
-            review.setSuggestions(objectMapper.writeValueAsString(result.get("suggestions")));
-            review.setRawResponse(rawResponse);
-            review.setCreateTime(LocalDateTime.now());
-            review.setUpdateTime(LocalDateTime.now());
-            review.setIsDeleted(0);
+            review.setScoreAbstract(new BigDecimal(scores.path("score_abstract").asText("0")));
+            review.setScoreStructure(new BigDecimal(scores.path("score_structure").asText("0")));
+            review.setScoreRelevance(new BigDecimal(scores.path("score_relevance").asText("0")));
+            review.setScoreDepth(new BigDecimal(scores.path("score_depth").asText("0")));
+            review.setScoreEvidence(new BigDecimal(scores.path("score_evidence").asText("0")));
+            review.setScoreLanguage(new BigDecimal(scores.path("score_language").asText("0")));
+            review.setTotalScore(new BigDecimal(scores.path("total_score").asText("0")));
+
+            // suggestions is a JSON array
+            JsonNode suggestionsNode = scores.path("suggestions");
+            review.setSuggestions(objectMapper.writeValueAsString(suggestionsNode));
+            review.setRawResponse(textContent);
+
             essayReviewMapper.insert(review);
 
+            // Update submission status
             submission.setStatus(1);
             submission.setTotalScore(review.getTotalScore());
-            submission.setUpdateTime(LocalDateTime.now());
             essaySubmissionMapper.updateById(submission);
-
-            log.info("gradeAsync: submission {} graded successfully, score={}", submissionId, review.getTotalScore());
 
         } catch (Exception e) {
-            log.error("gradeAsync: submission {} failed: {}", submissionId, e.getMessage(), e);
-            submission.setStatus(2);
-            submission.setUpdateTime(LocalDateTime.now());
-            essaySubmissionMapper.updateById(submission);
+            log.error("Essay grading failed for submission {}: {}", submissionId, e.getMessage(), e);
+            // Mark as failed
+            EssaySubmission failed = new EssaySubmission();
+            failed.setId(submissionId);
+            failed.setStatus(2);
+            essaySubmissionMapper.updateById(failed);
         }
     }
 
-    /**
-     * 构建发送给 Claude 的评分 Prompt
-     */
-    private String buildPrompt(String questionText, String abstractText, String content) {
-        return "你是一位资深的软件水平考试（软考）论文阅卷专家，请严格按照软考高级职称论文评分标准对以下论文进行评分。\n\n" +
-                "## 评分维度与满分\n" +
-                "- 摘要质量（score_abstract）：满分5分，评估摘要是否准确反映论文核心内容\n" +
-                "- 结构完整性（score_structure）：满分5分，评估论文结构是否层次清晰、逻辑严谨\n" +
-                "- 主题相关性（score_relevance）：满分5分，评估论文内容是否紧扣题目要求\n" +
-                "- 技术深度（score_depth）：满分4分，评估技术分析是否深入、是否体现高级职称水平\n" +
-                "- 论据充实度（score_evidence）：满分3分，评估是否有具体案例、数据或实践支撑\n" +
-                "- 语言流畅度（score_language）：满分3分，评估语言表达是否规范、流畅\n" +
-                "- 总分（total_score）：各维度分数之和，满分25分\n\n" +
-                "## 论文题目\n" + questionText + "\n\n" +
-                "## 考生摘要\n" + (abstractText != null ? abstractText : "（未填写）") + "\n\n" +
-                "## 考生正文\n" + (content != null ? content : "（未填写）") + "\n\n" +
-                "## 输出要求\n" +
-                "请严格返回如下 JSON 格式，不要包含任何额外文字、Markdown 代码块或注释：\n" +
-                "{\n" +
-                "  \"score_abstract\": <0-5的数字>,\n" +
-                "  \"score_structure\": <0-5的数字>,\n" +
-                "  \"score_relevance\": <0-5的数字>,\n" +
-                "  \"score_depth\": <0-4的数字>,\n" +
-                "  \"score_evidence\": <0-3的数字>,\n" +
-                "  \"score_language\": <0-3的数字>,\n" +
-                "  \"total_score\": <各维度之和>,\n" +
-                "  \"suggestions\": [\"改进建议1\", \"改进建议2\", \"改进建议3\"]\n" +
-                "}";
+    private String buildGradingPrompt(String questionText, String abstractText, String content) {
+        return "你是一位专业的软考论文阅卷专家。请对以下软考论文进行评分。\n\n" +
+               "## 评分标准（总分25分）\n" +
+               "- 摘要质量（4分）：摘要是否概括全文、字数合规（280-320字）、表述清晰\n" +
+               "- 结构完整性（4分）：引言/正文/结尾层次是否分明\n" +
+               "- 主题相关性（5分）：论点是否紧扣题目要求\n" +
+               "- 技术深度（6分）：软件工程核心概念的覆盖与运用是否到位\n" +
+               "- 论据充实度（3分）：是否有案例、数据、实际经验支撑\n" +
+               "- 语言流畅度（3分）：表达是否规范、逻辑连贯、无明显语病\n\n" +
+               "## 论文题目\n" + (questionText.isEmpty() ? "（未提供）" : questionText) + "\n\n" +
+               "## 考生摘要\n" + (abstractText.isEmpty() ? "（未提供摘要）" : abstractText) + "\n\n" +
+               "## 考生正文\n" + content + "\n\n" +
+               "请严格按照以下JSON格式返回评分结果，不要包含任何其他文字：\n" +
+               "{\n" +
+               "  \"score_abstract\": 3.5,\n" +
+               "  \"score_structure\": 3.0,\n" +
+               "  \"score_relevance\": 4.0,\n" +
+               "  \"score_depth\": 4.5,\n" +
+               "  \"score_evidence\": 2.5,\n" +
+               "  \"score_language\": 2.5,\n" +
+               "  \"total_score\": 20.0,\n" +
+               "  \"suggestions\": [\n" +
+               "    \"具体改进建议1（不超过50字）\",\n" +
+               "    \"具体改进建议2（不超过50字）\",\n" +
+               "    \"具体改进建议3（不超过50字）\"\n" +
+               "  ]\n" +
+               "}";
     }
 
-    /**
-     * 调用 Anthropic Messages API，返回 Claude 的文本回复
-     */
-    @SuppressWarnings("unchecked")
-    private String callClaudeApi(String prompt) {
+    private String callClaudeApi(String userPrompt) {
         HttpHeaders headers = new HttpHeaders();
-        headers.set("x-api-key", apiKey);
-        headers.set("anthropic-version", "2023-06-01");
         headers.setContentType(MediaType.APPLICATION_JSON);
-
-        Map<String, Object> message = new HashMap<>();
-        message.put("role", "user");
-        message.put("content", prompt);
+        headers.set("x-api-key", claudeApiKey);
+        headers.set("anthropic-version", "2023-06-01");
 
         Map<String, Object> requestBody = new HashMap<>();
         requestBody.put("model", claudeModel);
         requestBody.put("max_tokens", 1024);
-        requestBody.put("messages", new Object[]{message});
+
+        Map<String, String> message = new HashMap<>();
+        message.put("role", "user");
+        message.put("content", userPrompt);
+        requestBody.put("messages", Collections.singletonList(message));
 
         HttpEntity<Map<String, Object>> entity = new HttpEntity<>(requestBody, headers);
-        ResponseEntity<Map> response = restTemplate.postForEntity(CLAUDE_API_URL, entity, Map.class);
+        ResponseEntity<String> response = restTemplate.postForEntity(
+                "https://api.anthropic.com/v1/messages", entity, String.class);
 
-        Map<String, Object> body = response.getBody();
-        if (body == null) {
-            throw new RuntimeException("Claude API 返回空响应");
-        }
-        List<Map<String, Object>> contentList = (List<Map<String, Object>>) body.get("content");
-        if (contentList == null || contentList.isEmpty()) {
-            throw new RuntimeException("Claude API 响应中无 content 字段");
-        }
-        return (String) contentList.get(0).get("text");
+        return response.getBody();
     }
 
-    /**
-     * 从 Claude 回复文本中提取 JSON 字符串（兼容 markdown 代码块包裹的情况）
-     */
     private String extractJson(String text) {
-        if (text == null) throw new RuntimeException("Claude 返回文本为空");
-        // 尝试匹配 ```json ... ``` 或 ``` ... ```
-        Pattern codeBlock = Pattern.compile("```(?:json)?\\s*([\\s\\S]*?)```");
-        Matcher matcher = codeBlock.matcher(text);
-        if (matcher.find()) {
-            return matcher.group(1).trim();
+        // Handle case where Claude wraps JSON in ```json ... ``` blocks
+        if (text.contains("```json")) {
+            int start = text.indexOf("```json") + 7;
+            int end = text.lastIndexOf("```");
+            if (end > start) return text.substring(start, end).trim();
         }
-        // 尝试直接提取第一个 { ... }
+        if (text.contains("```")) {
+            int start = text.indexOf("```") + 3;
+            int end = text.lastIndexOf("```");
+            if (end > start) return text.substring(start, end).trim();
+        }
+        // Otherwise find the JSON object directly
         int start = text.indexOf('{');
         int end = text.lastIndexOf('}');
-        if (start >= 0 && end > start) {
-            return text.substring(start, end + 1);
-        }
-        return text.trim();
-    }
-
-    /**
-     * 将 JSON 解析出的数值安全转换为 BigDecimal
-     */
-    private BigDecimal toBigDecimal(Object value) {
-        if (value == null) return BigDecimal.ZERO;
-        try {
-            return new BigDecimal(value.toString());
-        } catch (NumberFormatException e) {
-            return BigDecimal.ZERO;
-        }
+        if (start >= 0 && end > start) return text.substring(start, end + 1);
+        return text;
     }
 }

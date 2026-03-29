@@ -30,5 +30,5 @@ logging:
     com.nan.aisoftoj: debug
 
 claude:
-  api-key: ${CLAUDE_API_KEY:}
+  api-key: ${CLAUDE_API_KEY:your-api-key-here}
   model: claude-sonnet-4-6
