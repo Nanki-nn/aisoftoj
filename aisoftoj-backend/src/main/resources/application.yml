@@ -27,4 +27,8 @@ file:
 
 logging:
   level:
-    com.nan.aisoftoj: debug 
+    com.nan.aisoftoj: debug
+
+claude:
+  api-key: ${CLAUDE_API_KEY:}
+  model: claude-sonnet-4-6

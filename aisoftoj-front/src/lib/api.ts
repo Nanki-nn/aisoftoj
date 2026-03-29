@@ -280,3 +280,71 @@ export async function submitPracticeSession(
     }),
   });
 }
+
+// ─── Essay API ────────────────────────────────────────────────────────────────
+
+export type EssayQuestion = {
+  id: number;
+  name: string;
+  intro: string;
+  year: number | null;
+  subjectName: string | null;
+};
+
+export type EssayResultData = {
+  submissionId: number;
+  status: number;
+  totalScore: number;
+  scoreAbstract: number;
+  scoreStructure: number;
+  scoreRelevance: number;
+  scoreDepth: number;
+  scoreEvidence: number;
+  scoreLanguage: number;
+  suggestions: string[];
+};
+
+export type EssayHistoryItem = {
+  submissionId: number;
+  questionId: number;
+  questionTitle: string;
+  wordCount: number;
+  totalScore: number;
+  status: number;
+  createTime: string;
+};
+
+function getAuthToken(): string {
+  return localStorage.getItem('authToken') || '';
+}
+
+export async function getEssayQuestions(subject?: string): Promise<EssayQuestion[]> {
+  const path = subject
+    ? `/essay/questions?subject=${encodeURIComponent(subject)}`
+    : '/essay/questions';
+  return request<EssayQuestion[]>(path);
+}
+
+export async function submitEssay(
+  questionId: number,
+  abstractText: string,
+  content: string
+): Promise<{ submissionId: number }> {
+  return request<{ submissionId: number }>('/essay/submit', {
+    method: 'POST',
+    headers: { Authorization: getAuthToken() },
+    body: JSON.stringify({ questionId, abstractText, content }),
+  });
+}
+
+export async function getEssayResult(submissionId: string): Promise<EssayResultData> {
+  return request<EssayResultData>(`/essay/result/${submissionId}`, {
+    headers: { Authorization: getAuthToken() },
+  });
+}
+
+export async function getEssayHistory(): Promise<EssayHistoryItem[]> {
+  return request<EssayHistoryItem[]>('/essay/history', {
+    headers: { Authorization: getAuthToken() },
+  });
+}

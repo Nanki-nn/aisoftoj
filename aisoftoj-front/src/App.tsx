@@ -8,6 +8,10 @@ import { AuthPage } from './components/AuthPage';
 import { ProfilePage } from './components/ProfilePage';
 import { PracticeHistory } from './components/PracticeHistory';
 import { WrongQuestions } from './components/WrongQuestions';
+import { EssayHome } from './components/EssayHome';
+import { EssayEditor } from './components/EssayEditor';
+import { EssayResult } from './components/EssayResult';
+import { EssayHistory } from './components/EssayHistory';
 import { useExamSession } from './hooks/useExamSession';
 import { useAuth } from './hooks/useAuth';
 import { ExamConfig as ExamConfigType } from './types/exam';
@@ -23,6 +27,10 @@ const ROUTES = {
   examConfig: '/exam/config',
   examSessionBase: '/exam/session',
   examResultBase: '/exam/result',
+  essay: '/essay',
+  essayWriteBase: '/essay/write',
+  essayResultBase: '/essay/result',
+  essayHistory: '/essay/history',
 } as const;
 
 function SessionRoute({
@@ -318,6 +326,10 @@ export default function App() {
             />
           }
         />
+        <Route path={ROUTES.essay} element={<EssayHome />} />
+        <Route path={`${ROUTES.essayWriteBase}/:questionId`} element={<EssayEditor />} />
+        <Route path={`${ROUTES.essayResultBase}/:submissionId`} element={<EssayResult />} />
+        <Route path={ROUTES.essayHistory} element={<EssayHistory />} />
         <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
       </Routes>
     </div>
