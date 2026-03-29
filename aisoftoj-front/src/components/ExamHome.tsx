@@ -1,4 +1,5 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
@@ -49,6 +50,7 @@ export function ExamHome({ onStartPaper, onShowProfile, onShowAuth, onShowPracti
   const [totalAnswered, setTotalAnswered] = useState(0);
   const [wrongCount, setWrongCount] = useState(0);
   const { user, logout, isAuthenticated } = useAuth();
+  const navigate = useNavigate();
 
   // 距离 2026 上半年软考首日（5月23日）的天数，每次渲染自动更新
   const daysToExam = useMemo(() => {
@@ -172,14 +174,22 @@ export function ExamHome({ onStartPaper, onShowProfile, onShowAuth, onShowPracti
                     key={subject}
                     variant={selectedSubject === subject ? "default" : "ghost"}
                     onClick={() => setSelectedSubject(subject)}
-                    className={selectedSubject === subject 
-                      ? "bg-blue-600 hover:bg-blue-700 text-white shadow-md" 
+                    className={selectedSubject === subject
+                      ? "bg-blue-600 hover:bg-blue-700 text-white shadow-md"
                       : "text-slate-600 hover:text-slate-800 hover:bg-slate-100"
                     }
                   >
                     {subject}
                   </Button>
                 ))}
+                <Button
+                  variant="ghost"
+                  onClick={() => navigate('/essay')}
+                  className="text-slate-600 hover:text-slate-800 hover:bg-slate-100 flex items-center gap-1"
+                >
+                  <FileText className="w-4 h-4" />
+                  论文批改
+                </Button>
               </div>
             </div>
             <div className="flex items-center gap-4">
