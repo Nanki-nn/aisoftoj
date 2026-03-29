@@ -190,24 +190,13 @@ public class EssayServiceImpl implements EssayService {
 
     @Override
     public ResultDTO<List<Map<String, Object>>> getQuestions(String subject) {
-        LambdaQueryWrapper<Question> wrapper = new LambdaQueryWrapper<Question>()
-                .eq(Question::getQuestionType, 6)
-                .eq(Question::getIsDeleted, 0);
-
-        List<Question> questions = questionMapper.selectList(wrapper);
-
-        List<Map<String, Object>> result = questions.stream().map(question -> {
-            Map<String, Object> item = new HashMap<>();
-            item.put("id", question.getId());
-            String intro = question.getIntro();
-            if (intro != null && intro.length() > 100) {
-                intro = intro.substring(0, 100);
-            }
-            item.put("intro", intro);
-            return item;
-        }).collect(Collectors.toList());
-
-        return ResultDTO.success(result);
+        List<Map<String, Object>> questions = questionMapper.selectEssayQuestionsWithPaper();
+        if (subject != null && !subject.trim().isEmpty()) {
+            questions = questions.stream()
+                    .filter(q -> subject.equals(q.get("subjectName")))
+                    .collect(Collectors.toList());
+        }
+        return ResultDTO.success(questions);
     }
 
     @Override

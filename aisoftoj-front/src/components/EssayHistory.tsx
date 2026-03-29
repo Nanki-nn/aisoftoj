@@ -14,46 +14,7 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { GraduationCap, FileText, Calendar, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-
-interface HistoryItem {
-  submissionId: number;
-  questionId: number;
-  questionTitle: string;
-  wordCount: number;
-  totalScore: number;
-  status: number;
-  createTime: string;
-}
-
-const mockHistory: HistoryItem[] = [
-  {
-    submissionId: 3,
-    questionId: 1,
-    questionTitle: '论软件架构设计方法',
-    wordCount: 2680,
-    totalScore: 18.5,
-    status: 1,
-    createTime: '2026-03-29T06:00:00Z',
-  },
-  {
-    submissionId: 2,
-    questionId: 3,
-    questionTitle: '论微服务架构的设计与实践',
-    wordCount: 2450,
-    totalScore: 15.0,
-    status: 1,
-    createTime: '2026-03-28T14:30:00Z',
-  },
-  {
-    submissionId: 1,
-    questionId: 1,
-    questionTitle: '论软件架构设计方法',
-    wordCount: 2100,
-    totalScore: 12.5,
-    status: 1,
-    createTime: '2026-03-27T10:15:00Z',
-  },
-];
+import { getEssayHistory, EssayHistoryItem } from '../lib/api';
 
 function formatDateTime(iso: string): string {
   const d = new Date(iso);
@@ -106,7 +67,7 @@ function StatusBadge({ status }: { status: number }) {
 export function EssayHistory() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const [history, setHistory] = useState<HistoryItem[]>([]);
+  const [history, setHistory] = useState<EssayHistoryItem[]>([]);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -114,11 +75,10 @@ export function EssayHistory() {
       navigate('/login');
       return;
     }
-    const timer = setTimeout(() => {
-      setHistory(mockHistory);
-      setLoading(false);
-    }, 500);
-    return () => clearTimeout(timer);
+    getEssayHistory()
+      .then(setHistory)
+      .catch(() => setHistory([]))
+      .finally(() => setLoading(false));
   }, [user, navigate]);
 
   const chartData = [...history]
