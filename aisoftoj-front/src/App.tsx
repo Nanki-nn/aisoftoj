@@ -111,26 +111,9 @@ export default function App() {
     }
   }, [location.pathname, currentSession, navigate]);
 
-  const choosePaperMode = (): 'practice' | 'exam' => {
-    const isExamMode = window.confirm('点击“确定”以考试模式开始；点击“取消”则进入练习模式。');
-    return isExamMode ? 'exam' : 'practice';
-  };
-
-  const handleStartPaper = async (paper: ExamPaper) => {
-    if (paper.status === 'in_progress' && paper.doingSessionId) {
-      try {
-        const session = await continuePracticeSession(paper.doingSessionId);
-        setSession(session);
-        navigate(`${ROUTES.examSessionBase}/${session.id}`);
-        return;
-      } catch (error) {
-        alert('继续练习失败：' + (error as Error).message);
-        return;
-      }
-    }
-
+  const handleStartPaper = async (paper: ExamPaper, mode: 'practice' | 'exam') => {
     try {
-      const session = await startPaperSession(paper.id, choosePaperMode());
+      const session = await startPaperSession(paper.id, mode);
       setSession(session);
       navigate(`${ROUTES.examSessionBase}/${session.id}`);
     } catch (error) {
@@ -188,7 +171,7 @@ export default function App() {
     if (restartConfig.paperId) {
       void (async () => {
         try {
-          const session = await startPaperSession(restartConfig.paperId!, choosePaperMode());
+          const session = await startPaperSession(restartConfig.paperId!, restartConfig.examMode ?? 'practice');
           setSession(session);
           navigate(`${ROUTES.examSessionBase}/${session.id}`);
         } catch (error) {

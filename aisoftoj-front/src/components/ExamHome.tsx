@@ -33,7 +33,7 @@ import { useAuth } from '../hooks/useAuth';
 import { fetchPapers, fetchPracticeHistory, fetchWrongQuestions } from '../lib/api';
 
 interface ExamHomeProps {
-  onStartPaper: (paper: ExamPaper) => void;
+  onStartPaper: (paper: ExamPaper, mode: 'practice' | 'exam') => void;
   onShowProfile: () => void;
   onShowAuth: () => void;
   onShowPracticeHistory: () => void;
@@ -48,6 +48,8 @@ export function ExamHome({ onStartPaper, onShowProfile, onShowAuth, onShowPracti
   const [error, setError] = useState<string | null>(null);
   const [totalAnswered, setTotalAnswered] = useState(0);
   const [wrongCount, setWrongCount] = useState(0);
+  const [showModeDialog, setShowModeDialog] = useState(false);
+  const [selectedPaper, setSelectedPaper] = useState<ExamPaper | null>(null);
   const { user, logout, isAuthenticated } = useAuth();
 
   // 距离 2026 上半年软考首日（5月23日）的天数，每次渲染自动更新
@@ -111,14 +113,27 @@ export function ExamHome({ onStartPaper, onShowProfile, onShowAuth, onShowPracti
       });
   }, [papers, selectedCategory, selectedSubject]);
 
+  const openModeDialog = (paper: ExamPaper) => {
+    setSelectedPaper(paper);
+    setShowModeDialog(true);
+  };
+
+  const handleModeSelect = (mode: 'practice' | 'exam') => {
+    if (selectedPaper) {
+      onStartPaper(selectedPaper, mode);
+      setShowModeDialog(false);
+      setSelectedPaper(null);
+    }
+  };
+
   const getStatusButton = (paper: ExamPaper) => {
     switch (paper.status) {
       case 'completed':
         return (
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
-            onClick={() => onStartPaper(paper)}
+            onClick={() => openModeDialog(paper)}
             className="text-emerald-600 border-emerald-200 hover:bg-emerald-50 transition-colors"
           >
             <RotateCcw className="w-4 h-4 mr-1" />
@@ -127,9 +142,9 @@ export function ExamHome({ onStartPaper, onShowProfile, onShowAuth, onShowPracti
         );
       case 'in_progress':
         return (
-          <Button 
+          <Button
             size="sm"
-            onClick={() => onStartPaper(paper)}
+            onClick={() => onStartPaper(paper, 'practice')}
             className="bg-blue-600 hover:bg-blue-700 shadow-lg transition-all hover:shadow-xl"
           >
             <Play className="w-4 h-4 mr-1" />
@@ -138,10 +153,10 @@ export function ExamHome({ onStartPaper, onShowProfile, onShowAuth, onShowPracti
         );
       default:
         return (
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             size="sm"
-            onClick={() => onStartPaper(paper)}
+            onClick={() => openModeDialog(paper)}
             className="text-slate-700 border-slate-200 hover:bg-slate-50 transition-colors"
           >
             <Play className="w-4 h-4 mr-1" />
@@ -259,7 +274,10 @@ export function ExamHome({ onStartPaper, onShowProfile, onShowAuth, onShowPracti
                   精选历年真题，智能分析错题，助你高效备考软考
                 </p>
                 <div className="flex gap-4">
-                  <Button className="bg-blue-600 hover:bg-blue-700 shadow-lg hover:shadow-xl transition-all">
+                  <Button
+                    className="bg-blue-600 hover:bg-blue-700 shadow-lg hover:shadow-xl transition-all"
+                    onClick={() => document.getElementById('paper-list')?.scrollIntoView({ behavior: 'smooth' })}
+                  >
                     <Trophy className="w-4 h-4 mr-2" />
                     开始练习
                   </Button>
@@ -336,7 +354,7 @@ export function ExamHome({ onStartPaper, onShowProfile, onShowAuth, onShowPracti
         </div>
 
         {/* 历年真题列表 */}
-        <div className="mb-8">
+        <div id="paper-list" className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl text-slate-800 flex items-center gap-2">
               <Calendar className="w-5 h-5" />
@@ -453,6 +471,56 @@ export function ExamHome({ onStartPaper, onShowProfile, onShowAuth, onShowPracti
           </Card>
         </div>
       </div>
+
+      {/* 模式选择弹窗（原生 fixed overlay，不依赖 Radix Portal） */}
+      {showModeDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+          {/* 半透明遮罩 */}
+          <div
+            className="absolute inset-0 bg-black/50"
+            onClick={() => setShowModeDialog(false)}
+          />
+          {/* 弹窗主体 */}
+          <div className="relative bg-white rounded-2xl shadow-2xl w-96 p-5">
+            {/* 关闭按钮 */}
+            <button
+              onClick={() => setShowModeDialog(false)}
+              className="absolute top-3 right-3 text-slate-400 hover:text-slate-600 text-xl leading-none"
+            >
+              ×
+            </button>
+
+            <h2 className="text-base font-semibold text-center text-slate-800 mb-1">选择答题模式</h2>
+            {selectedPaper && (
+              <p className="text-xs text-center text-slate-500 mb-4">
+                {selectedPaper.year}年{selectedPaper.month}月 · {selectedPaper.subject}
+              </p>
+            )}
+
+            <div className="grid grid-cols-2 gap-3">
+              {/* 练习模式 */}
+              <button
+                onClick={() => handleModeSelect('practice')}
+                className="flex flex-col items-center p-4 rounded-xl border-2 border-blue-200 bg-blue-50 hover:border-blue-500 hover:bg-blue-100 transition-all"
+              >
+                <FileText className="w-8 h-8 mb-2 text-blue-600" />
+                <div className="text-sm font-semibold text-slate-800">练习模式</div>
+                <div className="text-xs text-slate-500 mt-0.5 text-center">即时显示解析</div>
+              </button>
+
+              {/* 考试模式 */}
+              <button
+                onClick={() => handleModeSelect('exam')}
+                className="flex flex-col items-center p-4 rounded-xl border-2 border-red-200 bg-red-50 hover:border-red-500 hover:bg-red-100 transition-all"
+              >
+                <GraduationCap className="w-8 h-8 mb-2 text-red-600" />
+                <div className="text-sm font-semibold text-slate-800">考试模式</div>
+                <div className="text-xs text-slate-500 mt-0.5 text-center">交卷后查看</div>
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
