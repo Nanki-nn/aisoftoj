@@ -4,57 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { GraduationCap, FileText, ArrowLeft, Clock, Save, Loader2, CheckCircle } from 'lucide-react';
-
-const mockQuestions = [
-  {
-    id: 1,
-    year: 2023,
-    subject: '系统架构师',
-    title: '论软件架构设计方法',
-    content:
-      '请结合你参与的软件项目，论述软件架构设计的重要性，重点阐述你所采用的架构风格及其选择理由，并说明该架构在实际项目中遇到的问题及解决方案。要求：摘要300字左右，正文2500字左右。',
-  },
-  {
-    id: 2,
-    year: 2023,
-    subject: '项目管理师',
-    title: '论项目进度管理',
-    content:
-      '结合你管理过的软件项目，论述项目进度计划的制定、跟踪与控制方法，说明你采用的进度管理工具和技术，以及在项目执行过程中如何应对进度偏差。要求：摘要300字左右，正文2500字左右。',
-  },
-  {
-    id: 3,
-    year: 2022,
-    subject: '系统架构师',
-    title: '论微服务架构的设计与实践',
-    content:
-      '请论述微服务架构的核心概念，结合实际项目说明如何进行微服务拆分、服务间通信方式选择、数据一致性保障及服务治理实践。要求：摘要300字左右，正文2500字左右。',
-  },
-  {
-    id: 4,
-    year: 2022,
-    subject: '系统分析师',
-    title: '论系统需求分析方法',
-    content:
-      '结合具体项目，论述需求获取、需求分析和需求规格说明书编写的过程和方法，说明你在项目中如何处理需求变更。要求：摘要300字左右，正文2500字左右。',
-  },
-  {
-    id: 5,
-    year: 2021,
-    subject: '项目管理师',
-    title: '论信息系统项目的风险管理',
-    content:
-      '结合你参与管理的信息系统项目，论述项目风险管理的过程，重点阐述风险识别、风险评估和风险应对策略的制定与实施。要求：摘要300字左右，正文2500字左右。',
-  },
-  {
-    id: 6,
-    year: 2021,
-    subject: '系统架构师',
-    title: '论软件可靠性设计',
-    content:
-      '请结合你参与的软件项目，论述软件可靠性设计的重要性及具体实施方法，包括容错设计、冗余设计、检验点设置等。要求：摘要300字左右，正文2500字左右。',
-  },
-];
+import { getEssayQuestions, submitEssay, EssayQuestion } from '../lib/api';
 
 function formatTime(seconds: number): string {
   const mm = Math.floor(seconds / 60)
@@ -81,16 +31,27 @@ export function EssayEditor() {
   const { questionId } = useParams<{ questionId: string }>();
 
   const parsedId = parseInt(questionId || '0', 10);
-  const question = mockQuestions.find((q) => q.id === parsedId) || null;
-
   const draftKey = `essay-draft-${parsedId}`;
 
+  const [question, setQuestion] = useState<EssayQuestion | null>(null);
+  const [questionLoading, setQuestionLoading] = useState(true);
   const [abstractText, setAbstractText] = useState('');
   const [contentText, setContentText] = useState('');
   const [elapsed, setElapsed] = useState(0);
   const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
   const [showRestoreNotice, setShowRestoreNotice] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // Fetch question data from API
+  useEffect(() => {
+    getEssayQuestions()
+      .then((list) => {
+        const found = list.find((q) => q.id === parsedId) || null;
+        setQuestion(found);
+      })
+      .catch(() => setQuestion(null))
+      .finally(() => setQuestionLoading(false));
+  }, [parsedId]);
 
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
   const autoSaveRef = useRef<ReturnType<typeof setInterval> | null>(null);
@@ -157,34 +118,28 @@ export function EssayEditor() {
 
     setIsSubmitting(true);
     try {
-      const res = await fetch('http://localhost:8080/essay/submit', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          questionId: parsedId,
-          abstractText,
-          content: contentText,
-        }),
-      });
-
-      if (!res.ok) {
-        throw new Error(`请求失败，状态码：${res.status}`);
-      }
-
-      const json = await res.json();
-      const submissionId = json?.data?.submissionId;
-      if (!submissionId) {
-        throw new Error('服务器未返回有效的 submissionId');
-      }
+      const { submissionId } = await submitEssay(parsedId, abstractText, contentText);
       localStorage.removeItem(draftKey);
       navigate(`/essay/result/${submissionId}`);
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : '未知错误';
-      alert(`提交失败：${message}`);
+      if (message.includes('今日批改次数已用完')) {
+        alert('今日批改次数已用完（3/3），明天再来');
+      } else {
+        alert(`提交失败：${message}`);
+      }
     } finally {
       setIsSubmitting(false);
     }
   };
+
+  if (questionLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
+        <div className="text-slate-400">加载题目中…</div>
+      </div>
+    );
+  }
 
   if (!question) {
     return (
@@ -201,10 +156,11 @@ export function EssayEditor() {
     );
   }
 
+  const subjectName = question.subjectName || '未知科目';
   const subjectBadgeStyle =
-    question.subject === '系统架构师'
+    subjectName === '系统架构师'
       ? { background: '#dbeafe', color: '#1d4ed8' }
-      : question.subject === '项目管理师'
+      : subjectName === '项目管理师'
       ? { background: '#d1fae5', color: '#065f46' }
       : { background: '#fef3c7', color: '#92400e' };
 
@@ -231,7 +187,7 @@ export function EssayEditor() {
                 <span className="text-base">AI 论文批改</span>
               </button>
               <span className="text-slate-300">/</span>
-              <span className="text-base text-blue-600 truncate max-w-xs">{question.title}</span>
+              <span className="text-base text-blue-600 truncate max-w-xs">{question.name || `题目 #${question.id}`}</span>
             </div>
             <Button
               variant="ghost"
@@ -264,21 +220,23 @@ export function EssayEditor() {
             {/* 题目卡片 */}
             <div className="bg-white rounded-2xl shadow-sm border border-slate-200/50 p-6">
               <div className="flex items-center gap-2 mb-3">
-                <span
-                  className="text-xs font-medium px-2 py-0.5 rounded"
-                  style={{ background: '#dbeafe', color: '#1d4ed8' }}
-                >
-                  {question.year} 年
-                </span>
+                {question.year && (
+                  <span
+                    className="text-xs font-medium px-2 py-0.5 rounded"
+                    style={{ background: '#dbeafe', color: '#1d4ed8' }}
+                  >
+                    {question.year} 年
+                  </span>
+                )}
                 <span
                   className="text-xs font-medium px-2 py-0.5 rounded"
                   style={{ background: subjectBadgeStyle.background, color: subjectBadgeStyle.color }}
                 >
-                  {question.subject}
+                  {subjectName}
                 </span>
               </div>
-              <h2 className="text-lg text-slate-800 mb-3">{question.title}</h2>
-              <p className="text-slate-600 text-sm leading-relaxed">{question.content}</p>
+              <h2 className="text-lg text-slate-800 mb-3">{question.name || `题目 #${question.id}`}</h2>
+              <p className="text-slate-600 text-sm leading-relaxed">{question.intro}</p>
             </div>
 
             {/* 摘要区 */}

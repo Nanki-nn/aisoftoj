@@ -1,18 +1,10 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { FileText, GraduationCap, Calendar, Play } from 'lucide-react';
-
-const mockEssayQuestions = [
-  { id: 1, year: 2023, subject: '系统架构师', title: '论软件架构设计方法', preview: '请结合你参与的软件项目，论述软件架构设计的重要性，重点阐述你所采用的架构风格...' },
-  { id: 2, year: 2023, subject: '项目管理师', title: '论项目进度管理', preview: '结合你管理过的软件项目，论述项目进度计划的制定、跟踪与控制方法...' },
-  { id: 3, year: 2022, subject: '系统架构师', title: '论微服务架构的设计与实践', preview: '请论述微服务架构的核心概念，结合实际项目说明如何进行微服务拆分...' },
-  { id: 4, year: 2022, subject: '系统分析师', title: '论系统需求分析方法', preview: '结合具体项目，论述需求获取、需求分析和需求规格说明书编写的过程和方法...' },
-  { id: 5, year: 2021, subject: '项目管理师', title: '论信息系统项目的风险管理', preview: '结合你参与管理的信息系统项目，论述项目风险管理的过程，重点阐述风险识别...' },
-  { id: 6, year: 2021, subject: '系统架构师', title: '论软件可靠性设计', preview: '请结合你参与的软件项目，论述软件可靠性设计的重要性及具体实施方法...' },
-];
+import { getEssayQuestions, EssayQuestion } from '../lib/api';
 
 const SUBJECT_FILTERS = ['全部', '系统架构师', '项目管理师', '系统分析师'];
 
@@ -25,9 +17,19 @@ const SUBJECT_BADGE_COLORS: Record<string, { background: string; color: string }
 export function EssayHome() {
   const navigate = useNavigate();
   const [selectedSubject, setSelectedSubject] = useState('全部');
+  const [questions, setQuestions] = useState<EssayQuestion[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
-  const filteredQuestions = mockEssayQuestions.filter(
-    (q) => selectedSubject === '全部' || q.subject === selectedSubject
+  useEffect(() => {
+    getEssayQuestions()
+      .then(setQuestions)
+      .catch((e: Error) => setError(e.message || '加载题目失败'))
+      .finally(() => setLoading(false));
+  }, []);
+
+  const filteredQuestions = questions.filter(
+    (q) => selectedSubject === '全部' || q.subjectName === selectedSubject
   );
 
   return (
@@ -107,73 +109,82 @@ export function EssayHome() {
             <Calendar className="w-5 h-5 text-slate-500" />
             {selectedSubject === '全部' ? '全部题目' : selectedSubject}
           </h2>
-          <Badge variant="outline" className="border-slate-200 text-slate-600">
-            共 {filteredQuestions.length} 题
-          </Badge>
+          {!loading && (
+            <Badge variant="outline" className="border-slate-200 text-slate-600">
+              共 {filteredQuestions.length} 题
+            </Badge>
+          )}
         </div>
 
-        {/* 题目卡片网格 */}
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {filteredQuestions.map((question) => {
-            const badgeStyle = SUBJECT_BADGE_COLORS[question.subject] || {
-              background: '#f1f5f9',
-              color: '#475569',
-            };
-            return (
-              <Card
-                key={question.id}
-                className="bg-white hover:shadow-lg transition-all duration-300 border border-slate-200/50 hover:border-slate-300/50 group"
-              >
-                <CardHeader className="pb-3">
-                  <div className="flex items-start justify-between gap-3">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-2 mb-2">
-                        <span
-                          className="text-xs font-medium px-2 py-0.5 rounded"
-                          style={{ background: '#dbeafe', color: '#1d4ed8' }}
-                        >
-                          {question.year} 年
-                        </span>
-                        <span
-                          className="text-xs font-medium px-2 py-0.5 rounded"
-                          style={{ background: badgeStyle.background, color: badgeStyle.color }}
-                        >
-                          {question.subject}
-                        </span>
+        {/* 加载/错误/内容 */}
+        {loading ? (
+          <div className="flex items-center justify-center py-24 text-slate-400">加载中…</div>
+        ) : error ? (
+          <div className="flex items-center justify-center py-24 text-red-400">{error}</div>
+        ) : filteredQuestions.length === 0 ? (
+          <div className="flex flex-col items-center justify-center py-24 gap-3 text-slate-400">
+            <FileText className="w-12 h-12" />
+            <p>暂无{selectedSubject === '全部' ? '' : selectedSubject}题目</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {filteredQuestions.map((question) => {
+              const subject = question.subjectName || '未知科目';
+              const badgeStyle = SUBJECT_BADGE_COLORS[subject] || {
+                background: '#f1f5f9',
+                color: '#475569',
+              };
+              const preview = question.intro
+                ? question.intro.substring(0, 80) + (question.intro.length > 80 ? '…' : '')
+                : '';
+              return (
+                <Card
+                  key={question.id}
+                  className="bg-white hover:shadow-lg transition-all duration-300 border border-slate-200/50 hover:border-slate-300/50 group"
+                >
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between gap-3">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-2">
+                          {question.year && (
+                            <span
+                              className="text-xs font-medium px-2 py-0.5 rounded"
+                              style={{ background: '#dbeafe', color: '#1d4ed8' }}
+                            >
+                              {question.year} 年
+                            </span>
+                          )}
+                          <span
+                            className="text-xs font-medium px-2 py-0.5 rounded"
+                            style={{ background: badgeStyle.background, color: badgeStyle.color }}
+                          >
+                            {subject}
+                          </span>
+                        </div>
+                        <CardTitle className="text-base text-slate-800 group-hover:text-blue-600 transition-colors leading-snug">
+                          {question.name || `题目 #${question.id}`}
+                        </CardTitle>
                       </div>
-                      <CardTitle className="text-base text-slate-800 group-hover:text-blue-600 transition-colors leading-snug">
-                        {question.title}
-                      </CardTitle>
                     </div>
-                  </div>
-                </CardHeader>
-                <CardContent className="pt-0">
-                  <p
-                    className="text-sm text-slate-500 mb-4"
-                    style={{
-                      display: '-webkit-box',
-                      WebkitLineClamp: 2,
-                      WebkitBoxOrient: 'vertical',
-                      overflow: 'hidden',
-                    }}
-                  >
-                    {question.preview}
-                  </p>
-                  <div className="flex items-center justify-end">
-                    <Button
-                      size="sm"
-                      onClick={() => navigate(`/essay/write/${question.id}`)}
-                      className="bg-blue-600 hover:bg-blue-700 shadow-sm hover:shadow-md transition-all"
-                    >
-                      <Play className="w-3 h-3 mr-1" />
-                      开始练习
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            );
-          })}
-        </div>
+                  </CardHeader>
+                  <CardContent className="pt-0">
+                    <p className="text-sm text-slate-500 mb-4 line-clamp-2">{preview}</p>
+                    <div className="flex items-center justify-end">
+                      <Button
+                        size="sm"
+                        onClick={() => navigate(`/essay/write/${question.id}`)}
+                        className="bg-blue-600 hover:bg-blue-700 shadow-sm hover:shadow-md transition-all"
+                      >
+                        <Play className="w-3 h-3 mr-1" />
+                        开始练习
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );

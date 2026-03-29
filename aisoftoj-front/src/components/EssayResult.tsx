@@ -10,53 +10,18 @@ import {
   Radar,
   ResponsiveContainer,
 } from 'recharts';
+import { getEssayResult, EssayResultData } from '../lib/api';
 
 // --------------------------------------------------
-// Types
-// --------------------------------------------------
-interface EssayResultData {
-  submissionId: number;
-  status: number; // 0=pending, 1=completed, 2=failed
-  totalScore: number;
-  scoreAbstract: number;
-  scoreStructure: number;
-  scoreRelevance: number;
-  scoreDepth: number;
-  scoreEvidence: number;
-  scoreLanguage: number;
-  suggestions: string[];
-}
-
-// --------------------------------------------------
-// Mock data (fallback when backend is not running)
-// --------------------------------------------------
-const mockResult: EssayResultData = {
-  submissionId: 1,
-  status: 1,
-  totalScore: 18.5,
-  scoreAbstract: 3.5,
-  scoreStructure: 3.0,
-  scoreRelevance: 4.0,
-  scoreDepth: 4.5,
-  scoreEvidence: 2.0,
-  scoreLanguage: 1.5,
-  suggestions: [
-    '摘要部分建议更加精炼，突出核心论点和项目背景，避免过多罗列细节。',
-    '正文技术深度良好，但论据支撑不够充分，建议增加具体的数据指标或项目案例。',
-    '语言表达总体流畅，但部分段落逻辑衔接不够紧密，建议增加过渡句。',
-  ],
-};
-
-// --------------------------------------------------
-// Dimension definitions
+// Dimension definitions (max values match grading rubric)
 // --------------------------------------------------
 const DIMENSIONS = [
-  { key: 'scoreAbstract', label: '摘要', max: 4 },
-  { key: 'scoreStructure', label: '结构', max: 4 },
-  { key: 'scoreRelevance', label: '相关性', max: 5 },
-  { key: 'scoreDepth', label: '技术深度', max: 6 },
-  { key: 'scoreEvidence', label: '论据', max: 3 },
-  { key: 'scoreLanguage', label: '语言', max: 3 },
+  { key: 'scoreAbstract', label: '摘要质量', max: 5 },
+  { key: 'scoreStructure', label: '结构完整性', max: 5 },
+  { key: 'scoreRelevance', label: '主题相关性', max: 5 },
+  { key: 'scoreDepth', label: '技术深度', max: 4 },
+  { key: 'scoreEvidence', label: '论据充实度', max: 3 },
+  { key: 'scoreLanguage', label: '语言流畅度', max: 3 },
 ] as const;
 
 // Suggestion badge colors
@@ -158,12 +123,12 @@ function ReportState({ data, onBack, onViewHistory }: {
   const isPassed = data.totalScore >= 15;
 
   const radarData = [
-    { subject: '摘要', score: data.scoreAbstract, fullMark: 4 },
-    { subject: '结构', score: data.scoreStructure, fullMark: 4 },
-    { subject: '相关性', score: data.scoreRelevance, fullMark: 5 },
-    { subject: '技术深度', score: data.scoreDepth, fullMark: 6 },
-    { subject: '论据', score: data.scoreEvidence, fullMark: 3 },
-    { subject: '语言', score: data.scoreLanguage, fullMark: 3 },
+    { subject: '摘要质量', score: data.scoreAbstract, fullMark: 5 },
+    { subject: '结构完整性', score: data.scoreStructure, fullMark: 5 },
+    { subject: '主题相关性', score: data.scoreRelevance, fullMark: 5 },
+    { subject: '技术深度', score: data.scoreDepth, fullMark: 4 },
+    { subject: '论据充实度', score: data.scoreEvidence, fullMark: 3 },
+    { subject: '语言流畅度', score: data.scoreLanguage, fullMark: 3 },
   ];
 
   return (
@@ -322,63 +287,43 @@ export function EssayResult() {
 
   const pollCount = useRef(0);
   const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
-  const fallbackTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const MAX_POLLS = 15;
 
   useEffect(() => {
-    const id = submissionId ?? '1';
+    const id = submissionId ?? '';
+    if (!id) {
+      setPageState('failed');
+      return;
+    }
 
     const fetchResult = async () => {
       try {
-        const res = await fetch(`http://localhost:8080/essay/result/${id}`);
-        if (!res.ok) throw new Error('HTTP error');
-        const json = await res.json();
-        const data: EssayResultData = json.data ?? json;
-
+        const data = await getEssayResult(id);
         if (data.status === 1) {
           clearInterval(intervalRef.current!);
-          clearTimeout(fallbackTimerRef.current!);
           setResultData(data);
           setPageState('completed');
         } else if (data.status === 2) {
           clearInterval(intervalRef.current!);
-          clearTimeout(fallbackTimerRef.current!);
           setPageState('failed');
         }
         // status 0 => keep polling
       } catch {
-        // Backend not running; fallback handled by timeout below
+        // Network error — keep polling until MAX_POLLS
       }
 
       pollCount.current += 1;
       if (pollCount.current >= MAX_POLLS) {
         clearInterval(intervalRef.current!);
-        clearTimeout(fallbackTimerRef.current!);
-        // Only show timeout if not already resolved
         setPageState((prev) => (prev === 'loading' ? 'timeout' : prev));
       }
     };
 
-    // Start polling every 2 seconds
     intervalRef.current = setInterval(fetchResult, 2000);
-    // Initial fetch immediately
     fetchResult();
-
-    // Fallback: if backend is unreachable, show mock data after 3 seconds
-    fallbackTimerRef.current = setTimeout(() => {
-      setPageState((prev) => {
-        if (prev === 'loading') {
-          setResultData(mockResult);
-          return 'completed';
-        }
-        return prev;
-      });
-      clearInterval(intervalRef.current!);
-    }, 3000);
 
     return () => {
       clearInterval(intervalRef.current!);
-      clearTimeout(fallbackTimerRef.current!);
     };
   }, [submissionId]);
 
