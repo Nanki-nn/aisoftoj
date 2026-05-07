@@ -6,8 +6,7 @@ import { Input } from './ui/input';
 import { Label } from './ui/label';
 import { Switch } from './ui/switch';
 import { Badge } from './ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter, DialogClose } from './ui/dialog';
-import { BookOpen, Clock, Shuffle, Target, FileText, GraduationCap } from 'lucide-react';
+import { BookOpen, Clock, Shuffle, Target, FileText, GraduationCap, X } from 'lucide-react';
 import { ExamConfig as ExamConfigType } from '../types/exam';
 import { BrandLogo } from './BrandLogo';
 import { subjects, getCategoriesBySubject, filterQuestions } from '../data/questions';
@@ -308,36 +307,45 @@ export function ExamConfig({ onStartExam, initialConfig = null }: ExamConfigProp
             {isPaperRestart ? '按当前模式重新开始' : '开始答题'}
           </Button>
 
-          {/* 模式选择对话框 */}
-          <Dialog open={showModeDialog} onOpenChange={setShowModeDialog}>
-            <DialogContent className="sm:max-w-md">
-              <DialogHeader>
-                <DialogTitle>选择答题模式</DialogTitle>
-                <DialogDescription>
-                  请选择你想要的答题模式
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter className="gap-2 sm:justify-center">
-                <DialogClose asChild>
-                  <Button 
-                    variant="outline" 
-                    onClick={() => startExamWithMode('practice')}
-                    className="flex-1"
-                  >
-                    <FileText className="w-4 h-4 mr-2" />
-                    取消（练习模式）
-                  </Button>
-                </DialogClose>
-                <Button 
-                  onClick={() => startExamWithMode('exam')}
-                  className="flex-1 bg-red-600 hover:bg-red-700"
+          {/* 模式选择弹窗（原生 fixed overlay） */}
+          {showModeDialog && (
+            <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+              <div
+                className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm"
+                onClick={() => setShowModeDialog(false)}
+              />
+              <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl sm:p-7">
+                <button
+                  onClick={() => setShowModeDialog(false)}
+                  className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+                  aria-label="关闭"
                 >
-                  <GraduationCap className="w-4 h-4 mr-2" />
-                  确定（考试模式）
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
+                  <X className="h-5 w-5" />
+                </button>
+                <h2 className="mb-6 pr-10 text-center text-2xl font-semibold text-slate-800">选择答题模式</h2>
+
+                <div className="grid grid-cols-2 gap-4">
+                  <button
+                    onClick={() => startExamWithMode('practice')}
+                    className="flex h-40 flex-col items-center justify-center rounded-xl border-2 border-blue-200 bg-blue-50 p-5 transition-all hover:-translate-y-0.5 hover:border-blue-500 hover:bg-blue-100 hover:shadow-lg"
+                  >
+                    <BookOpen className="mb-3 h-11 w-11 text-blue-600" />
+                    <div className="text-lg font-semibold text-slate-800">练习模式</div>
+                    <div className="mt-2 text-center text-sm text-slate-500">即时显示解析</div>
+                  </button>
+
+                  <button
+                    onClick={() => startExamWithMode('exam')}
+                    className="flex h-40 flex-col items-center justify-center rounded-xl border-2 border-orange-200 bg-orange-50 p-5 transition-all hover:-translate-y-0.5 hover:border-orange-500 hover:bg-orange-100 hover:shadow-lg"
+                  >
+                    <GraduationCap className="mb-3 h-11 w-11 text-orange-600" />
+                    <div className="text-lg font-semibold text-slate-800">考试模式</div>
+                    <div className="mt-2 text-center text-sm text-slate-500">交卷后查看</div>
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
     </div>

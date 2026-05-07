@@ -70,4 +70,29 @@ public class QuestionDTO {
 	 * 被作答次数
 	 */
 	private Integer readCt;
+
+	/**
+	 * 当前会话中的题目记录ID
+	 */
+	private Integer questionRecordId;
+
+	/**
+	 * 当前会话中的用户答案
+	 */
+	private String userAnswer;
+
+	/**
+	 * 当前会话中是否已提交答案
+	 */
+	private Boolean isSubmitted;
+
+	/**
+	 * 当前会话中是否回答正确
+	 */
+	private Boolean isCorrect;
+
+	/**
+	 * 当前会话中本题耗时（秒）
+	 */
+	private Integer spendTime;
 }

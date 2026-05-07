@@ -6,7 +6,7 @@
 
 ![GitHub Stars](https://img.shields.io/github/stars/Nanki-nn/aisoftoj?style=social)
 ![GitHub Forks](https://img.shields.io/github/forks/Nanki-nn/aisoftoj?style=social)
-![License](https://img.shields.io/badge/license-MIT-blue)
+[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
 ![Java](https://img.shields.io/badge/Java-8-orange)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-2.7-brightgreen)
 ![MyBatis-Plus](https://img.shields.io/badge/MyBatis--Plus-3.5-red)
@@ -184,8 +184,8 @@ server:
 spring:
   datasource:
     url: jdbc:mysql://localhost:3306/aisoftoj?useUnicode=true&characterEncoding=utf8&serverTimezone=Asia/Shanghai
-    username: root
-    password: abc123456
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
 ```
 
 #### 启动方式
@@ -213,6 +213,57 @@ npm run dev
 ```
 
 启动成功后，前端访问地址：**http://localhost:5173**
+
+### 4️⃣ 生产环境配置
+
+后端建议使用 `prod` profile，并通过环境变量注入敏感配置。仓库根目录提供了示例文件 [`.env.production.example`](/Users/bytedance/aisoftoj/.env.production.example)，前端示例文件位于 [`aisoftoj-front/.env.production.example`](/Users/bytedance/aisoftoj/aisoftoj-front/.env.production.example)。
+
+后端至少需要配置这些变量：
+
+```bash
+SPRING_PROFILES_ACTIVE=prod
+DB_URL=jdbc:mysql://127.0.0.1:3306/aisoftoj?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+DB_USERNAME=aisoftoj
+DB_PASSWORD=change-me
+AUTH_JWT_SECRET=replace-with-a-long-random-string
+CORS_ALLOWED_ORIGINS=https://your-frontend-domain.com
+```
+
+前端如果不是和后端同域部署，需要显式配置：
+
+```bash
+VITE_API_BASE_URL=https://your-api-domain.com
+```
+
+### 5️⃣ 生产构建与启动
+
+后端打包：
+
+```bash
+mvn -pl aisoftoj-backend -DskipTests package
+java -jar aisoftoj-backend/target/aisoftoj-backend-1.0.0.jar
+```
+
+前端构建：
+
+```bash
+cd aisoftoj-front
+npm install
+npm run build
+```
+
+推荐用 Nginx 做反向代理，把前端静态资源和后端接口放到同一域名下。
+
+### ✅ 上线前检查清单
+
+- 确认 `AUTH_JWT_SECRET` 已替换为高强度随机值，不使用默认开发值。
+- 确认 `CORS_ALLOWED_ORIGINS` 只包含正式前端域名，不保留 `localhost`。
+- 确认数据库账号不是 `root`，并已限制来源 IP 与最小权限。
+- 确认 `APP_LOG_LEVEL` 在生产环境为 `info` 或 `warn`，不要输出调试 SQL。
+- 确认 `CLAUDE_API_KEY` 已配置，或在前端关闭论文批改入口。
+- 确认 `uploads/` 目录已创建，并设置好磁盘配额、备份和访问策略。
+- 确认 HTTPS、域名、反向代理和前端 `VITE_API_BASE_URL` 配置一致。
+- 确认至少手工回归登录、开始答题、继续答题、交卷、错题本、论文批改这几条主流程。
 
 ### 🌐 在线体验
 

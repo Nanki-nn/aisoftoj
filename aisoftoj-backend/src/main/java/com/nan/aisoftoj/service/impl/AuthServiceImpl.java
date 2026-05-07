@@ -3,7 +3,10 @@ package com.nan.aisoftoj.service.impl;
 import cn.hutool.core.date.DateUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.crypto.digest.BCrypt;
+import cn.hutool.jwt.JWT;
+import cn.hutool.jwt.JWTUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.nan.aisoftoj.common.UnauthorizedException;
 import com.nan.aisoftoj.dto.AuthLoginRequest;
 import com.nan.aisoftoj.dto.AuthRegisterRequest;
 import com.nan.aisoftoj.dto.AuthResponse;
@@ -16,15 +19,21 @@ import com.nan.aisoftoj.service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.beans.factory.annotation.Value;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Date;
-import java.util.UUID;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.HashMap;
+import java.util.Map;
 
 @Service
 public class AuthServiceImpl implements AuthService {
 
-    private static final ConcurrentHashMap<String, Integer> TOKEN_STORE = new ConcurrentHashMap<>();
+    @Value("${auth.jwt.secret}")
+    private String jwtSecret;
+
+    @Value("${auth.jwt.expire-hours:168}")
+    private Long jwtExpireHours;
 
     @Autowired
     private UserMapper userMapper;
@@ -93,15 +102,17 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    public Integer getCurrentUserId(String token) {
+        return getUserIdByToken(token);
+    }
+
+    @Override
     public void logout(String token) {
-        if (StrUtil.isNotBlank(token)) {
-            TOKEN_STORE.remove(token);
-        }
+        // JWT 为无状态令牌，前端删除本地令牌即可完成退出。
     }
 
     private AuthResponse buildAuthResponse(User user) {
-        String token = UUID.randomUUID().toString().replace("-", "");
-        TOKEN_STORE.put(token, user.getId());
+        String token = createToken(user.getId());
         AuthResponse response = new AuthResponse();
         response.setToken(token);
         response.setUser(buildUserDTO(user));
@@ -137,13 +148,55 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private Integer getUserIdByToken(String token) {
+        String normalizedToken = normalizeToken(token);
+        if (StrUtil.isBlank(normalizedToken)) {
+            throw new UnauthorizedException("未登录或登录已过期");
+        }
+
+        byte[] secretBytes = getSecretBytes();
+        if (!JWTUtil.verify(normalizedToken, secretBytes)) {
+            throw new UnauthorizedException("未登录或登录已过期");
+        }
+
+        JWT jwt = JWTUtil.parseToken(normalizedToken);
+        Object expiresAt = jwt.getPayload("exp");
+        Object userId = jwt.getPayload("userId");
+        if (expiresAt == null || userId == null) {
+            throw new UnauthorizedException("未登录或登录已过期");
+        }
+
+        long expireAtMillis = Long.parseLong(String.valueOf(expiresAt));
+        if (expireAtMillis <= System.currentTimeMillis()) {
+            throw new UnauthorizedException("未登录或登录已过期");
+        }
+
+        return Integer.parseInt(String.valueOf(userId));
+    }
+
+    private String createToken(Integer userId) {
+        long expireAt = System.currentTimeMillis() + jwtExpireHours * 60 * 60 * 1000;
+        Map<String, Object> payload = new HashMap<>();
+        payload.put("userId", userId);
+        payload.put("exp", expireAt);
+        payload.put("iat", System.currentTimeMillis());
+        return JWTUtil.createToken(payload, getSecretBytes());
+    }
+
+    private byte[] getSecretBytes() {
+        if (StrUtil.isBlank(jwtSecret)) {
+            throw new IllegalStateException("JWT 密钥未配置");
+        }
+        return jwtSecret.getBytes(StandardCharsets.UTF_8);
+    }
+
+    private String normalizeToken(String token) {
         if (StrUtil.isBlank(token)) {
-            throw new IllegalArgumentException("未登录或登录已过期");
+            return null;
         }
-        Integer userId = TOKEN_STORE.get(token);
-        if (userId == null) {
-            throw new IllegalArgumentException("未登录或登录已过期");
+        String trimmed = token.trim();
+        if (trimmed.startsWith("Bearer ")) {
+            return trimmed.substring(7).trim();
         }
-        return userId;
+        return trimmed;
     }
 }

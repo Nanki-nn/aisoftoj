@@ -61,5 +61,10 @@ public class QuestionServiceImpl implements QuestionService {
         return questionMapper.selectQuestionsByPaperId(paperId);
     }
 
+    @Override
+    public Question getById(Integer questionId) {
+        return questionMapper.selectById(questionId);
+    }
+
 
 }

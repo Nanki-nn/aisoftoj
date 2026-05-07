@@ -8,7 +8,16 @@
         <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
         <outputRelativeToContentRoot value="true" />
         <module name="examapp" />
+      </profile>
+      <profile name="Annotation profile for aisoftoj" enabled="true">
+        <sourceOutputDir name="target/generated-sources/annotations" />
+        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
+        <outputRelativeToContentRoot value="true" />
+        <processorPath useClasspath="false">
+          <entry name="$MAVEN_REPOSITORY$/org/projectlombok/lombok/1.18.38/lombok-1.18.38.jar" />
+        </processorPath>
         <module name="aisoftoj-backend" />
+        <module name="aisoftoj-master" />
       </profile>
     </annotationProcessing>
   </component>
@@ -16,6 +25,7 @@
     <option name="ADDITIONAL_OPTIONS_OVERRIDE">
       <module name="aisoftoj" options="" />
       <module name="aisoftoj-backend" options="-parameters" />
+      <module name="aisoftoj-master" options="-parameters" />
       <module name="examapp" options="-parameters" />
     </option>
   </component>

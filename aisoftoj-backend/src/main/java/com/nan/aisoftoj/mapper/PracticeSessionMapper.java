@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.nan.aisoftoj.dto.PracticeHistoryDTO;
 import com.nan.aisoftoj.entity.PracticeSession;
 import org.apache.ibatis.annotations.Mapper;
+import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 
 import java.util.List;
@@ -29,6 +30,15 @@ public interface  PracticeSessionMapper extends BaseMapper<PracticeSession> {
             "FROM practice_session ps " +
             "JOIN paper p ON p.id = ps.paper_id " +
             "WHERE ps.user_id = #{userId} AND ps.is_deleted = 0 " +
-            "ORDER BY ps.create_time DESC, ps.id DESC")
-    List<PracticeHistoryDTO> selectPracticeHistoryByUserId(Integer userId);
+            "ORDER BY ps.create_time DESC, ps.id DESC " +
+            "LIMIT #{pageSize} OFFSET #{offset}")
+    List<PracticeHistoryDTO> selectPracticeHistoryByUserId(
+            @Param("userId") Integer userId,
+            @Param("pageSize") Integer pageSize,
+            @Param("offset") Integer offset);
+
+    @Select("SELECT COUNT(1) " +
+            "FROM practice_session ps " +
+            "WHERE ps.user_id = #{userId} AND ps.is_deleted = 0")
+    Long countPracticeHistoryByUserId(@Param("userId") Integer userId);
 }

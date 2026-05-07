@@ -70,8 +70,6 @@ public class EssayController {
     }
 
     private Long getCurrentUserId(HttpServletRequest request) {
-        String token = request.getHeader("Authorization");
-        String userId = authService.getCurrentUser(token).getId();
-        return Long.parseLong(userId);
+        return Long.valueOf(authService.getCurrentUserId(request.getHeader("Authorization")));
     }
 }

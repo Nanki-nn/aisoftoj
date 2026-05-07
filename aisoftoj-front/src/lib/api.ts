@@ -1,9 +1,11 @@
 import { ExamPaper } from '../data/examPapers';
-import { ExamSession, Question } from '../types/exam';
-import { PracticeRecord, PracticeSessionRecord } from '../types/record';
+import { ExamSession, Question, QuestionOption } from '../types/exam';
+import { PageResult, PracticeRecord, PracticeSessionRecord } from '../types/record';
 import { LoginForm, RegisterForm, User } from '../types/user';
 
-const API_BASE_URL = 'http://localhost:8080';
+const API_BASE_URL =
+  import.meta.env.VITE_API_BASE_URL ||
+  (import.meta.env.DEV ? 'http://localhost:8080' : '');
 
 type ApiResult<T> = {
   code: number;
@@ -17,6 +19,11 @@ type ApiError = {
   message?: string;
   path?: string;
   timestamp?: number;
+};
+
+type PageQuery = {
+  page?: number;
+  pageSize?: number;
 };
 
 type PaperDTO = {
@@ -35,9 +42,12 @@ type PaperDTO = {
 };
 
 type BackendOption = {
-  keyStr: string;
-  valueStr: string;
-  orderNum: number;
+  key?: string;
+  text?: string;
+  correct?: boolean;
+  keyStr?: string;
+  valueStr?: string;
+  orderNum?: number;
 };
 
 type BackendQuestionDTO = {
@@ -49,12 +59,19 @@ type BackendQuestionDTO = {
   analysis: string;
   questionType: number;
   difficulty: number;
+  questionRecordId?: number | null;
+  userAnswer?: string | null;
+  isSubmitted?: boolean | null;
+  isCorrect?: boolean | null;
+  spendTime?: number | null;
 };
 
 type StartSessionRes = {
   practiceSessionId: number;
   paperId: number;
   paperName: string;
+  status?: number;
+  startTime?: string | number;
   paper?: {
     subjectName?: string;
     paperCateId?: number;
@@ -67,6 +84,10 @@ type GetSessionRes = {
   id: number;
   paperId: number;
   paperName: string;
+  examMode?: string;
+  status?: number;
+  startTime?: string | number;
+  endTime?: string | number;
   paper?: {
     subjectName?: string;
     paperCateId?: number;
@@ -123,9 +144,58 @@ function parseCorrectAnswer(answer: string, type: Question['type']): string | st
   return answer;
 }
 
+function parseUserAnswer(answer: string | null | undefined, type: Question['type']): string | string[] | undefined {
+  if (!answer || !answer.trim()) {
+    return undefined;
+  }
+  if (type === 'multiple') {
+    return answer.split(',').map(item => item.trim()).filter(Boolean);
+  }
+  return answer.trim();
+}
+
+function parseOptionPayload(rawValue?: string): Partial<QuestionOption> | null {
+  if (!rawValue) {
+    return null;
+  }
+
+  try {
+    const payload = JSON.parse(rawValue);
+    if (payload && typeof payload === 'object') {
+      return {
+        key: typeof payload.key === 'string' ? payload.key : undefined,
+        text: typeof payload.text === 'string' ? payload.text : undefined,
+        correct: typeof payload.correct === 'boolean' ? payload.correct : undefined,
+      };
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function mapOption(option: BackendOption, index: number): QuestionOption {
+  const nestedOption = parseOptionPayload(option.valueStr || option.text);
+  const fallbackKey = String.fromCharCode(65 + index);
+  const key = nestedOption?.key || option.keyStr || option.key || fallbackKey;
+  const text = nestedOption?.text || option.valueStr || option.text || '';
+
+  return {
+    key,
+    text,
+    correct: nestedOption?.correct ?? option.correct,
+  };
+}
+
+function normalizeAnswerValue(answer: string): string {
+  return parseOptionPayload(answer)?.key || answer;
+}
+
 function mapQuestion(question: BackendQuestionDTO, paperCateId = 1): Question {
   const isMarkdown = paperCateId === 2 || paperCateId === 3;
   const type = isMarkdown ? 'essay' : mapQuestionType(question.questionType);
+  const userAnswer = parseUserAnswer(question.userAnswer, type);
   return {
     id: String(question.id),
     type,
@@ -134,16 +204,99 @@ function mapQuestion(question: BackendQuestionDTO, paperCateId = 1): Question {
     difficulty: mapDifficulty(question.difficulty),
     question: question.intro || question.name,
     isMarkdown,
-    options: question.options?.map(option => option.valueStr) ?? [],
+    options: question.options?.map(mapOption) ?? [],
     correctAnswer: parseCorrectAnswer(question.answer, type),
     explanation: question.analysis || '',
+    questionRecordId: question.questionRecordId ? String(question.questionRecordId) : undefined,
+    userAnswer,
+    isSubmitted: question.isSubmitted ?? undefined,
+    isCorrect: question.isCorrect ?? undefined,
+    spendTime: question.spendTime ?? undefined,
   };
 }
 
+function buildQueryString(params: Record<string, string | number | boolean | undefined>): string {
+  const searchParams = new URLSearchParams();
+  Object.entries(params).forEach(([key, value]) => {
+    if (value !== undefined) {
+      searchParams.set(key, String(value));
+    }
+  });
+  const query = searchParams.toString();
+  return query ? `?${query}` : '';
+}
+
+function buildAnswersFromQuestions(questions: Question[]): Record<string, string | string[]> {
+  return questions.reduce<Record<string, string | string[]>>((answers, question) => {
+    if (question.userAnswer !== undefined && !(Array.isArray(question.userAnswer) && question.userAnswer.length === 0)) {
+      answers[question.id] = question.userAnswer;
+    }
+    return answers;
+  }, {});
+}
+
+const SESSION_ANSWER_CACHE_PREFIX = 'aisoftoj:session-answers:';
+
+function getSessionAnswerCacheKey(sessionId: string): string {
+  return `${SESSION_ANSWER_CACHE_PREFIX}${sessionId}`;
+}
+
+function readCachedSessionAnswers(sessionId: string): Record<string, string | string[]> {
+  try {
+    const raw = localStorage.getItem(getSessionAnswerCacheKey(sessionId));
+    if (!raw) {
+      return {};
+    }
+    const parsed = JSON.parse(raw);
+    return parsed && typeof parsed === 'object' && !Array.isArray(parsed) ? parsed : {};
+  } catch {
+    return {};
+  }
+}
+
+function buildSessionAnswers(sessionId: string, questions: Question[]): Record<string, string | string[]> {
+  return {
+    ...readCachedSessionAnswers(sessionId),
+    ...buildAnswersFromQuestions(questions),
+  };
+}
+
+export function cachePracticeSessionAnswers(
+  sessionId: string,
+  answers: Record<string, string | string[]>
+): void {
+  try {
+    localStorage.setItem(getSessionAnswerCacheKey(sessionId), JSON.stringify(answers));
+  } catch {
+    // localStorage may be unavailable in private modes; backend persistence still handles normal cases.
+  }
+}
+
+function mapExamMode(mode?: string): ExamSession['examMode'] {
+  return mode === 'exam' || mode === '2' ? 'exam' : 'practice';
+}
+
+function parseServerDate(value?: string | number): Date | undefined {
+  if (value === undefined || value === null || value === '') {
+    return undefined;
+  }
+
+  const date = new Date(value);
+  return Number.isNaN(date.getTime()) ? undefined : date;
+}
+
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  const authToken = localStorage.getItem('authToken');
+  const defaultHeaders: HeadersInit = {
+    'Content-Type': 'application/json',
+  };
+  if (authToken && !(init?.headers && new Headers(init.headers).has('Authorization'))) {
+    defaultHeaders.Authorization = `Bearer ${authToken}`;
+  }
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
     headers: {
-      'Content-Type': 'application/json',
+      ...defaultHeaders,
       ...(init?.headers || {}),
     },
     ...init,
@@ -183,7 +336,7 @@ export async function registerByEmail(form: RegisterForm): Promise<AuthResponse>
 export async function fetchCurrentUser(token: string): Promise<User> {
   return request<User>('/auth/me', {
     headers: {
-      Authorization: token,
+      Authorization: `Bearer ${token}`,
     },
   });
 }
@@ -192,7 +345,7 @@ export async function logoutAuth(token: string): Promise<void> {
   await request('/auth/logout', {
     method: 'POST',
     headers: {
-      Authorization: token,
+      Authorization: `Bearer ${token}`,
     },
   });
 }
@@ -207,7 +360,7 @@ export async function fetchPapers(): Promise<ExamPaper[]> {
     category: mapPaperCate(paper.paperCateId),
     questionCount: paper.questionTotal || 0,
     lastUpdated: paper.updateTime || '',
-    viewCount: paper.readCt || 0,
+    practiceCount: paper.readCt || 0,
     status: paper.paperStatus || 'not_started',
     completedCount: paper.completedCount ?? paper.progress ?? 0,
     doingSessionId: paper.doingSessionId ? String(paper.doingSessionId) : null,
@@ -225,43 +378,75 @@ export async function startPaperSession(
       mode: examMode === 'exam' ? 2 : 1,
     }),
   });
+  const questions = data.questionList.map(q => mapQuestion(q, data.paper?.paperCateId ?? 1));
+  const sessionId = String(data.practiceSessionId);
 
   return {
-    id: String(data.practiceSessionId),
+    id: sessionId,
     paperId: String(data.paperId),
     paperName: data.paperName,
     subject: data.paper?.subjectName || data.paperName,
     category: mapPaperCate(data.paper?.paperCateId || 1),
-    questions: data.questionList.map(q => mapQuestion(q, data.paper?.paperCateId ?? 1)),
-    answers: {},
-    startTime: new Date(),
-    isCompleted: false,
+    questions,
+    answers: buildSessionAnswers(sessionId, questions),
+    startTime: parseServerDate(data.startTime) || new Date(),
+    isCompleted: data.status === 1,
     examMode,
   };
 }
 
-export async function fetchPracticeHistory(): Promise<PracticeSessionRecord[]> {
-  return request<PracticeSessionRecord[]>('/session/history');
+export async function fetchPracticeHistory(params: PageQuery = {}): Promise<PageResult<PracticeSessionRecord>> {
+  return request<PageResult<PracticeSessionRecord>>(
+    `/session/history${buildQueryString({
+      page: params.page,
+      pageSize: params.pageSize,
+    })}`
+  );
 }
 
-export async function fetchWrongQuestions(): Promise<PracticeRecord[]> {
-  return request<PracticeRecord[]>('/wrong-questions');
+export async function fetchWrongQuestions(params: PageQuery = {}): Promise<PageResult<PracticeRecord>> {
+  return request<PageResult<PracticeRecord>>(
+    `/wrong-questions${buildQueryString({
+      page: params.page,
+      pageSize: params.pageSize,
+    })}`
+  );
 }
 
 export async function continuePracticeSession(sessionId: string): Promise<ExamSession> {
   const data = await request<GetSessionRes>(`/session/${sessionId}`);
+  const questions = data.questionList.map(q => mapQuestion(q, data.paper?.paperCateId ?? 1));
+  const isCompleted = data.status === 1;
+  const resolvedSessionId = String(data.id);
   return {
-    id: String(data.id),
+    id: resolvedSessionId,
     paperId: String(data.paperId),
     paperName: data.paperName,
     subject: data.paper?.subjectName || data.paperName,
     category: mapPaperCate(data.paper?.paperCateId || 1),
-    questions: data.questionList.map(q => mapQuestion(q, data.paper?.paperCateId ?? 1)),
-    answers: {},
-    startTime: new Date(),
-    isCompleted: false,
-    examMode: 'practice',
+    questions,
+    answers: buildSessionAnswers(resolvedSessionId, questions),
+    startTime: parseServerDate(data.startTime) || new Date(),
+    endTime: parseServerDate(data.endTime),
+    isCompleted,
+    examMode: mapExamMode(data.examMode),
   };
+}
+
+export async function updatePracticeQuestionRecord(
+  questionRecordId: string,
+  userAnswer: string | string[],
+  spendTime = 0
+): Promise<void> {
+  await request(`/practice/session/question/record/${questionRecordId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({
+      userAnswer: Array.isArray(userAnswer)
+        ? userAnswer.map(normalizeAnswerValue).join(',')
+        : normalizeAnswerValue(userAnswer),
+      spendTime,
+    }),
+  });
 }
 
 export async function submitPracticeSession(
@@ -274,7 +459,9 @@ export async function submitPracticeSession(
       endTime: new Date().toISOString(),
       answers: Object.entries(answers).map(([questionId, userAnswer]) => ({
         questionId: Number(questionId),
-        userAnswer: Array.isArray(userAnswer) ? userAnswer.join(',') : userAnswer,
+        userAnswer: Array.isArray(userAnswer)
+          ? userAnswer.map(normalizeAnswerValue).join(',')
+          : normalizeAnswerValue(userAnswer),
         spendTime: 0,
       })),
     }),
@@ -332,19 +519,19 @@ export async function submitEssay(
 ): Promise<{ submissionId: number }> {
   return request<{ submissionId: number }>('/essay/submit', {
     method: 'POST',
-    headers: { Authorization: getAuthToken() },
+    headers: { Authorization: `Bearer ${getAuthToken()}` },
     body: JSON.stringify({ questionId, abstractText, content }),
   });
 }
 
 export async function getEssayResult(submissionId: string): Promise<EssayResultData> {
   return request<EssayResultData>(`/essay/result/${submissionId}`, {
-    headers: { Authorization: getAuthToken() },
+    headers: { Authorization: `Bearer ${getAuthToken()}` },
   });
 }
 
 export async function getEssayHistory(): Promise<EssayHistoryItem[]> {
   return request<EssayHistoryItem[]>('/essay/history', {
-    headers: { Authorization: getAuthToken() },
+    headers: { Authorization: `Bearer ${getAuthToken()}` },
   });
 }

@@ -1,5 +1,11 @@
 // 考试相关类型定义
 
+export interface QuestionOption {
+  key: string;
+  text: string;
+  correct?: boolean;
+}
+
 export interface Question {
   id: string;
   type: 'single' | 'multiple' | 'fill' | 'judge' | 'essay';
@@ -8,10 +14,15 @@ export interface Question {
   difficulty: 'easy' | 'medium' | 'hard';
   question: string;
   isMarkdown?: boolean;
-  options?: string[];
+  options?: Array<string | QuestionOption>;
   correctAnswer: string | string[];
   explanation: string;
   year?: number;
+  questionRecordId?: string;
+  userAnswer?: string | string[];
+  isSubmitted?: boolean;
+  isCorrect?: boolean | null;
+  spendTime?: number;
 }
 
 export interface ExamSession {

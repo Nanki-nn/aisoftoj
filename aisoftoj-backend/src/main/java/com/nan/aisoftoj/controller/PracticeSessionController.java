@@ -1,9 +1,12 @@
 package com.nan.aisoftoj.controller;
 
 import com.nan.aisoftoj.dto.*;
+import com.nan.aisoftoj.service.AuthService;
 import com.nan.aisoftoj.service.PracticeSessionService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
+
+import javax.servlet.http.HttpServletRequest;
 
 /**
  *  刷题会话
@@ -14,6 +17,9 @@ public class PracticeSessionController {
     @Autowired
     private PracticeSessionService practiceSessionService;
 
+    @Autowired
+    private AuthService authService;
+
      /**
      * 开始刷题会话
      * URI: /session/start
@@ -23,8 +29,10 @@ public class PracticeSessionController {
      * 返回：
      */
      @PostMapping("/session/start")
-     public ResultDTO<StartPracticeSessionRes> startPracticeSession(@RequestBody StartPracticeSessionReq startPracticeSessionReq) {
-        StartPracticeSessionRes res = practiceSessionService.startPracticeSession(startPracticeSessionReq);
+     public ResultDTO<StartPracticeSessionRes> startPracticeSession(@RequestBody StartPracticeSessionReq startPracticeSessionReq,
+                                                                   HttpServletRequest request) {
+        Integer userId = authService.getCurrentUserId(request.getHeader("Authorization"));
+        StartPracticeSessionRes res = practiceSessionService.startPracticeSession(userId, startPracticeSessionReq);
         return ResultDTO.success(res);
      }
 
@@ -36,8 +44,10 @@ public class PracticeSessionController {
      * 返回刷题会话详情
      */
     @GetMapping("/session/{sessionId}")
-    public ResultDTO<GETPracticeSessionRes> getPracticeSessionDetail(@PathVariable Integer sessionId) {
-        GETPracticeSessionRes paperRecordDetail = practiceSessionService.getPracticeSessionDetail(sessionId);
+    public ResultDTO<GETPracticeSessionRes> getPracticeSessionDetail(@PathVariable Integer sessionId,
+                                                                     HttpServletRequest request) {
+        Integer userId = authService.getCurrentUserId(request.getHeader("Authorization"));
+        GETPracticeSessionRes paperRecordDetail = practiceSessionService.getPracticeSessionDetail(userId, sessionId);
         return ResultDTO.success(paperRecordDetail);
      }
 
@@ -49,9 +59,12 @@ public class PracticeSessionController {
      * Method: POST
      */
     @PostMapping("/session/submit/{sessionId}")
-    public ResultDTO<PaperSubmitResponse> submitPracticeSession(@PathVariable Integer sessionId, @RequestBody PaperSubmitRequest request) {
+    public ResultDTO<PaperSubmitResponse> submitPracticeSession(@PathVariable Integer sessionId,
+                                                                @RequestBody PaperSubmitRequest request,
+                                                                HttpServletRequest httpRequest) {
+        Integer userId = authService.getCurrentUserId(httpRequest.getHeader("Authorization"));
 
-        PaperSubmitResponse response = practiceSessionService.submitPracticeSession(sessionId,request);
+        PaperSubmitResponse response = practiceSessionService.submitPracticeSession(userId, sessionId, request);
         return ResultDTO.success(response);
     }
 

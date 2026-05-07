@@ -27,15 +27,17 @@ public class PaperServiceImpl implements PaperService {
 
 
     @Override
-    public List<PaperDTO> getAllPapers() {
+    public List<PaperDTO> getAllPapers(Integer userId) {
         //1.查询所有试卷基本信息
         List<Paper> papers = paperMapper.selectList(Wrappers.lambdaQuery(Paper.class)
                 .eq(Paper::getIsDeleted, false));
 
         List<PracticeSession> sessions = practiceSessionMapper.selectList(Wrappers.lambdaQuery(PracticeSession.class)
                 .eq(PracticeSession::getIsDeleted, false)
-                .eq(PracticeSession::getUserId, 1));
+                .eq(PracticeSession::getUserId, userId));
 
+        Map<Integer, Long> sessionCountByPaperId = sessions.stream()
+                .collect(Collectors.groupingBy(PracticeSession::getPaperId, Collectors.counting()));
         Map<Integer, Integer> doingSessionIdByPaperId = sessions.stream()
                 .filter(session -> PracticeSessionState.DOING.getCode() == session.getStatus())
                 .collect(Collectors.toMap(
@@ -66,7 +68,7 @@ public class PaperServiceImpl implements PaperService {
             dto.setName(paper.getName());
             dto.setOrderNum(paper.getOrderNum());
             dto.setQuestionTotal(paper.getQuestionTotal());
-            dto.setReadCt(paper.getReadCt());
+            dto.setReadCt(sessionCountByPaperId.getOrDefault(paper.getId(), 0L).intValue());
             dto.setIsDeleted(paper.getIsDeleted());
             dto.setCreateTime(paper.getCreateTime());
             dto.setUpdateTime(paper.getUpdateTime());
@@ -90,7 +92,7 @@ public class PaperServiceImpl implements PaperService {
     }
 
     @Override
-    public List<PaperDTO> getPapers(Integer subjectId, Integer cateId) {
+    public List<PaperDTO> getPapers(Integer userId, Integer subjectId, Integer cateId) {
 
         //1.查询试卷基本信息
         List<Paper> papers = paperMapper.selectList(Wrappers.lambdaQuery(Paper.class)
@@ -100,8 +102,10 @@ public class PaperServiceImpl implements PaperService {
 
         List<PracticeSession> sessions = practiceSessionMapper.selectList(Wrappers.lambdaQuery(PracticeSession.class)
                 .eq(PracticeSession::getIsDeleted, false)
-                .eq(PracticeSession::getUserId, 1));
+                .eq(PracticeSession::getUserId, userId));
 
+        Map<Integer, Long> sessionCountByPaperId = sessions.stream()
+                .collect(Collectors.groupingBy(PracticeSession::getPaperId, Collectors.counting()));
         Map<Integer, Integer> doingSessionIdByPaperId = sessions.stream()
                 .filter(session -> PracticeSessionState.DOING.getCode() == session.getStatus())
                 .collect(Collectors.toMap(
@@ -132,7 +136,7 @@ public class PaperServiceImpl implements PaperService {
             dto.setName(paper.getName());
             dto.setOrderNum(paper.getOrderNum());
             dto.setQuestionTotal(paper.getQuestionTotal());
-            dto.setReadCt(paper.getReadCt());
+            dto.setReadCt(sessionCountByPaperId.getOrDefault(paper.getId(), 0L).intValue());
             dto.setIsDeleted(paper.getIsDeleted());
             dto.setCreateTime(paper.getCreateTime());
             dto.setUpdateTime(paper.getUpdateTime());
