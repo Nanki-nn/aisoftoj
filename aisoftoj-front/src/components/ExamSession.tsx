@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
+import { useSearchParams } from 'react-router-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
-import { Progress } from './ui/progress';
 import { Badge } from './ui/badge';
 import { Alert, AlertDescription } from './ui/alert';
 import { Checkbox } from './ui/checkbox';
@@ -21,10 +21,9 @@ import {
   AlertCircle,
   Timer,
   BookOpen,
-  ArrowLeft
+  GraduationCap
 } from 'lucide-react';
-import { BrandLogo } from './BrandLogo';
-import { ExamSession as ExamSessionType, Question } from '../types/exam';
+import { ExamSession as ExamSessionType, Question, QuestionOption } from '../types/exam';
 
 function sanitizeQuestionHtml(html: string): string {
   if (!html) {
@@ -37,6 +36,58 @@ function sanitizeQuestionHtml(html: string): string {
     .replace(/\son\w+="[^"]*"/gi, '')
     .replace(/\son\w+='[^']*'/gi, '')
     .replace(/javascript:/gi, '');
+}
+
+function parseOptionString(option: string): QuestionOption | null {
+  try {
+    const payload = JSON.parse(option);
+    if (payload && typeof payload === 'object') {
+      const key = typeof payload.key === 'string' ? payload.key : '';
+      const text = typeof payload.text === 'string' ? payload.text : '';
+      if (key || text) {
+        return {
+          key,
+          text,
+          correct: typeof payload.correct === 'boolean' ? payload.correct : undefined,
+        };
+      }
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function getOptionValue(option: string | QuestionOption): string {
+  if (typeof option === 'string') {
+    const parsed = parseOptionString(option);
+    return parsed?.key || option;
+  }
+
+  return option.key;
+}
+
+function getOptionText(option: string | QuestionOption): string {
+  if (typeof option === 'string') {
+    const parsed = parseOptionString(option);
+    return parsed?.text || option;
+  }
+
+  return option.text;
+}
+
+function getOptionLabel(option: string | QuestionOption, index: number): string {
+  if (typeof option === 'string') {
+    const parsed = parseOptionString(option);
+    return parsed?.key || String.fromCharCode(65 + index);
+  }
+
+  return option.key || String.fromCharCode(65 + index);
+}
+
+function normalizeAnswerValue(answer: string): string {
+  return parseOptionString(answer)?.key || answer.trim();
 }
 
 interface ExamSessionProps {
@@ -54,6 +105,7 @@ export function ExamSession({
 }: ExamSessionProps) {
   const questionCardRef = useRef<HTMLDivElement | null>(null);
   const hasMountedRef = useRef(false);
+  const [searchParams] = useSearchParams();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0); // 已用时间（秒）
@@ -65,7 +117,14 @@ export function ExamSession({
   const [showAnswer, setShowAnswer] = useState(false);
 
   const currentQuestion = session.questions[currentQuestionIndex];
-  const progress = ((currentQuestionIndex + 1) / session.questions.length) * 100;
+  const isReadOnly = session.isCompleted;
+  const shouldRevealAnswer = isReadOnly || session.examMode === 'practice';
+  const modeLabel = isReadOnly ? '已完成' : (shouldRevealAnswer ? '练习模式' : '考试模式');
+  const modeBadgeClass = isReadOnly
+    ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+    : shouldRevealAnswer
+    ? 'bg-blue-100 text-blue-700 border border-blue-200'
+    : 'bg-amber-100 text-amber-800 border border-amber-200';
   const answeredCount = session.questions.filter((question) => {
     const answer = session.answers[question.id];
     if (Array.isArray(answer)) return answer.length > 0;
@@ -76,8 +135,21 @@ export function ExamSession({
   const ITEMS_PER_PAGE = 15;
   const totalPages = Math.ceil(session.questions.length / ITEMS_PER_PAGE);
 
+  useEffect(() => {
+    const questionId = searchParams.get('questionId');
+    if (!questionId) {
+      return;
+    }
+
+    const targetIndex = session.questions.findIndex(question => question.id === questionId);
+    if (targetIndex >= 0) {
+      setCurrentQuestionIndex(targetIndex);
+    }
+  }, [searchParams, session.questions]);
+
   // 计时器逻辑
   useEffect(() => {
+    if (isReadOnly) return;
     if (!session.timeLimit) return;
 
     const totalSeconds = session.timeLimit * 60;
@@ -102,11 +174,17 @@ export function ExamSession({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [session.timeLimit, session.startTime, onCompleteExam]);
+  }, [isReadOnly, session.timeLimit, session.startTime, onCompleteExam]);
 
   // 已用时间计时器（从0开始）
   useEffect(() => {
     const startTime = session.startTime.getTime();
+    const endTime = session.endTime?.getTime();
+    if (isReadOnly) {
+      const elapsed = Math.max(0, Math.floor(((endTime || startTime) - startTime) / 1000));
+      setElapsedTime(elapsed);
+      return;
+    }
     
     // 初始化已用时间
     const initialElapsed = Math.floor((Date.now() - startTime) / 1000);
@@ -119,7 +197,7 @@ export function ExamSession({
     }, 1000);
     
     return () => clearInterval(timer);
-  }, [session.startTime]);
+  }, [isReadOnly, session.startTime, session.endTime]);
 
   // 自动切换答题卡页面（仅当题目切换时）
   useEffect(() => {
@@ -143,9 +221,9 @@ export function ExamSession({
       setFillDraft('');
     }
     
-    // 切换题目时重置显示答案状态
-    setShowAnswer(false);
-  }, [currentQuestion.id, currentQuestion.type, session.answers]);
+    // 查看已完成记录时默认展示解析；正常刷题切题时收起“查看答案”状态
+    setShowAnswer(isReadOnly);
+  }, [currentQuestion.id, currentQuestion.type, isReadOnly, session.answers]);
 
   useEffect(() => {
     if (!hasMountedRef.current) {
@@ -169,6 +247,9 @@ export function ExamSession({
   };
 
   const handleAnswerChange = (answer: string | string[]) => {
+    if (isReadOnly) {
+      return;
+    }
     onUpdateAnswer(currentQuestion.id, answer);
   };
 
@@ -193,6 +274,9 @@ export function ExamSession({
   };
 
   const handleSubmit = () => {
+    if (isReadOnly) {
+      return;
+    }
     if (answeredCount < session.questions.length) {
       setShowConfirmSubmit(true);
     } else {
@@ -212,12 +296,6 @@ export function ExamSession({
 
   const jumpToQuestion = (index: number) => {
     setCurrentQuestionIndex(index);
-  };
-
-  // 计算已用时间
-  const getElapsedTime = () => {
-    const elapsed = Math.floor((Date.now() - session.startTime.getTime()) / 1000);
-    return formatTime(elapsed);
   };
 
   // 答题卡分页索引计算
@@ -244,56 +322,77 @@ export function ExamSession({
 
   // 验证答案是否正确
   const isAnswerCorrect = (userAnswer: string | string[], correctAnswer: string | string[]): boolean => {
+    const normalizeAnswers = (answer: string | string[]) =>
+      (Array.isArray(answer) ? answer : [answer])
+        .map(normalizeAnswerValue)
+        .filter(Boolean);
+
     if (Array.isArray(userAnswer) && Array.isArray(correctAnswer)) {
+      const normalizedUserAnswer = normalizeAnswers(userAnswer);
+      const normalizedCorrectAnswer = normalizeAnswers(correctAnswer);
       // 多选题：比较数组内容是否相同（忽略顺序）
-      if (userAnswer.length !== correctAnswer.length) return false;
-      return userAnswer.every(answer => correctAnswer.includes(answer)) && 
-             correctAnswer.every(answer => userAnswer.includes(answer));
+      if (normalizedUserAnswer.length !== normalizedCorrectAnswer.length) return false;
+      return normalizedUserAnswer.every(answer => normalizedCorrectAnswer.includes(answer)) &&
+             normalizedCorrectAnswer.every(answer => normalizedUserAnswer.includes(answer));
     } else if (!Array.isArray(userAnswer) && !Array.isArray(correctAnswer)) {
       // 单选题、判断题、填空题
-      return userAnswer === correctAnswer;
+      return normalizeAnswerValue(userAnswer) === normalizeAnswerValue(correctAnswer);
     }
     return false;
   };
 
+  const formatAnswer = (answer: string | string[]): string => {
+    if (Array.isArray(answer)) {
+      return answer.map(normalizeAnswerValue).join(', ');
+    }
+    return normalizeAnswerValue(answer);
+  };
+
   const renderQuestionContent = () => {
     const currentAnswer = session.answers[currentQuestion.id];
-    const optionLabels = ['A', 'B', 'C', 'D', 'E', 'F'];
     const isAnswered = !!currentAnswer;
-    const isCorrect = isAnswered ? isAnswerCorrect(currentAnswer, currentQuestion.correctAnswer) : false;
+    const isCorrect = shouldRevealAnswer && isAnswered ? isAnswerCorrect(currentAnswer, currentQuestion.correctAnswer) : false;
 
     switch (currentQuestion.type) {
       case 'single':
       case 'judge':
         return (
-          <RadioGroup 
-            value={currentAnswer as string || ''} 
-            onValueChange={handleAnswerChange}
-            className="!grid !gap-4"
-          >
+                  <RadioGroup
+                    value={normalizeAnswerValue(currentAnswer as string || '')}
+                    onValueChange={handleAnswerChange}
+                    disabled={isReadOnly}
+                    className="!grid !gap-4"
+                  >
             {currentQuestion.options?.map((option, index) => {
-              const isSelected = currentAnswer === option;
-              const isCorrectOption = option === currentQuestion.correctAnswer;
-              const isWrongSelected = isSelected && !isCorrect;
-              
+              const optionValue = getOptionValue(option);
+              const optionText = getOptionText(option);
+              const optionLabel = getOptionLabel(option, index);
+              const isSelected = normalizeAnswerValue(currentAnswer as string || '') === optionValue;
+              const correctOptions = Array.isArray(currentQuestion.correctAnswer)
+                ? currentQuestion.correctAnswer
+                : [currentQuestion.correctAnswer];
+              const isCorrectOption = shouldRevealAnswer && correctOptions.map(normalizeAnswerValue).includes(optionValue);
+
               return (
-                <Label 
-                  key={index} 
-                  htmlFor={`option-${index}`} 
+                <Label
+                  key={optionValue || index}
+                  htmlFor={`option-${index}`}
                   className={`
                     flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all
-                    ${isSelected 
-                      ? (isCorrect 
+                    ${isSelected
+                      ? (!shouldRevealAnswer
+                          ? 'bg-blue-50 border-blue-500 text-blue-900'
+                          : isCorrect
                           ? 'bg-green-50 border-green-500 text-green-900' 
                           : 'bg-red-50 border-red-500 text-red-900')
-                      : (isAnswered && isCorrectOption
+                      : (shouldRevealAnswer && isAnswered && isCorrectOption
                           ? 'bg-green-50 border-green-300 text-green-800'
                           : 'bg-white border-slate-200 hover:border-blue-300 hover:bg-blue-50')
                     }
                   `}
                 >
-                  <RadioGroupItem value={option} id={`option-${index}`} />
-                  <span className="flex-1 leading-relaxed">{optionLabels[index]}. {option}</span>
+                  <RadioGroupItem value={optionValue} id={`option-${index}`} />
+                  <span className="flex-1 leading-relaxed">{optionLabel}. {optionText}</span>
                 </Label>
               );
             })}
@@ -303,11 +402,12 @@ export function ExamSession({
       case 'multiple':
         const committedMultipleAnswers = Array.isArray(currentAnswer) ? currentAnswer : [];
         const isMultipleAnswered = committedMultipleAnswers.length > 0;
-        const isMultipleCorrect = isMultipleAnswered ? isAnswerCorrect(committedMultipleAnswers, currentQuestion.correctAnswer) : false;
+        const isMultipleCorrect = shouldRevealAnswer && isMultipleAnswered ? isAnswerCorrect(committedMultipleAnswers, currentQuestion.correctAnswer) : false;
         const correctOptions = Array.isArray(currentQuestion.correctAnswer) ? currentQuestion.correctAnswer : [currentQuestion.correctAnswer];
+        const normalizedCommittedAnswers = committedMultipleAnswers.map(normalizeAnswerValue);
         const hasDraftChanges =
-          multipleDraft.length !== committedMultipleAnswers.length ||
-          multipleDraft.some((answer) => !committedMultipleAnswers.includes(answer));
+          multipleDraft.length !== normalizedCommittedAnswers.length ||
+          multipleDraft.some((answer) => !normalizedCommittedAnswers.includes(normalizeAnswerValue(answer)));
         
         return (
           <div className="grid gap-4">
@@ -317,47 +417,57 @@ export function ExamSession({
               </AlertDescription>
             </Alert>
             {currentQuestion.options?.map((option, index) => {
-              const isSelected = multipleDraft.includes(option);
-              const isCorrectOption = correctOptions.includes(option);
+              const optionValue = getOptionValue(option);
+              const optionText = getOptionText(option);
+              const optionLabel = getOptionLabel(option, index);
+              const normalizedCorrectOptions = correctOptions.map(normalizeAnswerValue);
+              const isSelected = multipleDraft.map(normalizeAnswerValue).includes(optionValue);
+              const isCorrectOption = shouldRevealAnswer && normalizedCorrectOptions.includes(optionValue);
               
               return (
                 <Label
-                  key={index}
+                  key={optionValue || index}
                   htmlFor={`option-${index}`}
                   className={`
                     flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all
                     ${isSelected 
-                      ? (isMultipleCorrect 
+                      ? (!shouldRevealAnswer
+                          ? 'bg-blue-50 border-blue-500 text-blue-900'
+                          : isMultipleCorrect
                           ? 'bg-green-50 border-green-500 text-green-900' 
                           : 'bg-red-50 border-red-500 text-red-900')
-                      : (isMultipleAnswered && isCorrectOption
+                      : (shouldRevealAnswer && isMultipleAnswered && isCorrectOption
                           ? 'bg-green-50 border-green-300 text-green-800'
                           : 'bg-white border-slate-200 hover:border-blue-300 hover:bg-blue-50')
                     }
                   `}
                 >
-                  <Checkbox
-                    id={`option-${index}`}
-                    checked={isSelected}
-                    onCheckedChange={(checked) => {
-                      if (checked) {
-                        if (!multipleDraft.includes(option)) {
-                          setMultipleDraft([...multipleDraft, option]);
+                    <Checkbox
+                      id={`option-${index}`}
+                      checked={isSelected}
+                      disabled={isReadOnly}
+                      onCheckedChange={(checked) => {
+                        if (isReadOnly) {
+                          return;
+                        }
+                        if (checked) {
+                        if (!multipleDraft.map(normalizeAnswerValue).includes(optionValue)) {
+                          setMultipleDraft([...multipleDraft, optionValue]);
                         }
                       } else {
-                        setMultipleDraft(multipleDraft.filter(a => a !== option));
+                        setMultipleDraft(multipleDraft.filter(a => normalizeAnswerValue(a) !== optionValue));
                       }
                     }}
                   />
-                  <span className="flex-1 leading-relaxed">{optionLabels[index]}. {option}</span>
+                  <span className="flex-1 leading-relaxed">{optionLabel}. {optionText}</span>
                 </Label>
               );
             })}
             <div className="flex flex-wrap items-center gap-3 pt-2">
-              <Button onClick={handleConfirmMultipleAnswer} className="bg-blue-600 hover:bg-blue-700">
+              <Button onClick={handleConfirmMultipleAnswer} disabled={isReadOnly} className="bg-blue-600 hover:bg-blue-700">
                 {isMultipleAnswered ? '更新答案' : '确认答案'}
               </Button>
-              <Button variant="outline" onClick={() => setMultipleDraft(committedMultipleAnswers)}>
+              <Button variant="outline" onClick={() => setMultipleDraft(committedMultipleAnswers)} disabled={isReadOnly}>
                 撤销修改
               </Button>
               <div className="text-sm text-slate-500">
@@ -372,6 +482,7 @@ export function ExamSession({
         return (
           <Input
             value={fillDraft}
+            disabled={isReadOnly}
             onChange={(e) => {
               setFillDraft(e.target.value);
               handleAnswerChange(e.target.value);
@@ -385,6 +496,7 @@ export function ExamSession({
         return (
           <Textarea
             value={fillDraft}
+            disabled={isReadOnly}
             onChange={(e) => {
               setFillDraft(e.target.value);
               handleAnswerChange(e.target.value);
@@ -401,20 +513,21 @@ export function ExamSession({
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* 顶部导航栏 */}
-      <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
+      <div className="border-b border-slate-200 bg-white/80">
         <div className="max-w-7xl mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <BrandLogo />
-              <span className="text-slate-300">|</span>
-              <Button variant="ghost" size="sm" onClick={onBackToConfig} className="flex items-center gap-1 text-slate-600">
-                首页
-              </Button>
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <Button variant="ghost" size="sm" onClick={onBackToConfig} className="w-fit text-slate-600">
+              首页
+            </Button>
+            <div className="flex flex-col gap-1 sm:items-center">
+              <h1 className="text-lg text-slate-800">
+                {session.subject} - {session.category}
+              </h1>
+              <Badge className={modeBadgeClass}>
+                <GraduationCap className="h-3.5 w-3.5" />
+                {modeLabel}
+              </Badge>
             </div>
-            <h1 className="text-lg text-slate-800">
-              {session.subject} - {session.category}
-            </h1>
             {timeLeft !== null && (
               <div className={`flex items-center gap-2 px-3 py-1 rounded-lg ${
                 timeLeft < 300 ? 'bg-red-100 text-red-700' : 'bg-slate-100 text-slate-700'
@@ -432,52 +545,6 @@ export function ExamSession({
           {/* 左侧：题目区域 */}
           <div ref={questionCardRef} className="lg:col-span-2">
             <Card className="bg-white shadow-sm border border-slate-200">
-              <CardHeader className="border-b border-slate-100 pb-4">
-                <div className="space-y-3">
-                  <h2 className="text-xl text-slate-800">
-                    {currentQuestion.year ? `${currentQuestion.year}年` : ''}
-                    {session.subject}真题 -&gt; {session.category}
-                  </h2>
-                  
-                  {/* 试卷信息 */}
-                  <div className="flex flex-wrap gap-4 text-sm">
-                    <div className="flex items-center gap-2">
-                      <span className="text-slate-500">试卷信息：</span>
-                      <Badge variant="secondary" className="bg-green-100 text-green-700">
-                        做{answeredCount}题
-                      </Badge>
-                      <Badge variant="outline">
-                        查看知识
-                      </Badge>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-slate-500">总题数：{session.questions.length}</span>
-                      <span className="text-slate-500">已做：{answeredCount}</span>
-                      <Badge variant="secondary">未做：{session.questions.length - answeredCount}</Badge>
-                    </div>
-                  </div>
-
-                  {/* 本题信息 */}
-                  <div className="flex flex-wrap gap-4 text-sm">
-                    <div className="flex items-center gap-2">
-                      <span className="text-slate-500">本题信息：</span>
-                      <Badge variant="secondary" className="bg-blue-100 text-blue-700">
-                        了解即可
-                      </Badge>
-                      <span className="text-slate-600">
-                        {currentQuestionIndex + 1}题-{currentQuestion.type === 'single' ? '单选' : currentQuestion.type === 'multiple' ? '多选' : currentQuestion.type === 'judge' ? '判断' : '填空'}-这是较容易的题
-                      </span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <span className="text-slate-500">
-                        进度：{answeredCount}/{session.questions.length}
-                      </span>
-                      <span className="text-slate-500">用时：{getElapsedTime()}</span>
-                    </div>
-                  </div>
-                </div>
-              </CardHeader>
-
               <CardContent className="pt-6">
                 {/* 题目内容 */}
                 <div className="space-y-6">
@@ -489,11 +556,22 @@ export function ExamSession({
                     <Badge variant="secondary">
                       {currentQuestion.type === 'single' ? '单选题' : currentQuestion.type === 'multiple' ? '多选题' : currentQuestion.type === 'judge' ? '判断题' : '填空题'}
                     </Badge>
-                    {session.answers[currentQuestion.id] && (
-                      <Badge className={isAnswerCorrect(session.answers[currentQuestion.id], currentQuestion.correctAnswer) ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}>
-                        {isAnswerCorrect(session.answers[currentQuestion.id], currentQuestion.correctAnswer) ? '已答对' : '已作答'}
+                    {session.answers[currentQuestion.id] && (() => {
+                      const currentAnswerCorrect = shouldRevealAnswer
+                        ? isAnswerCorrect(session.answers[currentQuestion.id], currentQuestion.correctAnswer)
+                        : false;
+                      return (
+                      <Badge className={
+                        !shouldRevealAnswer
+                          ? 'bg-blue-100 text-blue-700'
+                          : currentAnswerCorrect
+                            ? 'bg-green-100 text-green-700'
+                            : 'bg-red-100 text-red-700'
+                      }>
+                        {shouldRevealAnswer && currentAnswerCorrect ? '已答对' : '已作答'}
                       </Badge>
-                    )}
+                      );
+                    })()}
                     {markedQuestions.has(currentQuestionIndex) && (
                       <Badge className="bg-orange-100 text-orange-700">已标记</Badge>
                     )}
@@ -568,7 +646,7 @@ export function ExamSession({
 
                 {/* 练字模式下的解析显示 */}
                 {/* 练习模式下的提示和解析 */}
-                {session.examMode === 'practice' && (
+                {shouldRevealAnswer && (
                   <>
                     {/* 已答题时显示答案解析 */}
                     {session.answers[currentQuestion.id] && (
@@ -602,10 +680,7 @@ export function ExamSession({
                               }`}>
                                 <span className="font-medium">你的答案：</span>
                                 <span className="ml-2">
-                                  {Array.isArray(session.answers[currentQuestion.id]) 
-                                    ? (session.answers[currentQuestion.id] as string[]).join(', ')
-                                    : session.answers[currentQuestion.id]
-                                  }
+                                  {formatAnswer(session.answers[currentQuestion.id])}
                                 </span>
                               </div>
                               <div className={`${
@@ -615,10 +690,7 @@ export function ExamSession({
                               }`}>
                                 <span className="font-medium">正确答案：</span>
                                 <span className="ml-2">
-                                  {Array.isArray(currentQuestion.correctAnswer) 
-                                    ? currentQuestion.correctAnswer.join(', ')
-                                    : currentQuestion.correctAnswer
-                                  }
+                                  {formatAnswer(currentQuestion.correctAnswer)}
                                 </span>
                               </div>
                             </div>
@@ -657,10 +729,7 @@ export function ExamSession({
                             <div className="text-blue-800">
                               <span className="font-medium">正确答案：</span>
                               <span className="ml-2">
-                                {Array.isArray(currentQuestion.correctAnswer) 
-                                  ? currentQuestion.correctAnswer.join(', ')
-                                  : currentQuestion.correctAnswer
-                                }
+                                {formatAnswer(currentQuestion.correctAnswer)}
                               </span>
                             </div>
                           </div>
@@ -718,16 +787,14 @@ export function ExamSession({
                     const isCurrent = questionIndex === currentQuestionIndex;
                     const isMarked = markedQuestions.has(questionIndex);
                     
-                    // essay 类型无法自动判断正误
-                    const canAutoGrade = question.type !== 'essay';
-                    const isCorrect = isAnswered && canAutoGrade ? isAnswerCorrect(userAnswer, question.correctAnswer) : false;
+                    const canRevealCorrectness = shouldRevealAnswer && question.type !== 'essay';
+                    const isCorrect = isAnswered && canRevealCorrectness ? isAnswerCorrect(userAnswer, question.correctAnswer) : false;
 
                     let buttonClasses = 'w-full aspect-square rounded text-sm transition-all font-medium flex items-center justify-center min-h-[32px] ';
 
                     // 背景和文字颜色
                     if (isAnswered) {
-                      if (!canAutoGrade) {
-                        // essay 类型：已答但不判断正误，显示蓝色
+                      if (!canRevealCorrectness) {
                         buttonClasses += 'bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 ';
                       } else if (isCorrect) {
                         buttonClasses += 'bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 ';
@@ -796,14 +863,18 @@ export function ExamSession({
                       <span className="inline-block h-3 w-3 rounded border border-slate-300 bg-white"></span>
                       未答
                     </div>
-                    <div className="flex items-center gap-2 text-slate-600">
-                      <span className="inline-block h-3 w-3 rounded border border-green-200 bg-green-50"></span>
-                      正确
-                    </div>
-                    <div className="flex items-center gap-2 text-slate-600">
-                      <span className="inline-block h-3 w-3 rounded border border-red-200 bg-red-50"></span>
-                      错误
-                    </div>
+                    {shouldRevealAnswer && (
+                      <>
+                        <div className="flex items-center gap-2 text-slate-600">
+                          <span className="inline-block h-3 w-3 rounded border border-green-200 bg-green-50"></span>
+                          正确
+                        </div>
+                        <div className="flex items-center gap-2 text-slate-600">
+                          <span className="inline-block h-3 w-3 rounded border border-red-200 bg-red-50"></span>
+                          错误
+                        </div>
+                      </>
+                    )}
                     <div className="flex items-center gap-2 text-slate-600">
                       <span className="inline-block h-3 w-3 rounded border border-blue-200 bg-blue-50"></span>
                       已答
@@ -821,7 +892,7 @@ export function ExamSession({
                     <span className="text-slate-600">已答题：</span>
                     <span className="text-slate-800">{answeredCount}</span>
                   </div>
-                  {answeredCount > 0 && (
+                  {shouldRevealAnswer && answeredCount > 0 && (
                     <>
                       <div className="flex justify-between">
                         <span className="text-slate-600">正确：</span>
@@ -854,14 +925,16 @@ export function ExamSession({
                 </div>
 
                 {/* 交卷按钮 */}
-                <div className="mt-4 pt-4 border-t border-slate-100">
-                  <Button
-                    onClick={handleSubmit}
-                    className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2"
-                  >
-                    交卷
-                  </Button>
-                </div>
+                {!isReadOnly && (
+                  <div className="mt-4 pt-4 border-t border-slate-100">
+                    <Button
+                      onClick={handleSubmit}
+                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2"
+                    >
+                      交卷
+                    </Button>
+                  </div>
+                )}
               </CardContent>
             </Card>
           </div>

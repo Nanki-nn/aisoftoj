@@ -8,4 +8,6 @@ import lombok.Data;
 public class UpdateQuestionRecordDTO {
 
         private String userAnswer;
+
+        private Integer spendTime;
 }

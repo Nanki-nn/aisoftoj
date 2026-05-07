@@ -17,4 +17,6 @@ public interface QuestionService {
 
     List<Question> listByPaperId(Integer paperId);
 
+    Question getById(Integer questionId);
+
 }

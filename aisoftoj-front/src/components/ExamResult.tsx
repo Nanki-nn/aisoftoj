@@ -22,7 +22,63 @@ import {
   ArrowLeft
 } from 'lucide-react';
 import { BrandLogo } from './BrandLogo';
-import { ExamSession, Question } from '../types/exam';
+import { ExamSession, Question, QuestionOption } from '../types/exam';
+
+function sanitizeQuestionHtml(html: string): string {
+  if (!html) return '';
+  return html
+    .replace(/<script[\s\S]*?>[\s\S]*?<\/script>/gi, '')
+    .replace(/<style[\s\S]*?>[\s\S]*?<\/style>/gi, '')
+    .replace(/\son\w+="[^"]*"/gi, '')
+    .replace(/\son\w+='[^']*'/gi, '')
+    .replace(/javascript:/gi, '');
+}
+
+function parseOptionString(option: string): QuestionOption | null {
+  try {
+    const payload = JSON.parse(option);
+    if (payload && typeof payload === 'object') {
+      const key = typeof payload.key === 'string' ? payload.key : '';
+      const text = typeof payload.text === 'string' ? payload.text : '';
+      if (key || text) {
+        return {
+          key,
+          text,
+          correct: typeof payload.correct === 'boolean' ? payload.correct : undefined,
+        };
+      }
+    }
+  } catch {
+    return null;
+  }
+
+  return null;
+}
+
+function normalizeAnswerValue(answer: string): string {
+  return parseOptionString(answer)?.key || answer.trim();
+}
+
+function isAnswerCorrect(userAnswer: string | string[], correctAnswer: string | string[]): boolean {
+  const normalizeAnswers = (answer: string | string[]) =>
+    (Array.isArray(answer) ? answer : [answer])
+      .map(normalizeAnswerValue)
+      .filter(Boolean);
+  const userAnswers = normalizeAnswers(userAnswer);
+  const correctAnswers = normalizeAnswers(correctAnswer);
+
+  return userAnswers.length === correctAnswers.length &&
+    userAnswers.every(answer => correctAnswers.includes(answer)) &&
+    correctAnswers.every(answer => userAnswers.includes(answer));
+}
+
+function formatAnswer(answer: string | string[]): string {
+  if (!answer) return '未作答';
+  if (Array.isArray(answer)) {
+    return answer.map(normalizeAnswerValue).join(', ');
+  }
+  return normalizeAnswerValue(answer);
+}
 
 interface ExamResultProps {
   session: ExamSession;
@@ -49,15 +105,8 @@ export function ExamResult({ session, onRestartExam, onBackToHome, onContinuePra
       let isCorrect = false;
 
       if (!isSubjectiveExam && userAnswer !== undefined) {
-        if (question.type === 'multiple') {
-          const correctAnswers = Array.isArray(question.correctAnswer)
-            ? question.correctAnswer
-            : [question.correctAnswer];
-          const userAnswers = Array.isArray(userAnswer) ? userAnswer : [userAnswer];
-          isCorrect = correctAnswers.length === userAnswers.length &&
-                     correctAnswers.every(answer => userAnswers.includes(answer));
-        } else if (question.type !== 'essay') {
-          isCorrect = userAnswer === question.correctAnswer;
+        if (question.type !== 'essay') {
+          isCorrect = isAnswerCorrect(userAnswer, question.correctAnswer);
         }
       }
 
@@ -94,21 +143,6 @@ export function ExamResult({ session, onRestartExam, onBackToHome, onContinuePra
     if (score >= 80) return '良好';
     if (score >= 60) return '及格';
     return '不及格';
-  };
-
-  const formatUserAnswer = (answer: string | string[], isMultiple: boolean) => {
-    if (!answer) return '未作答';
-    if (isMultiple && Array.isArray(answer)) {
-      return answer.join(', ');
-    }
-    return Array.isArray(answer) ? answer.join(', ') : answer;
-  };
-
-  const formatCorrectAnswer = (answer: string | string[], isMultiple: boolean) => {
-    if (isMultiple && Array.isArray(answer)) {
-      return answer.join(', ');
-    }
-    return Array.isArray(answer) ? answer.join(', ') : answer;
   };
 
   return (
@@ -278,13 +312,24 @@ export function ExamResult({ session, onRestartExam, onBackToHome, onContinuePra
                              result.question.difficulty === 'medium' ? '中等' : '困难'}
                           </Badge>
                         </div>
-                        <p className="mb-3">{result.question.question}</p>
+                        {result.question.isMarkdown ? (
+                          <div className="markdown-body leading-relaxed text-slate-700 mb-3">
+                            <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
+                              {result.question.question}
+                            </ReactMarkdown>
+                          </div>
+                        ) : (
+                          <div
+                            className="leading-relaxed text-slate-700 mb-3 [&_font[color='red']]:font-semibold [&_font[color='blue']]:font-semibold [&_u]:underline"
+                            dangerouslySetInnerHTML={{ __html: sanitizeQuestionHtml(result.question.question) }}
+                          />
+                        )}
 
                         <div className="bg-muted p-3 rounded-lg mb-2">
                           <div className="flex items-start gap-2">
                             <span className="font-medium text-sm">你的答案：</span>
                             <span className={isEssay ? 'text-slate-700 whitespace-pre-wrap' : (result.isCorrect ? 'text-green-600' : 'text-red-600')}>
-                              {formatUserAnswer(result.userAnswer, result.question.type === 'multiple')}
+                              {formatAnswer(result.userAnswer)}
                             </span>
                           </div>
                         </div>
@@ -294,7 +339,7 @@ export function ExamResult({ session, onRestartExam, onBackToHome, onContinuePra
                             <div className="flex items-start gap-2">
                               <span className="font-medium text-sm">正确答案：</span>
                               <span className="text-green-600">
-                                {formatCorrectAnswer(result.question.correctAnswer, result.question.type === 'multiple')}
+                                {formatAnswer(result.question.correctAnswer)}
                               </span>
                             </div>
                           </div>

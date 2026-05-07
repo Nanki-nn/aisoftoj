@@ -59,8 +59,6 @@ export function useExamSession() {
   }, []);
 
   const updateAnswer = useCallback((questionId: string, answer: string | string[]) => {
-    if (!currentSession) return;
-
     setCurrentSession(prev => {
       if (!prev) return null;
       return {
@@ -71,7 +69,7 @@ export function useExamSession() {
         },
       };
     });
-  }, [currentSession]);
+  }, []);
 
   const completeExam = useCallback(() => {
     if (!currentSession) return null;

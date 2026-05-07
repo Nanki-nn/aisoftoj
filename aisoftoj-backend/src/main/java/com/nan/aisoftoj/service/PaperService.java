@@ -7,9 +7,9 @@ import java.util.List;
 
 public interface PaperService {
 
-    List<PaperDTO> getAllPapers();
+    List<PaperDTO> getAllPapers(Integer userId);
 
-    List<PaperDTO> getPapers(Integer subjectId, Integer cateId);
+    List<PaperDTO> getPapers(Integer userId, Integer subjectId, Integer cateId);
 
     Paper getById(Integer id);
 

@@ -4,10 +4,10 @@ import com.nan.aisoftoj.dto.*;
 
 public interface PracticeSessionService {
 
-    StartPracticeSessionRes startPracticeSession(StartPracticeSessionReq startPracticeSessionReq);
+    StartPracticeSessionRes startPracticeSession(Integer userId, StartPracticeSessionReq startPracticeSessionReq);
 
-    GETPracticeSessionRes getPracticeSessionDetail(Integer sessionId);
+    GETPracticeSessionRes getPracticeSessionDetail(Integer userId, Integer sessionId);
 
-    PaperSubmitResponse submitPracticeSession(Integer sessionId,PaperSubmitRequest request);
+    PaperSubmitResponse submitPracticeSession(Integer userId, Integer sessionId, PaperSubmitRequest request);
 
 }

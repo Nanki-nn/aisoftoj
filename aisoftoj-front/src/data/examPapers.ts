@@ -7,7 +7,7 @@ export interface ExamPaper {
   category: '综合知识' | '案例分析' | '论文';
   questionCount: number;
   lastUpdated: string;
-  viewCount: number;
+  practiceCount: number;
   status: 'not_started' | 'in_progress' | 'completed';
   completedCount?: number;
   doingSessionId?: string | null;
@@ -22,7 +22,7 @@ export const examPapers: ExamPaper[] = [
     category: '综合知识',
     questionCount: 75,
     lastUpdated: '2025/10/3 22:35:00',
-    viewCount: 1414,
+    practiceCount: 1414,
     status: 'in_progress',
     completedCount: 45
   },
@@ -34,7 +34,7 @@ export const examPapers: ExamPaper[] = [
     category: '综合知识',
     questionCount: 76,
     lastUpdated: '2025/10/3 16:59:32',
-    viewCount: 1071,
+    practiceCount: 1071,
     status: 'in_progress',
     completedCount: 32
   },
@@ -46,7 +46,7 @@ export const examPapers: ExamPaper[] = [
     category: '综合知识',
     questionCount: 62,
     lastUpdated: '2025/10/2 19:21:16',
-    viewCount: 611,
+    practiceCount: 611,
     status: 'in_progress',
     completedCount: 15
   },
@@ -58,7 +58,7 @@ export const examPapers: ExamPaper[] = [
     category: '综合知识',
     questionCount: 65,
     lastUpdated: '2025/10/3 21:20:56',
-    viewCount: 474,
+    practiceCount: 474,
     status: 'in_progress',
     completedCount: 28
   },
@@ -70,7 +70,7 @@ export const examPapers: ExamPaper[] = [
     category: '综合知识',
     questionCount: 75,
     lastUpdated: '2025/10/3 06:15:41',
-    viewCount: 313,
+    practiceCount: 313,
     status: 'in_progress',
     completedCount: 12
   },
@@ -82,7 +82,7 @@ export const examPapers: ExamPaper[] = [
     category: '综合知识',
     questionCount: 73,
     lastUpdated: '2025/10/3 17:45:10',
-    viewCount: 264,
+    practiceCount: 264,
     status: 'in_progress',
     completedCount: 20
   },
@@ -94,7 +94,7 @@ export const examPapers: ExamPaper[] = [
     category: '综合知识',
     questionCount: 67,
     lastUpdated: '2025/10/3 16:28:47',
-    viewCount: 207,
+    practiceCount: 207,
     status: 'not_started'
   },
   {
@@ -105,7 +105,7 @@ export const examPapers: ExamPaper[] = [
     category: '综合知识',
     questionCount: 72,
     lastUpdated: '2025/10/2 22:23:10',
-    viewCount: 177,
+    practiceCount: 177,
     status: 'in_progress',
     completedCount: 8
   },
@@ -117,7 +117,7 @@ export const examPapers: ExamPaper[] = [
     category: '综合知识',
     questionCount: 75,
     lastUpdated: '2025/10/3 09:58:01',
-    viewCount: 119,
+    practiceCount: 119,
     status: 'not_started'
   },
   {
@@ -128,7 +128,7 @@ export const examPapers: ExamPaper[] = [
     category: '综合知识',
     questionCount: 73,
     lastUpdated: '2025/10/2 18:01:22',
-    viewCount: 92,
+    practiceCount: 92,
     status: 'not_started'
   },
   {
@@ -139,7 +139,7 @@ export const examPapers: ExamPaper[] = [
     category: '综合知识',
     questionCount: 75,
     lastUpdated: '2025/9/30 22:03:22',
-    viewCount: 76,
+    practiceCount: 76,
     status: 'not_started'
   },
   {
@@ -150,7 +150,7 @@ export const examPapers: ExamPaper[] = [
     category: '综合知识',
     questionCount: 75,
     lastUpdated: '2025/10/1 21:44:29',
-    viewCount: 76,
+    practiceCount: 76,
     status: 'not_started'
   }
 ];

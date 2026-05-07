@@ -12,9 +12,18 @@ export interface PracticeSessionRecord {
   status: 'inProgress' | 'completed'; // 状态
 }
 
+export interface PageResult<T> {
+  records: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+}
+
 // 错题记录
 export interface PracticeRecord {
   id: string;
+  sessionId?: string | number | null;
+  questionId?: string | number | null;
   topicName: string;
   questionBank: string;
   topicType: string;

@@ -1,15 +1,11 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
-import { Avatar, AvatarImage, AvatarFallback } from './ui/avatar';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
 import {
   BookOpen,
   Clock,
-  Eye,
   Play,
   RotateCcw,
   Trophy,
@@ -22,15 +18,12 @@ import {
   FileText,
   ChevronRight,
   Star,
-  Github,
-  User,
-  LogOut,
-  Settings,
   History,
-  AlertCircle
+  AlertCircle,
+  X
 } from 'lucide-react';
 import { supportedSubjects, supportedCategories, ExamPaper } from '../data/examPapers';
-import { useAuth } from '../hooks/useAuth';
+import { AppHeader } from './AppHeader';
 import { fetchPapers, fetchPracticeHistory, fetchWrongQuestions } from '../lib/api';
 
 interface ExamHomeProps {
@@ -51,17 +44,6 @@ export function ExamHome({ onStartPaper, onShowProfile, onShowAuth, onShowPracti
   const [wrongCount, setWrongCount] = useState(0);
   const [showModeDialog, setShowModeDialog] = useState(false);
   const [selectedPaper, setSelectedPaper] = useState<ExamPaper | null>(null);
-  const { user, logout, isAuthenticated } = useAuth();
-  const navigate = useNavigate();
-
-  // 距离 2026 上半年软考首日（5月23日）的天数，每次渲染自动更新
-  const daysToExam = useMemo(() => {
-    const examDate = new Date('2026-05-23');
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    examDate.setHours(0, 0, 0, 0);
-    return Math.ceil((examDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-  }, []);
 
   useEffect(() => {
     let isMounted = true;
@@ -83,10 +65,10 @@ export function ExamHome({ onStartPaper, onShowProfile, onShowAuth, onShowPracti
         }
       });
 
-    fetchPracticeHistory()
+    fetchPracticeHistory({ pageSize: 100 })
       .then((history) => {
         if (isMounted) {
-          const total = history.reduce((sum, s) => sum + (s.answeredCount || 0), 0);
+          const total = history.records.reduce((sum, s) => sum + (s.answeredCount || 0), 0);
           setTotalAnswered(total);
         }
       })
@@ -95,7 +77,7 @@ export function ExamHome({ onStartPaper, onShowProfile, onShowAuth, onShowPracti
     fetchWrongQuestions()
       .then((wrongs) => {
         if (isMounted) {
-          setWrongCount(wrongs.length);
+          setWrongCount(wrongs.total);
         }
       })
       .catch(() => {/* 未登录时忽略 */});
@@ -168,108 +150,9 @@ export function ExamHome({ onStartPaper, onShowProfile, onShowAuth, onShowPracti
     }
   };
 
-  const formatDate = (dateStr: string) => {
-    return dateStr.replace(/(\d{4})\/(\d{1,2})\/(\d{1,2})/, '$1/$2/$3');
-  };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* 顶部导航栏 */}
-      <div className="bg-white/70 backdrop-blur-sm border-b border-slate-200/50 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-6">
-              <div className="flex items-center gap-2">
-                <GraduationCap className="w-8 h-8 text-blue-600" />
-                <h1 className="text-xl text-slate-800">知构软考刷题平台</h1>
-              </div>
-              <div className="hidden md:flex items-center gap-2">
-                {supportedSubjects.slice(0, 2).map(subject => (
-                  <Button
-                    key={subject}
-                    variant={selectedSubject === subject ? "default" : "ghost"}
-                    onClick={() => setSelectedSubject(subject)}
-                    className={selectedSubject === subject
-                      ? "bg-blue-600 hover:bg-blue-700 text-white shadow-md"
-                      : "text-slate-600 hover:text-slate-800 hover:bg-slate-100"
-                    }
-                  >
-                    {subject}
-                  </Button>
-                ))}
-                <Button
-                  variant="ghost"
-                  onClick={() => navigate('/essay')}
-                  className="text-slate-600 hover:text-slate-800 hover:bg-slate-100 flex items-center gap-1"
-                >
-                  <FileText className="w-4 h-4" />
-                  论文批改
-                </Button>
-              </div>
-            </div>
-            <div className="flex items-center gap-4">
-              <div className="flex items-center gap-2 bg-amber-100 text-amber-800 px-4 py-2 rounded-lg border border-amber-200">
-                <Calendar className="w-4 h-4" />
-                {daysToExam > 0 ? (
-                  <>
-                    <span className="hidden sm:inline">距离软考还有</span>
-                    <span className="font-semibold">{daysToExam}天</span>
-                  </>
-                ) : daysToExam === 0 ? (
-                  <span className="font-semibold">今天就是考试日，加油！</span>
-                ) : (
-                  <span className="font-semibold">2026上半年软考已结束</span>
-                )}
-              </div>
-
-              {/* GitHub Star */}
-              <a
-                href="https://github.com/Nanki-nn/aisoftoj"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="flex items-center gap-2 px-3 py-2 rounded-lg border border-slate-200 bg-white/60 text-slate-500 hover:text-slate-900 hover:bg-white hover:border-slate-300 text-sm transition-all"
-              >
-                <Github className="w-4 h-4 shrink-0" />
-                <span>项目开源 · 欢迎 Star 支持</span>
-              </a>
-
-              {/* 用户头像和菜单 */}
-              {isAuthenticated && user ? (
-                <DropdownMenu>
-                  <DropdownMenuTrigger asChild>
-                    <Button variant="ghost" className="h-10 w-10 rounded-full p-0">
-                      <Avatar className="h-10 w-10">
-                        <AvatarImage src={user.avatar} />
-                        <AvatarFallback className="bg-blue-100 text-blue-600">
-                          {user.nickname.charAt(0)}
-                        </AvatarFallback>
-                      </Avatar>
-                    </Button>
-                  </DropdownMenuTrigger>
-                  <DropdownMenuContent align="end" className="w-56">
-                    <DropdownMenuItem onClick={onShowProfile} className="flex items-center gap-2">
-                      <User className="w-4 h-4" />
-                      个人中心
-                    </DropdownMenuItem>
-                    <DropdownMenuItem className="flex items-center gap-2">
-                      <Settings className="w-4 h-4" />
-                      设置
-                    </DropdownMenuItem>
-                    <DropdownMenuItem onClick={logout} className="flex items-center gap-2 text-red-600">
-                      <LogOut className="w-4 h-4" />
-                      退出登录
-                    </DropdownMenuItem>
-                  </DropdownMenuContent>
-                </DropdownMenu>
-              ) : (
-                <Button onClick={onShowAuth} variant="outline">
-                  登录 / 注册
-                </Button>
-              )}
-            </div>
-          </div>
-        </div>
-      </div>
+      <AppHeader onShowAuth={onShowAuth} onShowProfile={onShowProfile} />
 
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* 欢迎区域 */}
@@ -416,13 +299,13 @@ export function ExamHome({ onStartPaper, onShowProfile, onShowAuth, onShowPracti
                     
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-slate-600 flex items-center gap-1">
-                        <Eye className="w-3 h-3" />
-                        浏览次数
+                        <History className="w-3 h-3" />
+                        做题次数
                       </span>
-                      <span className="text-slate-800">{paper.viewCount}</span>
+                      <span className="text-slate-800">{paper.practiceCount}</span>
                     </div>
 
-                    {paper.status === 'in_progress' && paper.completedCount && (
+                    {paper.status === 'in_progress' && Boolean(paper.completedCount) && (
                       <div className="space-y-2">
                         <div className="flex justify-between text-sm">
                           <span className="text-slate-600">练习进度</span>
@@ -436,10 +319,7 @@ export function ExamHome({ onStartPaper, onShowProfile, onShowAuth, onShowPracti
                     )}
 
                     <div className="pt-2 border-t border-slate-100">
-                      <div className="flex items-center justify-between">
-                        <div className="text-xs text-slate-500">
-                          更新: {formatDate(paper.lastUpdated)}
-                        </div>
+                      <div className="flex items-center justify-end">
                         {getStatusButton(paper)}
                       </div>
                     </div>
@@ -484,48 +364,49 @@ export function ExamHome({ onStartPaper, onShowProfile, onShowAuth, onShowPracti
 
       {/* 模式选择弹窗（原生 fixed overlay，不依赖 Radix Portal） */}
       {showModeDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
           {/* 半透明遮罩 */}
           <div
-            className="absolute inset-0 bg-black/50"
+            className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm"
             onClick={() => setShowModeDialog(false)}
           />
           {/* 弹窗主体 */}
-          <div className="relative bg-white rounded-2xl shadow-2xl w-96 p-5">
+          <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl sm:p-7">
             {/* 关闭按钮 */}
             <button
               onClick={() => setShowModeDialog(false)}
-              className="absolute top-3 right-3 text-slate-400 hover:text-slate-600 text-xl leading-none"
+              className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+              aria-label="关闭"
             >
-              ×
+              <X className="h-5 w-5" />
             </button>
 
-            <h2 className="text-base font-semibold text-center text-slate-800 mb-1">选择答题模式</h2>
+            <h2 className="mb-2 pr-10 text-center text-2xl font-semibold text-slate-800">选择答题模式</h2>
             {selectedPaper && (
-              <p className="text-xs text-center text-slate-500 mb-4">
+              <p className="mb-6 text-center text-base text-slate-500">
                 {selectedPaper.year}年{selectedPaper.month}月 · {selectedPaper.subject}
               </p>
             )}
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-2 gap-4">
               {/* 练习模式 */}
               <button
                 onClick={() => handleModeSelect('practice')}
-                className="flex flex-col items-center p-4 rounded-xl border-2 border-blue-200 bg-blue-50 hover:border-blue-500 hover:bg-blue-100 transition-all"
+                className="flex h-40 flex-col items-center justify-center rounded-xl border-2 border-blue-200 bg-blue-50 p-5 transition-all hover:-translate-y-0.5 hover:border-blue-500 hover:bg-blue-100 hover:shadow-lg"
               >
-                <FileText className="w-8 h-8 mb-2 text-blue-600" />
-                <div className="text-sm font-semibold text-slate-800">练习模式</div>
-                <div className="text-xs text-slate-500 mt-0.5 text-center">即时显示解析</div>
+                <FileText className="mb-3 h-11 w-11 text-blue-600" />
+                <div className="text-lg font-semibold text-slate-800">练习模式</div>
+                <div className="mt-2 text-center text-sm text-slate-500">即时显示解析</div>
               </button>
 
               {/* 考试模式 */}
               <button
                 onClick={() => handleModeSelect('exam')}
-                className="flex flex-col items-center p-4 rounded-xl border-2 border-red-200 bg-red-50 hover:border-red-500 hover:bg-red-100 transition-all"
+                className="flex h-40 flex-col items-center justify-center rounded-xl border-2 border-red-200 bg-red-50 p-5 transition-all hover:-translate-y-0.5 hover:border-red-500 hover:bg-red-100 hover:shadow-lg"
               >
-                <GraduationCap className="w-8 h-8 mb-2 text-red-600" />
-                <div className="text-sm font-semibold text-slate-800">考试模式</div>
-                <div className="text-xs text-slate-500 mt-0.5 text-center">交卷后查看</div>
+                <GraduationCap className="mb-3 h-11 w-11 text-red-600" />
+                <div className="text-lg font-semibold text-slate-800">考试模式</div>
+                <div className="mt-2 text-center text-sm text-slate-500">交卷后查看</div>
               </button>
             </div>
           </div>

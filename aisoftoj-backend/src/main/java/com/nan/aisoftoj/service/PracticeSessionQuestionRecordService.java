@@ -6,6 +6,6 @@ import java.util.List;
 
 public interface PracticeSessionQuestionRecordService {
 
-    Long updatePracticeSessionQuestionRecord(Integer questionRecordId, UpdateQuestionRecordDTO updateQuestionRecordDTO);
+    Long updatePracticeSessionQuestionRecord(Integer userId, Integer questionRecordId, UpdateQuestionRecordDTO updateQuestionRecordDTO);
 
 }

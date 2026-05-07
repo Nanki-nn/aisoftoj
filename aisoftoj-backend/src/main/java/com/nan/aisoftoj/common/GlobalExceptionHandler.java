@@ -25,6 +25,18 @@ public class GlobalExceptionHandler {
         return new ErrorResponse(400, message, request.getRequestURI());
     }
 
+    @ExceptionHandler(UnauthorizedException.class)
+    @ResponseBody
+    public ErrorResponse handleUnauthorizedException(HttpServletRequest request, UnauthorizedException ex) {
+        return new ErrorResponse(401, ex.getMessage(), request.getRequestURI());
+    }
+
+    @ExceptionHandler(ForbiddenException.class)
+    @ResponseBody
+    public ErrorResponse handleForbiddenException(HttpServletRequest request, ForbiddenException ex) {
+        return new ErrorResponse(403, ex.getMessage(), request.getRequestURI());
+    }
+
     @ExceptionHandler(Exception.class)
     @ResponseBody
     public ErrorResponse handleGeneralException(HttpServletRequest request, Exception ex) {

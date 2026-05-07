@@ -1,14 +1,17 @@
 package com.nan.aisoftoj.service.impl;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.nan.aisoftoj.common.ForbiddenException;
 import com.nan.aisoftoj.consts.PracticeSessionState;
 import com.nan.aisoftoj.dto.*;
 import com.nan.aisoftoj.entity.Paper;
 import com.nan.aisoftoj.entity.PracticeSession;
 import com.nan.aisoftoj.entity.PracticeSessionQuestionRecord;
 import com.nan.aisoftoj.entity.Question;
+import com.nan.aisoftoj.entity.UserWrongQuestionStat;
 import com.nan.aisoftoj.mapper.PracticeSessionMapper;
 import com.nan.aisoftoj.mapper.PracticeSessionQuestionRecordMapper;
+import com.nan.aisoftoj.mapper.UserWrongQuestionStatMapper;
 import com.nan.aisoftoj.service.PaperService;
 import com.nan.aisoftoj.service.PracticeSessionService;
 import com.nan.aisoftoj.service.QuestionService;
@@ -18,6 +21,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -35,11 +39,13 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
 	private PracticeSessionMapper practiceSessionMapper;
     @Autowired
     private PracticeSessionQuestionRecordMapper practiceSessionQuestionRecordMapper;
+    @Autowired
+    private UserWrongQuestionStatMapper userWrongQuestionStatMapper;
 
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public StartPracticeSessionRes startPracticeSession(StartPracticeSessionReq startPracticeSessionReq) {
+    public StartPracticeSessionRes startPracticeSession(Integer userId, StartPracticeSessionReq startPracticeSessionReq) {
 
         // 从请求中获取试卷ID
         Integer paperId =  startPracticeSessionReq.getPaperId();
@@ -57,7 +63,7 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
         PracticeSession practiceSession = practiceSessionMapper.selectOne(
                 new LambdaQueryWrapper<PracticeSession>()
                         .eq(PracticeSession::getPaperId, paperId)
-                        .eq(PracticeSession::getUserId, 1)
+                        .eq(PracticeSession::getUserId, userId)
                         .eq(PracticeSession::getExamMode, sessionMode)
                         .eq(PracticeSession::getStatus, PracticeSessionState.DOING.getCode())
         );
@@ -69,7 +75,7 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
         //创建试卷会话记录
         PracticeSession insertPracticeSession = new PracticeSession();
         insertPracticeSession.setPaperId(paperId);
-        insertPracticeSession.setUserId(1);
+        insertPracticeSession.setUserId(userId);
         insertPracticeSession.setStartTime(new Date());
         insertPracticeSession.setExamMode(sessionMode);
         insertPracticeSession.setAnsweredCount(0);
@@ -92,11 +98,24 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
         res.setPracticeSessionId(practiceSession.getId());
         res.setPaperId(paperId);
         res.setPaperName(paper.getName());
+        res.setStatus(practiceSession.getStatus());
+        res.setStartTime(practiceSession.getStartTime());
         res.setPaper(paper);
         //找出所有与试卷关联的题目
         List<Question> questions = questionService.listByPaperId(paperId);
         // 转换为DTO格式
         List<QuestionDTO> questionDTOs = getQuestionDTOS(questions);
+        Map<Integer, PracticeSessionQuestionRecord> recordMap = getSessionQuestionRecordMap(practiceSession.getId());
+        questionDTOs.forEach(questionDTO -> {
+            PracticeSessionQuestionRecord record = recordMap.get(questionDTO.getId());
+            if (record != null) {
+                questionDTO.setQuestionRecordId(record.getId());
+                questionDTO.setUserAnswer(record.getUserAnswer());
+                questionDTO.setIsSubmitted(record.getIsSubmitted());
+                questionDTO.setIsCorrect(record.getIsCorrect());
+                questionDTO.setSpendTime(record.getSpendTime());
+            }
+        });
         res.setQuestionList(questionDTOs);
         return res;
     }
@@ -167,10 +186,20 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
 
     }
 
+    private Map<Integer, PracticeSessionQuestionRecord> getSessionQuestionRecordMap(Integer practiceSessionId) {
+        List<PracticeSessionQuestionRecord> records = practiceSessionQuestionRecordMapper.selectList(
+                new LambdaQueryWrapper<PracticeSessionQuestionRecord>()
+                        .eq(PracticeSessionQuestionRecord::getSessionId, practiceSessionId)
+                        .eq(PracticeSessionQuestionRecord::getIsDeleted, false)
+        );
+        return records.stream()
+                .collect(Collectors.toMap(PracticeSessionQuestionRecord::getQuestionId, record -> record, (left, right) -> left));
+    }
+
     @Override
-    public GETPracticeSessionRes getPracticeSessionDetail(Integer practiceSessionId) {
+    public GETPracticeSessionRes getPracticeSessionDetail(Integer userId, Integer practiceSessionId) {
         //校验practiceSessionId是否存在
-        PracticeSession practiceSession = practiceSessionMapper.selectById(practiceSessionId);
+        PracticeSession practiceSession = getOwnedSession(userId, practiceSessionId);
         if (practiceSession == null) {
             throw new IllegalArgumentException("试卷会话记录不存在");
         }
@@ -187,35 +216,51 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
         resDTO.setUserId(practiceSession.getUserId());
         resDTO.setPaperId(practiceSession.getPaperId());
         resDTO.setExamMode(practiceSession.getExamMode());
+        resDTO.setStatus(practiceSession.getStatus());
+        resDTO.setStartTime(practiceSession.getStartTime());
+        resDTO.setEndTime(practiceSession.getEndTime());
         resDTO.setPaperName(paper.getName());
         resDTO.setPaper(paper);
 
         //找出所有与试卷关联的题目
         List<Question> questions = questionService.listByPaperId(practiceSession.getPaperId());
-        // 转换为DTO格式
-        getQuestionDTOs(questions, resDTO);
+        // 转换为DTO格式，并附带本次会话的答题记录
+        getQuestionDTOs(questions, resDTO, getSessionQuestionRecordMap(practiceSessionId));
         return resDTO;
 
     }
 
-    private void getQuestionDTOs(List<Question> questions, GETPracticeSessionRes resDTO) {
+    private void getQuestionDTOs(List<Question> questions, GETPracticeSessionRes resDTO, Map<Integer, PracticeSessionQuestionRecord> recordMap) {
         List<QuestionDTO> questionDTOs = getQuestionDTOS(questions);
+        questionDTOs.forEach(questionDTO -> {
+            PracticeSessionQuestionRecord record = recordMap.get(questionDTO.getId());
+            if (record != null) {
+                questionDTO.setQuestionRecordId(record.getId());
+                questionDTO.setUserAnswer(record.getUserAnswer());
+                questionDTO.setIsSubmitted(record.getIsSubmitted());
+                questionDTO.setIsCorrect(record.getIsCorrect());
+                questionDTO.setSpendTime(record.getSpendTime());
+            }
+        });
         resDTO.setQuestionList(questionDTOs);
     }
 
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public PaperSubmitResponse submitPracticeSession(Integer practiceSessionId, PaperSubmitRequest request) {
-        PracticeSession practiceSession = practiceSessionMapper.selectById(practiceSessionId);
+    public PaperSubmitResponse submitPracticeSession(Integer userId, Integer practiceSessionId, PaperSubmitRequest request) {
+        PracticeSession practiceSession = getOwnedSession(userId, practiceSessionId);
         if (practiceSession == null) {
             throw new IllegalArgumentException("试卷会话记录不存在");
         }
+        boolean shouldRecordWrongStats = practiceSession.getStatus() == null
+                || practiceSession.getStatus() != PracticeSessionState.FINISHED.getCode();
 
         List<Question> questions = questionService.listByPaperId(practiceSession.getPaperId());
         if (questions.isEmpty()) {
             throw new IllegalArgumentException("试卷不存在题目");
         }
+        Paper paper = paperService.getById(practiceSession.getPaperId());
 
         Map<Integer, Question> questionMap = questions.stream()
                 .collect(Collectors.toMap(Question::getId, question -> question));
@@ -243,22 +288,24 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
             }
 
             PaperSubmitRequest.QuestionAnswer submitAnswer = answerMap.get(record.getQuestionId());
-            String userAnswer = submitAnswer == null ? "" : submitAnswer.getUserAnswer();
+            String userAnswer = submitAnswer == null ? record.getUserAnswer() : submitAnswer.getUserAnswer();
             boolean isCorrect = isCorrectAnswer(question.getAnswer(), userAnswer);
-            if (submitAnswer != null && userAnswer != null && !userAnswer.trim().isEmpty()) {
+            if (userAnswer != null && !userAnswer.trim().isEmpty()) {
                 answeredCount++;
             }
 
             PracticeSessionQuestionRecord updateRecord = new PracticeSessionQuestionRecord();
             updateRecord.setId(record.getId());
             updateRecord.setUserAnswer(userAnswer);
-            updateRecord.setIsSubmitted(submitAnswer != null);
+            updateRecord.setIsSubmitted(userAnswer != null && !userAnswer.trim().isEmpty());
             updateRecord.setIsCorrect(isCorrect);
-            updateRecord.setSpendTime(submitAnswer == null ? 0 : submitAnswer.getSpendTime());
+            updateRecord.setSpendTime(submitAnswer == null ? record.getSpendTime() : submitAnswer.getSpendTime());
             practiceSessionQuestionRecordMapper.updateById(updateRecord);
 
             if (isCorrect) {
                 score = score.add(BigDecimal.ONE);
+            } else if (shouldRecordWrongStats) {
+                saveWrongQuestionStat(userId, practiceSession.getPaperId(), paper, question);
             }
         }
 
@@ -279,6 +326,78 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
         return response;
     }
 
+    private void saveWrongQuestionStat(Integer userId, Integer paperId, Paper paper, Question question) {
+        Date now = new Date();
+        String sourceFrontId = "session_wrong_" + userId + "_" + question.getId();
+        UserWrongQuestionStat existingStat = userWrongQuestionStatMapper.selectOne(
+                new LambdaQueryWrapper<UserWrongQuestionStat>()
+                        .eq(UserWrongQuestionStat::getSourceFrontId, sourceFrontId)
+                        .last("LIMIT 1")
+        );
+
+        if (existingStat == null) {
+            UserWrongQuestionStat insertStat = new UserWrongQuestionStat();
+            insertStat.setSourceFrontId(sourceFrontId);
+            insertStat.setSourceType("wrong_question");
+            insertStat.setUserId(userId);
+            insertStat.setPaperId(paperId);
+            insertStat.setQuestionId(question.getId());
+            insertStat.setQuestionName(question.getName());
+            insertStat.setPaperName(paper == null ? null : paper.getName());
+            insertStat.setTopicType(getQuestionTypeName(question.getQuestionType()));
+            insertStat.setErrorCount(1);
+            insertStat.setImportanceLevel("medium");
+            insertStat.setLastWrongTime(now);
+            insertStat.setIsDeleted(0);
+            userWrongQuestionStatMapper.insert(insertStat);
+            return;
+        }
+
+        UserWrongQuestionStat updateStat = new UserWrongQuestionStat();
+        updateStat.setId(existingStat.getId());
+        updateStat.setPaperId(paperId);
+        updateStat.setQuestionName(question.getName());
+        updateStat.setPaperName(paper == null ? existingStat.getPaperName() : paper.getName());
+        updateStat.setTopicType(getQuestionTypeName(question.getQuestionType()));
+        updateStat.setErrorCount((existingStat.getErrorCount() == null ? 0 : existingStat.getErrorCount()) + 1);
+        updateStat.setLastWrongTime(now);
+        updateStat.setIsDeleted(0);
+        userWrongQuestionStatMapper.updateById(updateStat);
+    }
+
+    private String getQuestionTypeName(Integer questionType) {
+        if (questionType == null) {
+            return "未知题型";
+        }
+        switch (questionType) {
+            case 1:
+                return "单选题";
+            case 2:
+                return "多选题";
+            case 3:
+                return "判断题";
+            case 4:
+                return "填空题";
+            case 5:
+                return "案例题";
+            case 6:
+                return "论文题";
+            default:
+                return "未知题型";
+        }
+    }
+
+    private PracticeSession getOwnedSession(Integer userId, Integer practiceSessionId) {
+        PracticeSession practiceSession = practiceSessionMapper.selectById(practiceSessionId);
+        if (practiceSession == null || practiceSession.getIsDeleted() != null && practiceSession.getIsDeleted() == 1) {
+            return null;
+        }
+        if (!userId.equals(practiceSession.getUserId())) {
+            throw new ForbiddenException("无权访问该试卷会话");
+        }
+        return practiceSession;
+    }
+
     private boolean isCorrectAnswer(String standardAnswer, String userAnswer) {
         if (standardAnswer == null || standardAnswer.trim().isEmpty()) {
             return false;
@@ -293,14 +412,12 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
             return normalizedStandard.equalsIgnoreCase(normalizedUser);
         }
 
-        List<String> standardAnswers = List.of(normalizedStandard.split(","))
-                .stream()
+        List<String> standardAnswers = Arrays.stream(normalizedStandard.split(","))
                 .map(String::trim)
                 .filter(item -> !item.isEmpty())
                 .sorted()
                 .collect(Collectors.toList());
-        List<String> userAnswers = List.of(normalizedUser.split(","))
-                .stream()
+        List<String> userAnswers = Arrays.stream(normalizedUser.split(","))
                 .map(String::trim)
                 .filter(item -> !item.isEmpty())
                 .sorted()

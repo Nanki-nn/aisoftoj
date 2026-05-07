@@ -12,11 +12,19 @@ import { EssayHome } from './components/EssayHome';
 import { EssayEditor } from './components/EssayEditor';
 import { EssayResult } from './components/EssayResult';
 import { EssayHistory } from './components/EssayHistory';
+import { AppHeader } from './components/AppHeader';
 import { useExamSession } from './hooks/useExamSession';
 import { useAuth } from './hooks/useAuth';
 import { ExamConfig as ExamConfigType } from './types/exam';
 import { ExamPaper } from './data/examPapers';
-import { continuePracticeSession, startPaperSession, submitPracticeSession } from './lib/api';
+import { PracticeRecord, PracticeSessionRecord } from './types/record';
+import {
+  cachePracticeSessionAnswers,
+  continuePracticeSession,
+  startPaperSession,
+  submitPracticeSession,
+  updatePracticeQuestionRecord,
+} from './lib/api';
 
 const ROUTES = {
   home: '/',
@@ -35,19 +43,62 @@ const ROUTES = {
 
 function SessionRoute({
   currentSession,
+  setSession,
   updateAnswer,
   onCompleteExam,
   onBackToConfig,
 }: {
   currentSession: ReturnType<typeof useExamSession>['currentSession'];
+  setSession: ReturnType<typeof useExamSession>['setSession'];
   updateAnswer: ReturnType<typeof useExamSession>['updateAnswer'];
   onCompleteExam: () => void;
   onBackToConfig: () => void;
 }) {
   const { sessionId } = useParams();
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
-  if (!currentSession || !sessionId || currentSession.id !== sessionId) {
+  useEffect(() => {
+    if (!sessionId || currentSession?.id === sessionId) {
+      return;
+    }
+
+    let isMounted = true;
+    setIsLoading(true);
+    setLoadError(null);
+
+    continuePracticeSession(sessionId)
+      .then((session) => {
+        if (isMounted) {
+          setSession(session);
+        }
+      })
+      .catch((error) => {
+        if (isMounted) {
+          setLoadError((error as Error).message || '刷题会话加载失败');
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentSession?.id, sessionId, setSession]);
+
+  if (!sessionId) {
     return <Navigate to={ROUTES.home} replace />;
+  }
+
+  if (loadError) {
+    return <div className="min-h-screen bg-background p-6 text-red-600">{loadError}</div>;
+  }
+
+  if (isLoading || !currentSession || currentSession.id !== sessionId) {
+    return <div className="min-h-screen bg-background p-6 text-slate-500">正在加载刷题会话...</div>;
   }
 
   return (
@@ -59,6 +110,8 @@ function SessionRoute({
     />
   );
 }
+
+type UpdateAnswerFn = ReturnType<typeof useExamSession>['updateAnswer'];
 
 function ResultRoute({
   currentSession,
@@ -90,6 +143,23 @@ function ResultRoute({
   );
 }
 
+function AppShell({
+  children,
+  onShowAuth,
+  onShowProfile,
+}: {
+  children: React.ReactNode;
+  onShowAuth: () => void;
+  onShowProfile: () => void;
+}) {
+  return (
+    <>
+      <AppHeader onShowAuth={onShowAuth} onShowProfile={onShowProfile} />
+      {children}
+    </>
+  );
+}
+
 export default function App() {
   const [lastConfig, setLastConfig] = useState<ExamConfigType | null>(null);
   const [examConfigDraft, setExamConfigDraft] = useState<Partial<ExamConfigType> | null>(null);
@@ -111,17 +181,18 @@ export default function App() {
   }, [checkAuthStatus]);
 
   useEffect(() => {
-    const isSessionRoute = location.pathname.startsWith(ROUTES.examSessionBase);
     const isResultRoute = location.pathname.startsWith(ROUTES.examResultBase);
 
-    if ((isSessionRoute || isResultRoute) && !currentSession) {
+    if (isResultRoute && !currentSession) {
       navigate(ROUTES.home, { replace: true });
     }
   }, [location.pathname, currentSession, navigate]);
 
   const handleStartPaper = async (paper: ExamPaper, mode: 'practice' | 'exam') => {
     try {
-      const session = await startPaperSession(paper.id, mode);
+      const session = paper.status === 'in_progress' && paper.doingSessionId
+        ? await continuePracticeSession(paper.doingSessionId)
+        : await startPaperSession(paper.id, mode);
       setSession(session);
       navigate(`${ROUTES.examSessionBase}/${session.id}`);
     } catch (error) {
@@ -156,6 +227,25 @@ export default function App() {
     if (session) {
       navigate(`${ROUTES.examResultBase}/${session.id}`);
     }
+  };
+
+  const handleUpdateAnswer: UpdateAnswerFn = (questionId, answer) => {
+    updateAnswer(questionId, answer);
+
+    const question = currentSession?.questions.find(item => item.id === questionId);
+    if (currentSession) {
+      cachePracticeSessionAnswers(currentSession.id, {
+        ...currentSession.answers,
+        [questionId]: answer,
+      });
+    }
+    if (!question?.questionRecordId) {
+      return;
+    }
+
+    void updatePracticeQuestionRecord(question.questionRecordId, answer).catch((error) => {
+      console.error('保存答题记录失败', error);
+    });
   };
 
   const handleRestartExam = () => {
@@ -258,13 +348,46 @@ export default function App() {
     navigate(ROUTES.wrongQuestions);
   };
 
-  const handleContinuePracticeFromHistory = async (recordId: string) => {
+  const handleContinuePracticeFromHistory = async (recordId: string, status: PracticeSessionRecord['status']) => {
     try {
       const session = await continuePracticeSession(recordId);
       setSession(session);
       navigate(`${ROUTES.examSessionBase}/${session.id}`);
     } catch (error) {
-      alert('继续练习失败：' + (error as Error).message);
+      alert(`${status === 'completed' ? '查看' : '继续'}记录失败：` + (error as Error).message);
+    }
+  };
+
+  const handleViewPracticeResultFromHistory = async (recordId: string) => {
+    try {
+      const session = await continuePracticeSession(recordId);
+      setSession({
+        ...session,
+        isCompleted: true,
+        endTime: session.endTime || new Date(),
+      });
+      navigate(`${ROUTES.examResultBase}/${session.id}`);
+    } catch (error) {
+      alert('查看考试结果失败：' + (error as Error).message);
+    }
+  };
+
+  const handleViewWrongQuestion = async (record: PracticeRecord) => {
+    if (!record.sessionId || !record.questionId) {
+      alert('这条错题缺少对应刷题会话，暂时无法查看原题');
+      return;
+    }
+
+    try {
+      const session = await continuePracticeSession(String(record.sessionId));
+      setSession({
+        ...session,
+        isCompleted: true,
+        endTime: session.endTime || new Date(),
+      });
+      navigate(`${ROUTES.examSessionBase}/${session.id}?questionId=${record.questionId}`);
+    } catch (error) {
+      alert('查看错题失败：' + (error as Error).message);
     }
   };
 
@@ -273,7 +396,7 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-background text-foreground">
       <Routes>
         <Route
           path={ROUTES.home}
@@ -292,13 +415,23 @@ export default function App() {
         <Route
           path={ROUTES.practiceHistory}
           element={
-            <PracticeHistory
-              onBack={handleBackToHome}
-              onContinue={handleContinuePracticeFromHistory}
-            />
+            <AppShell onShowAuth={handleShowAuth} onShowProfile={handleShowProfile}>
+              <PracticeHistory
+                onBack={handleBackToHome}
+                onContinue={handleContinuePracticeFromHistory}
+                onViewResult={handleViewPracticeResultFromHistory}
+              />
+            </AppShell>
           }
         />
-        <Route path={ROUTES.wrongQuestions} element={<WrongQuestions onBack={handleBackToHome} />} />
+        <Route
+          path={ROUTES.wrongQuestions}
+          element={
+            <AppShell onShowAuth={handleShowAuth} onShowProfile={handleShowProfile}>
+              <WrongQuestions onBack={handleBackToHome} onViewQuestion={handleViewWrongQuestion} />
+            </AppShell>
+          }
+        />
         <Route
           path={ROUTES.examConfig}
           element={<ExamConfig onStartExam={handleStartExam} initialConfig={examConfigDraft} />}
@@ -306,12 +439,15 @@ export default function App() {
         <Route
           path={`${ROUTES.examSessionBase}/:sessionId`}
           element={
-            <SessionRoute
-              currentSession={currentSession}
-              updateAnswer={updateAnswer}
-              onCompleteExam={handleCompleteExam}
-              onBackToConfig={handleBackToConfig}
-            />
+            <AppShell onShowAuth={handleShowAuth} onShowProfile={handleShowProfile}>
+              <SessionRoute
+                currentSession={currentSession}
+                setSession={setSession}
+                updateAnswer={handleUpdateAnswer}
+                onCompleteExam={handleCompleteExam}
+                onBackToConfig={handleBackToConfig}
+              />
+            </AppShell>
           }
         />
         <Route
