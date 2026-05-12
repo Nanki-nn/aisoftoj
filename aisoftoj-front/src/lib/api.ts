@@ -535,3 +535,183 @@ export async function getEssayHistory(): Promise<EssayHistoryItem[]> {
     headers: { Authorization: `Bearer ${getAuthToken()}` },
   });
 }
+
+// ─── Admin API ─────────────────────────────────────────────────────────────────
+
+export type AdminDashboardDTO = {
+  userTotal: number;
+  enabledUserTotal: number;
+  questionTotal: number;
+  activeQuestionTotal: number;
+};
+
+export type AdminUserDTO = {
+  id: number;
+  loginName: string;
+  nickName: string;
+  email: string;
+  phone: string;
+  avatar: string;
+  isEnabled: boolean;
+  createTime: string;
+  updateTime: string;
+  sessionCount: number;
+  wrongQuestionCount: number;
+};
+
+export type AdminUserUpdateRequest = {
+  loginName?: string;
+  nickName?: string;
+  email?: string;
+  phone?: string;
+  isEnabled?: boolean;
+};
+
+export type AdminQuestionDTO = {
+  id: number;
+  name: string;
+  intro: string;
+  options: string;
+  answer: string;
+  analysis: string;
+  questionType: number;
+  difficulty: number;
+  readCt: number;
+  createTime: string;
+  updateTime: string;
+  subjectName: string | null;
+  paperYear: number | null;
+  paperMonth: number | null;
+  paperCateId: number | null;
+};
+
+export type AdminQuestionRequest = {
+  name: string;
+  intro?: string;
+  options?: string;
+  answer: string;
+  analysis?: string;
+  questionType: number;
+  difficulty: number;
+};
+
+export type AdminPageDTO<T> = {
+  records: T[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+export async function fetchAdminDashboard(): Promise<AdminDashboardDTO> {
+  return request<AdminDashboardDTO>('/admin/dashboard');
+}
+
+export async function listAdminUsers(params: {
+  keyword?: string;
+  enabled?: boolean;
+  page?: number;
+  pageSize?: number;
+}): Promise<AdminPageDTO<AdminUserDTO>> {
+  return request<AdminPageDTO<AdminUserDTO>>(
+    `/admin/users${buildQueryString({
+      keyword: params.keyword,
+      enabled: params.enabled,
+      page: params.page,
+      pageSize: params.pageSize,
+    })}`
+  );
+}
+
+export async function updateAdminUser(
+  userId: number,
+  data: AdminUserUpdateRequest
+): Promise<AdminUserDTO> {
+  return request<AdminUserDTO>(`/admin/users/${userId}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteAdminUser(userId: number): Promise<void> {
+  await request(`/admin/users/${userId}`, { method: 'DELETE' });
+}
+
+export async function listAdminQuestions(params: {
+  keyword?: string;
+  questionType?: number;
+  difficulty?: number;
+  subjectName?: string;
+  year?: number;
+  month?: number;
+  paperCateId?: number;
+  page?: number;
+  pageSize?: number;
+}): Promise<AdminPageDTO<AdminQuestionDTO>> {
+  return request<AdminPageDTO<AdminQuestionDTO>>(
+    `/admin/questions${buildQueryString({
+      keyword: params.keyword,
+      questionType: params.questionType,
+      difficulty: params.difficulty,
+      subjectName: params.subjectName,
+      year: params.year,
+      month: params.month,
+      paperCateId: params.paperCateId,
+      page: params.page,
+      pageSize: params.pageSize,
+    })}`
+  );
+}
+
+export async function createAdminQuestion(data: AdminQuestionRequest): Promise<AdminQuestionDTO> {
+  return request<AdminQuestionDTO>('/admin/questions', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateAdminQuestion(
+  questionId: number,
+  data: AdminQuestionRequest
+): Promise<AdminQuestionDTO> {
+  return request<AdminQuestionDTO>(`/admin/questions/${questionId}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteAdminQuestion(questionId: number): Promise<void> {
+  await request(`/admin/questions/${questionId}`, { method: 'DELETE' });
+}
+
+export async function fetchAdminSubjects(): Promise<string[]> {
+  return request<string[]>('/admin/questions/subjects');
+}
+
+export async function fetchAdminYears(): Promise<number[]> {
+  return request<number[]>('/admin/questions/years');
+}
+
+export async function fetchAdminMonths(): Promise<number[]> {
+  return request<number[]>('/admin/questions/months');
+}
+
+// ─── OSS API ───────────────────────────────────────────────────────────────────
+
+export async function uploadOssFile(file: File, dir?: string): Promise<string> {
+  const formData = new FormData();
+  formData.append('file', file);
+  if (dir) formData.append('dir', dir);
+
+  const authToken = localStorage.getItem('authToken');
+  const response = await fetch(`${API_BASE_URL}/oss/upload`, {
+    method: 'POST',
+    headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+    body: formData,
+  });
+
+  const payload = await response.json().catch(() => null);
+  if (!response.ok || !payload || payload.code !== 200) {
+    throw new Error(payload?.message || `上传失败: ${response.status}`);
+  }
+  return payload.data as string;
+}

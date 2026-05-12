@@ -40,3 +40,15 @@ logging:
 claude:
   api-key: ${CLAUDE_API_KEY:}
   model: claude-sonnet-4-6
+
+# 阿里云 OSS 配置
+aliyun:
+  oss:
+    endpoint: ${OSS_ENDPOINT:}
+    access-key-id: ${OSS_ACCESS_KEY_ID:}
+    access-key-secret: ${OSS_ACCESS_KEY_SECRET:}
+    bucket-name: ${OSS_BUCKET_NAME:}
+    # 文件访问域名，如 https://your-bucket.oss-cn-hangzhou.aliyuncs.com 或自定义域名
+    base-url: ${OSS_BASE_URL:}
+    # 上传目录前缀
+    dir-prefix: ${OSS_DIR_PREFIX:aisoftoj/}

@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ExamHome } from './components/ExamHome';
+import { PapersPage } from './components/PapersPage';
 import { ExamConfig } from './components/ExamConfig';
 import { ExamSession } from './components/ExamSession';
 import { ExamResult } from './components/ExamResult';
@@ -13,6 +14,11 @@ import { EssayEditor } from './components/EssayEditor';
 import { EssayResult } from './components/EssayResult';
 import { EssayHistory } from './components/EssayHistory';
 import { AppHeader } from './components/AppHeader';
+import { AdminLayout } from './components/admin/AdminLayout';
+import { AdminDashboard } from './components/admin/AdminDashboard';
+import { AdminUsers } from './components/admin/AdminUsers';
+import { AdminQuestions } from './components/admin/AdminQuestions';
+import { AdminOssUpload } from './components/admin/AdminOssUpload';
 import { useExamSession } from './hooks/useExamSession';
 import { useAuth } from './hooks/useAuth';
 import { ExamConfig as ExamConfigType } from './types/exam';
@@ -28,6 +34,7 @@ import {
 
 const ROUTES = {
   home: '/',
+  papers: '/papers',
   auth: '/login',
   profile: '/profile',
   practiceHistory: '/practice-history',
@@ -402,6 +409,15 @@ export default function App() {
           path={ROUTES.home}
           element={
             <ExamHome
+              onShowAuth={handleShowAuth}
+              onShowProfile={handleShowProfile}
+            />
+          }
+        />
+        <Route
+          path={ROUTES.papers}
+          element={
+            <PapersPage
               onStartPaper={handleStartPaper}
               onShowProfile={handleShowProfile}
               onShowAuth={handleShowAuth}
@@ -466,6 +482,38 @@ export default function App() {
         <Route path={`${ROUTES.essayWriteBase}/:questionId`} element={<EssayEditor />} />
         <Route path={`${ROUTES.essayResultBase}/:submissionId`} element={<EssayResult />} />
         <Route path={ROUTES.essayHistory} element={<EssayHistory />} />
+        <Route
+          path="/admin"
+          element={
+            <AdminLayout>
+              <AdminDashboard />
+            </AdminLayout>
+          }
+        />
+        <Route
+          path="/admin/users"
+          element={
+            <AdminLayout>
+              <AdminUsers />
+            </AdminLayout>
+          }
+        />
+        <Route
+          path="/admin/questions"
+          element={
+            <AdminLayout>
+              <AdminQuestions />
+            </AdminLayout>
+          }
+        />
+        <Route
+          path="/admin/oss"
+          element={
+            <AdminLayout>
+              <AdminOssUpload />
+            </AdminLayout>
+          }
+        />
         <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
       </Routes>
     </div>

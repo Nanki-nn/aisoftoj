@@ -1,0 +1,17 @@
+logging:
+  level:
+    com.nan.aisoftoj: warn
+
+spring:
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USERNAME}
+    password: ${DB_PASSWORD}
+
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS}
+
+auth:
+  jwt:
+    secret: ${AUTH_JWT_SECRET}
