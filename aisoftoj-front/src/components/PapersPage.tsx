@@ -4,17 +4,21 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
 import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from './ui/dialog';
+import {
+  AlertCircle,
   BookOpen,
-  Clock,
-  Play,
-  RotateCcw,
-  GraduationCap,
   Calendar,
   FileText,
+  GraduationCap,
   History,
-  AlertCircle,
-  X,
-  PenLine,
+  Play,
+  RotateCcw,
 } from 'lucide-react';
 import { supportedSubjects, supportedCategories, ExamPaper } from '../data/examPapers';
 import { AppHeader } from './AppHeader';
@@ -74,7 +78,9 @@ export function PapersPage({
           setTotalAnswered(total);
         }
       })
-      .catch(() => {/* 未登录时忽略 */});
+      .catch(() => {
+        /* 未登录时忽略 */
+      });
 
     fetchWrongQuestions()
       .then((wrongs) => {
@@ -82,7 +88,9 @@ export function PapersPage({
           setWrongCount(wrongs.total);
         }
       })
-      .catch(() => {/* 未登录时忽略 */});
+      .catch(() => {
+        /* 未登录时忽略 */
+      });
 
     return () => {
       isMounted = false;
@@ -110,6 +118,10 @@ export function PapersPage({
       setShowModeDialog(false);
       setSelectedPaper(null);
     }
+  };
+
+  const formatDate = (dateStr: string) => {
+    return dateStr.replace(/(\d{4})\/(\d{1,2})\/(\d{1,2})/, '$1/$2/$3');
   };
 
   const getStatusButton = (paper: ExamPaper) => {
@@ -153,38 +165,17 @@ export function PapersPage({
   };
 
   return (
-    <div className="min-h-screen bg-[#f5f7f2]">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <AppHeader onShowAuth={onShowAuth} onShowProfile={onShowProfile} />
 
-      <div className="mx-auto max-w-7xl px-4 py-8 sm:px-6">
-        <section className="mb-8 overflow-hidden bg-white shadow-sm ring-1 ring-slate-900/8">
-          <div className="grid gap-0 lg:grid-cols-[0.92fr_1.08fr]">
-            <div className="bg-slate-950 p-7 text-white lg:p-9">
-              <div className="mb-7 inline-flex items-center gap-2 bg-white/10 px-3 py-2 text-sm font-semibold text-blue-200">
-                <FileText className="h-4 w-4" />
-                刷真题
-              </div>
-              <h1 className="max-w-xl text-[clamp(2.1rem,4.8vw,4.2rem)] font-semibold leading-[0.95]">
-                用真题校准每一次复习。
-              </h1>
-              <p className="mt-5 max-w-lg text-base leading-7 text-slate-300">
-                练习模式即时看解析，考试模式训练整卷节奏。近年试卷、科目和题型集中在一个页面里。
-              </p>
-            </div>
-            <div className="grid gap-3 bg-[#f7f8f4] p-6 sm:grid-cols-3 lg:p-8">
-              {[
-                ['近年真题', '按年份倒序找卷'],
-                ['模式切换', '练习 / 考试两套节奏'],
-                ['错题沉淀', '复盘时只看薄弱处'],
-              ].map(([title, desc]) => (
-                <div key={title} className="bg-white p-5 shadow-sm ring-1 ring-slate-900/8">
-                  <div className="mb-8 text-sm font-semibold text-blue-700">{title}</div>
-                  <p className="text-sm leading-6 text-slate-600">{desc}</p>
-                </div>
-              ))}
-            </div>
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* 页面标题 */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <FileText className="w-8 h-8 text-blue-600" />
+            <h1 className="text-3xl text-slate-800">刷真题</h1>
           </div>
-        </section>
+        </div>
 
         {/* 已登录用户的学习数据 */}
         {isAuthenticated && (
@@ -216,37 +207,44 @@ export function PapersPage({
           </div>
         )}
 
-        {/* 分类筛选 */}
+        {/* 筛选区域 */}
         <div className="mb-8">
           <div className="bg-white rounded-xl shadow-sm border border-slate-200/50 p-6">
             <h3 className="text-lg text-slate-800 mb-4 flex items-center gap-2">
-              <FileText className="w-5 h-5" />
-              筛选条件
+              <BookOpen className="w-5 h-5" />
+              科目筛选
             </h3>
-            <div className="mb-4 flex flex-wrap gap-3">
-              {supportedSubjects.slice(0, 6).map(subject => (
+            <div className="flex flex-wrap gap-3 mb-6">
+              {supportedSubjects.map((subject) => (
                 <Button
                   key={subject}
-                  variant={selectedSubject === subject ? "default" : "ghost"}
+                  variant={selectedSubject === subject ? 'default' : 'outline'}
                   onClick={() => setSelectedSubject(subject)}
-                  className={selectedSubject === subject
-                    ? "bg-blue-600 hover:bg-blue-700 text-white shadow-md"
-                    : "text-slate-600 hover:text-slate-800 hover:bg-slate-100"
+                  className={
+                    selectedSubject === subject
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md'
+                      : 'border-slate-200 text-slate-600 hover:bg-slate-50'
                   }
                 >
                   {subject}
                 </Button>
               ))}
             </div>
+
+            <h3 className="text-lg text-slate-800 mb-4 flex items-center gap-2">
+              <FileText className="w-5 h-5" />
+              题型分类
+            </h3>
             <div className="flex flex-wrap gap-3">
-              {supportedCategories.map(category => (
+              {supportedCategories.map((category) => (
                 <Button
                   key={category}
-                  variant={selectedCategory === category ? "default" : "outline"}
+                  variant={selectedCategory === category ? 'default' : 'outline'}
                   onClick={() => setSelectedCategory(category)}
-                  className={selectedCategory === category
-                    ? "bg-slate-800 hover:bg-slate-900 text-white shadow-md"
-                    : "border-slate-200 text-slate-600 hover:bg-slate-50"
+                  className={
+                    selectedCategory === category
+                      ? 'bg-slate-800 hover:bg-slate-900 text-white shadow-md'
+                      : 'border-slate-200 text-slate-600 hover:bg-slate-50'
                   }
                 >
                   {category}
@@ -256,7 +254,7 @@ export function PapersPage({
           </div>
         </div>
 
-        {/* 历年真题列表 */}
+        {/* 试卷列表 */}
         <div className="mb-8">
           <div className="flex items-center justify-between mb-6">
             <h3 className="text-xl text-slate-800 flex items-center gap-2">
@@ -282,8 +280,11 @@ export function PapersPage({
 
           {!isLoading && !error && (
             <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-              {filteredPapers.map(paper => (
-                <Card key={paper.id} className="bg-white hover:shadow-lg transition-all duration-300 border border-slate-200/50 hover:border-slate-300/50 group">
+              {filteredPapers.map((paper) => (
+                <Card
+                  key={paper.id}
+                  className="bg-white hover:shadow-lg transition-all duration-300 border border-slate-200/50 hover:border-slate-300/50 group"
+                >
                   <CardHeader className="pb-4">
                     <div className="flex items-start justify-between">
                       <div>
@@ -292,10 +293,7 @@ export function PapersPage({
                         </CardTitle>
                         <p className="text-slate-500 mt-1">{paper.subject}</p>
                       </div>
-                      <Badge
-                        variant="secondary"
-                        className="bg-blue-100 text-blue-700 border-blue-200"
-                      >
+                      <Badge variant="secondary" className="bg-blue-100 text-blue-700 border-blue-200">
                         {paper.category}
                       </Badge>
                     </div>
@@ -319,17 +317,22 @@ export function PapersPage({
                         <div className="space-y-2">
                           <div className="flex justify-between text-sm">
                             <span className="text-slate-600">练习进度</span>
-                            <span className="text-slate-800">{paper.completedCount}/{paper.questionCount}</span>
+                            <span className="text-slate-800">
+                              {paper.completedCount}/{paper.questionCount}
+                            </span>
                           </div>
                           <Progress
-                            value={(paper.completedCount / paper.questionCount) * 100}
+                            value={((paper.completedCount || 0) / paper.questionCount) * 100}
                             className="h-2 bg-slate-100"
                           />
                         </div>
                       )}
 
                       <div className="pt-2 border-t border-slate-100">
-                        <div className="flex items-center justify-end">
+                        <div className="flex items-center justify-between">
+                          <div className="text-xs text-slate-500">
+                            更新: {formatDate(paper.lastUpdated)}
+                          </div>
                           {getStatusButton(paper)}
                         </div>
                       </div>
@@ -340,90 +343,75 @@ export function PapersPage({
             </div>
           )}
         </div>
-
-        {/* 方法论亮点 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
-          {[
-            {
-              icon: FileText,
-              color: 'text-blue-600 bg-blue-50',
-              title: '只刷真题，不做杂题',
-              desc: '近 5 年历年真题，每道题标注考频，把时间花在刀刃上',
-            },
-            {
-              icon: Clock,
-              color: 'text-amber-600 bg-amber-50',
-              title: '碎片时间也够用',
-              desc: '每天下班后 1-2 小时，按阶段推进，不需要整块时间',
-            },
-            {
-              icon: PenLine,
-              color: 'text-violet-600 bg-violet-50',
-              title: 'AI 论文批改',
-              desc: '准备好万金油项目，AI 帮你批改论文、找出扣分点',
-            },
-          ].map((item) => {
-            const Icon = item.icon;
-            return (
-              <div key={item.title} className="bg-white rounded-xl border border-slate-200/60 p-5 flex items-start gap-4">
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${item.color}`}>
-                  <Icon className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-800 mb-1">{item.title}</p>
-                  <p className="text-xs text-slate-500 leading-relaxed">{item.desc}</p>
-                </div>
-              </div>
-            );
-          })}
-        </div>
       </div>
 
-      {/* 模式选择弹窗 */}
-      {showModeDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
-          <div
-            className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm"
-            onClick={() => setShowModeDialog(false)}
-          />
-          <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl sm:p-7">
-            <button
-              onClick={() => setShowModeDialog(false)}
-              className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
-              aria-label="关闭"
+      {/* 模式选择对话框 */}
+      <Dialog open={showModeDialog} onOpenChange={setShowModeDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="text-2xl text-center">选择答题模式</DialogTitle>
+            <DialogDescription className="text-center">
+              {selectedPaper && (
+                <>
+                  {selectedPaper.year}年{selectedPaper.month}月 - {selectedPaper.subject} -{' '}
+                  {selectedPaper.category}
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-4">
+            <Card
+              className="cursor-pointer border-2 border-blue-200 hover:border-blue-500 hover:shadow-lg transition-all"
+              onClick={() => handleModeSelect('practice')}
             >
-              <X className="h-5 w-5" />
-            </button>
+              <CardContent className="p-6 text-center">
+                <FileText className="w-12 h-12 mx-auto mb-3 text-blue-600" />
+                <h3 className="text-lg mb-2 text-slate-800">练习模式</h3>
+                <p className="text-sm text-slate-600 mb-3">边做边学，即时反馈</p>
+                <div className="space-y-1 text-xs text-slate-500">
+                  <div className="flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                    每题显示详细解析
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                    不限制答题时间
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                    可随时查看答案
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-            <h2 className="mb-2 pr-10 text-center text-2xl font-semibold text-slate-800">选择答题模式</h2>
-            {selectedPaper && (
-              <p className="mb-6 text-center text-base text-slate-500">
-                {selectedPaper.year}年{selectedPaper.month}月 · {selectedPaper.subject}
-              </p>
-            )}
-
-            <div className="grid grid-cols-2 gap-4">
-              <button
-                onClick={() => handleModeSelect('practice')}
-                className="flex h-40 flex-col items-center justify-center rounded-xl border-2 border-blue-200 bg-blue-50 p-5 transition-all hover:-translate-y-0.5 hover:border-blue-500 hover:bg-blue-100 hover:shadow-lg"
-              >
-                <FileText className="mb-3 h-11 w-11 text-blue-600" />
-                <div className="text-lg font-semibold text-slate-800">练习模式</div>
-                <div className="mt-2 text-center text-sm text-slate-500">即时显示解析</div>
-              </button>
-
-              <button
-                onClick={() => handleModeSelect('exam')}
-                className="flex h-40 flex-col items-center justify-center rounded-xl border-2 border-red-200 bg-red-50 p-5 transition-all hover:-translate-y-0.5 hover:border-red-500 hover:bg-red-100 hover:shadow-lg"
-              >
-                <GraduationCap className="mb-3 h-11 w-11 text-red-600" />
-                <div className="text-lg font-semibold text-slate-800">考试模式</div>
-                <div className="mt-2 text-center text-sm text-slate-500">交卷后查看</div>
-              </button>
-            </div>
+            <Card
+              className="cursor-pointer border-2 border-red-200 hover:border-red-500 hover:shadow-lg transition-all"
+              onClick={() => handleModeSelect('exam')}
+            >
+              <CardContent className="p-6 text-center">
+                <GraduationCap className="w-12 h-12 mx-auto mb-3 text-red-600" />
+                <h3 className="text-lg mb-2 text-slate-800">考试模式</h3>
+                <p className="text-sm text-slate-600 mb-3">模拟考试，检验实力</p>
+                <div className="space-y-1 text-xs text-slate-500">
+                  <div className="flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                    完成后统一查看解析
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                    模拟真实考试环境
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                    全面检验学习成果
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

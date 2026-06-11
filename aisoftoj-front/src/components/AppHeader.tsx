@@ -1,9 +1,14 @@
 import React, { useMemo } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { BookMarked, BookOpen, Calendar, FileText, Github, LogOut, Settings, Shield, User } from 'lucide-react';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { Calendar, GraduationCap, Github, LogOut, Settings, Shield, User } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
-import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from './ui/dropdown-menu';
-import { BrandLogo } from './BrandLogo';
+import { Button } from './ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from './ui/dropdown-menu';
 import { useAuth } from '../hooks/useAuth';
 
 interface AppHeaderProps {
@@ -11,107 +16,120 @@ interface AppHeaderProps {
   onShowProfile: () => void;
 }
 
+const NAV_LINKS = [
+  { path: '/foundation', label: '打基础' },
+  { path: '/papers', label: '刷真题' },
+  { path: '/essay-sprint', label: '论文冲刺' },
+];
+
 export function AppHeader({ onShowAuth, onShowProfile }: AppHeaderProps) {
   const { user, logout, isAuthenticated } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
+  const currentPath = location.pathname;
 
-  const daysToExam = useMemo(() => {
+  const daysLeft = useMemo(() => {
     const examDate = new Date('2026-05-23');
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     examDate.setHours(0, 0, 0, 0);
-    return Math.ceil((examDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    const diff = Math.ceil((examDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    return diff > 0 ? diff : 0;
   }, []);
 
-  const navLinks = [
-    { label: '打基础', href: '/foundation', icon: BookMarked },
-    { label: '刷真题', href: '/papers', icon: BookOpen },
-    { label: '论文冲刺', href: '/essay-sprint', icon: FileText },
-  ];
-
   return (
-    <header className="bg-white/70 backdrop-blur-sm border-b border-slate-200/50 sticky top-0 z-40">
-      <div className="mx-auto max-w-7xl px-4 sm:px-6 h-14 flex items-center justify-between gap-4">
+    <div className="bg-white/70 backdrop-blur-sm border-b border-slate-200/50 sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4 py-4">
+        <div className="flex items-center justify-between">
+          {/* 左侧：Logo + 主导航 */}
+          <div className="flex items-center gap-6">
+            <button
+              onClick={() => navigate('/')}
+              className="flex items-center gap-2 hover:opacity-80 transition-opacity bg-transparent border-none cursor-pointer p-0"
+            >
+              <GraduationCap className="w-8 h-8 text-blue-600" />
+              <h1 className="text-xl text-slate-800">知构软考</h1>
+            </button>
 
-        {/* Left: logo + nav */}
-        <div className="flex items-center gap-6">
-          <BrandLogo />
-          <nav className="hidden md:flex gap-1">
-            {navLinks.map(({ label, href, icon: Icon }) => (
-              <button
-                key={href}
-                onClick={() => navigate(href)}
-                className="inline-flex items-center gap-1.5 text-sm font-medium px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors bg-transparent border-none cursor-pointer"
-              >
-                <Icon className="w-3.5 h-3.5" />
-                {label}
-              </button>
-            ))}
-          </nav>
-        </div>
-
-        {/* Right */}
-        <div className="flex items-center gap-2">
-          {/* Countdown — always visible */}
-          <div className="flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1.5 rounded-full bg-amber-100 text-amber-800 border border-amber-200">
-            <Calendar className="w-3.5 h-3.5 shrink-0" />
-            <span className="hidden sm:inline">距离软考还有</span>
-            <span>{daysToExam > 0 ? `${daysToExam}天` : daysToExam === 0 ? '今天考试！' : '已结束'}</span>
+            <nav className="hidden md:flex items-center gap-2">
+              {NAV_LINKS.map((link) => (
+                <Button
+                  key={link.path}
+                  variant={currentPath === link.path ? 'default' : 'ghost'}
+                  onClick={() => navigate(link.path)}
+                  className={
+                    currentPath === link.path
+                      ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md'
+                      : 'text-slate-600 hover:text-slate-800 hover:bg-slate-100'
+                  }
+                >
+                  {link.label}
+                </Button>
+              ))}
+            </nav>
           </div>
 
-          {/* GitHub */}
-          <a
-            href="https://github.com/Nanki-nn/aisoftoj"
-            target="_blank"
-            rel="noopener noreferrer"
-            className="hidden sm:inline-flex items-center gap-1.5 text-xs font-medium px-2.5 py-1.5 rounded-md border border-slate-200 text-slate-500 hover:text-slate-900 hover:border-slate-400 transition-colors no-underline"
-          >
-            <Github className="w-3.5 h-3.5" />
-            <span className="hidden lg:inline">项目开源 · </span>Star
-          </a>
+          {/* 右侧：倒计时 + GitHub + 用户菜单 */}
+          <div className="flex items-center gap-4">
+            <div className="flex items-center gap-2 bg-amber-100 text-amber-800 px-4 py-2 rounded-lg border border-amber-200">
+              <Calendar className="w-4 h-4" />
+              <span className="hidden sm:inline">距离考试还有</span>
+              <span className="font-semibold">{daysLeft}天</span>
+            </div>
 
-          {/* Auth */}
-          {isAuthenticated && user ? (
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <button className="rounded-full p-0 border-none bg-transparent cursor-pointer">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage src={user.avatar} />
-                    <AvatarFallback className="bg-blue-100 text-blue-600 text-xs font-bold">
-                      {user.nickname.charAt(0)}
-                    </AvatarFallback>
-                  </Avatar>
-                </button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end" className="w-48">
-                <DropdownMenuItem onClick={onShowProfile} className="flex items-center gap-2">
-                  <User className="w-4 h-4" />
-                  个人中心
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => navigate('/admin')} className="flex items-center gap-2">
-                  <Shield className="w-4 h-4" />
-                  后台管理
-                </DropdownMenuItem>
-                <DropdownMenuItem className="flex items-center gap-2">
-                  <Settings className="w-4 h-4" />
-                  设置
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={logout} className="flex items-center gap-2 text-red-600">
-                  <LogOut className="w-4 h-4" />
-                  退出登录
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
-          ) : (
-            <button
-              onClick={onShowAuth}
-              className="text-sm font-semibold px-4 py-1.5 rounded-md bg-slate-950 text-white hover:bg-blue-900 transition-colors border-none cursor-pointer"
+            <a
+              href="https://github.com/Nanki-nn/aisoftoj"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="hidden sm:inline-flex items-center gap-2 text-sm font-medium px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors no-underline"
             >
-              登录
-            </button>
-          )}
+              <Github className="w-4 h-4" />
+              <span>Star</span>
+            </a>
+
+            {isAuthenticated && user ? (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="h-10 w-10 rounded-full p-0">
+                    <Avatar className="h-10 w-10">
+                      <AvatarImage src={user.avatar} />
+                      <AvatarFallback className="bg-blue-100 text-blue-600">
+                        {user.nickname.charAt(0)}
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem onClick={onShowProfile} className="flex items-center gap-2">
+                    <User className="w-4 h-4" />
+                    个人中心
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/practice-history')} className="flex items-center gap-2">
+                    <Settings className="w-4 h-4" />
+                    刷题历史
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/wrong-questions')} className="flex items-center gap-2">
+                    <Settings className="w-4 h-4" />
+                    错题本
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => navigate('/admin')} className="flex items-center gap-2">
+                    <Shield className="w-4 h-4" />
+                    后台管理
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={logout} className="flex items-center gap-2 text-red-600">
+                    <LogOut className="w-4 h-4" />
+                    退出登录
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            ) : (
+              <Button onClick={onShowAuth} variant="outline">
+                登录 / 注册
+              </Button>
+            )}
+          </div>
         </div>
       </div>
-    </header>
+    </div>
   );
 }
