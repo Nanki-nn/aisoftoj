@@ -4,6 +4,7 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { ArrowLeft } from 'lucide-react';
 import { fetchPracticeHistory } from '../lib/api';
 import { PracticeSessionRecord } from '../types/record';
 
@@ -66,17 +67,25 @@ export function PracticeHistory({ onBack, onContinue, onViewResult }: PracticeHi
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      {/* 顶部导航栏 */}
+      <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 py-3">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" onClick={onBack} className="flex items-center gap-2">
+              <ArrowLeft className="w-4 h-4" />
+              返回
+            </Button>
+            <div className="text-slate-500">题库列表 {'>'} 刷题记录</div>
+          </div>
+        </div>
+      </div>
+
       {/* 主体内容 */}
       <div className="max-w-7xl mx-auto px-4 py-6">
         <Card className="bg-white shadow-sm border border-slate-200">
           <CardContent className="p-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
-              <div className="flex items-center gap-3">
-                <Button variant="ghost" size="sm" onClick={onBack} className="text-slate-600">
-                  首页
-                </Button>
-                <h2 className="text-slate-800">刷题记录</h2>
-              </div>
+              <h2 className="text-slate-800">刷题记录</h2>
               <div className="flex items-center gap-2 text-sm text-slate-500">
                 <span>每页</span>
                 <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
