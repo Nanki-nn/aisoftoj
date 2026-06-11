@@ -135,7 +135,7 @@ export function EssayEditor() {
 
   if (questionLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
+      <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="text-slate-400">加载题目中…</div>
       </div>
     );
@@ -143,7 +143,7 @@ export function EssayEditor() {
 
   if (!question) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex flex-col items-center justify-center">
+      <div className="min-h-screen bg-white flex flex-col items-center justify-center">
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200/50 p-12 text-center max-w-md w-full">
           <p className="text-slate-500 mb-2 text-sm">题目 #{questionId} 不存在</p>
           <h2 className="text-xl text-slate-700 mb-6">未找到对应题目</h2>
@@ -165,7 +165,7 @@ export function EssayEditor() {
       : { background: '#fef3c7', color: '#92400e' };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-white">
       {/* 顶部导航栏 */}
       <div className="bg-white/70 backdrop-blur-sm border-b border-slate-200/50 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-4">
