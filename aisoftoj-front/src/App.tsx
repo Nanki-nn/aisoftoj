@@ -1,6 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
-import { ExamHome } from './components/ExamHome';
+import { LearningLanding } from './components/LearningLanding';
+import { FoundationPage } from './components/FoundationPage';
+import { EssaySprintPage } from './components/EssaySprintPage';
 import { PapersPage } from './components/PapersPage';
 import { ExamConfig } from './components/ExamConfig';
 import { ExamSession } from './components/ExamSession';
@@ -34,6 +36,7 @@ import {
 
 const ROUTES = {
   home: '/',
+  foundation: '/foundation',
   papers: '/papers',
   auth: '/login',
   profile: '/profile',
@@ -43,6 +46,7 @@ const ROUTES = {
   examSessionBase: '/exam/session',
   examResultBase: '/exam/result',
   essay: '/essay',
+  essaySprint: '/essay-sprint',
   essayWriteBase: '/essay/write',
   essayResultBase: '/essay/result',
   essayHistory: '/essay/history',
@@ -408,11 +412,15 @@ export default function App() {
         <Route
           path={ROUTES.home}
           element={
-            <ExamHome
+            <LearningLanding
               onShowAuth={handleShowAuth}
               onShowProfile={handleShowProfile}
             />
           }
+        />
+        <Route
+          path={ROUTES.foundation}
+          element={<FoundationPage onShowAuth={handleShowAuth} onShowProfile={handleShowProfile} />}
         />
         <Route
           path={ROUTES.papers}
@@ -479,6 +487,10 @@ export default function App() {
           }
         />
         <Route path={ROUTES.essay} element={<EssayHome />} />
+        <Route
+          path={ROUTES.essaySprint}
+          element={<EssaySprintPage onShowAuth={handleShowAuth} onShowProfile={handleShowProfile} />}
+        />
         <Route path={`${ROUTES.essayWriteBase}/:questionId`} element={<EssayEditor />} />
         <Route path={`${ROUTES.essayResultBase}/:submissionId`} element={<EssayResult />} />
         <Route path={ROUTES.essayHistory} element={<EssayHistory />} />

@@ -113,6 +113,12 @@ export function AuthPage({ onLoginSuccess }: AuthPageProps) {
                   </div>
                 </div>
               </div>
+
+              <div className="mt-8 text-center">
+                <p className="text-slate-500 text-sm">
+                  已有 <span className="text-blue-600">10,000+</span> 用户通过平台成功备考
+                </p>
+              </div>
             </div>
           </div>
 
