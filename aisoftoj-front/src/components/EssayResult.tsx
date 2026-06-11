@@ -37,7 +37,7 @@ const SUGGESTION_BADGE_STYLES: Record<number, { background: string; color: strin
 
 function LoadingState() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex flex-col items-center justify-center gap-6">
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-6">
       <div
         className="w-16 h-16 rounded-full border-4 border-blue-200 border-t-blue-600 animate-spin"
         style={{ borderTopColor: '#2563eb', borderColor: '#bfdbfe' }}
@@ -70,7 +70,7 @@ function LoadingState() {
 
 function FailedState({ onRetry }: { onRetry: () => void }) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex flex-col items-center justify-center gap-6">
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-6">
       <div
         className="w-16 h-16 rounded-full flex items-center justify-center"
         style={{ background: '#fee2e2' }}
@@ -94,7 +94,7 @@ function FailedState({ onRetry }: { onRetry: () => void }) {
 
 function TimeoutState({ onViewHistory }: { onViewHistory: () => void }) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex flex-col items-center justify-center gap-6">
+    <div className="min-h-screen bg-white flex flex-col items-center justify-center gap-6">
       <div
         className="w-16 h-16 rounded-full flex items-center justify-center"
         style={{ background: '#fef3c7' }}
@@ -132,7 +132,7 @@ function ReportState({ data, onBack, onViewHistory }: {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-white">
       {/* Top nav */}
       <div className="bg-white/70 backdrop-blur-sm border-b border-slate-200/50 sticky top-0 z-10">
         <div className="max-w-4xl mx-auto px-4 py-4">

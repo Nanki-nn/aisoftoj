@@ -95,7 +95,7 @@ export function EssaySprintPage({ onShowAuth, onShowProfile }: EssaySprintPagePr
       : essayExamples.filter((e) => e.subjects.includes(selectedSubject));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-white">
       <AppHeader onShowAuth={onShowAuth} onShowProfile={onShowProfile} />
 
       <div className="max-w-7xl mx-auto px-4 py-8">

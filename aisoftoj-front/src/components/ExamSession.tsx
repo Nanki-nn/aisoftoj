@@ -512,7 +512,7 @@ export function ExamSession({
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <div className="min-h-screen bg-white">
       <div className="border-b border-slate-200 bg-white/80">
         <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">

@@ -73,7 +73,7 @@ export function AuthPage({ onLoginSuccess }: AuthPageProps) {
   };
 
   return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
+      <div className="min-h-screen bg-white flex items-center justify-center p-4">
         <div className="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
           {/* 左侧展示区域 */}
           <div className="hidden lg:block">
