@@ -4,13 +4,6 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
 import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from './ui/dialog';
-import {
   AlertCircle,
   BookOpen,
   Calendar,
@@ -19,6 +12,7 @@ import {
   History,
   Play,
   RotateCcw,
+  X,
 } from 'lucide-react';
 import { supportedSubjects, supportedCategories, ExamPaper } from '../data/examPapers';
 import { AppHeader } from './AppHeader';
@@ -345,73 +339,51 @@ export function PapersPage({
         </div>
       </div>
 
-      {/* 模式选择对话框 */}
-      <Dialog open={showModeDialog} onOpenChange={setShowModeDialog}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle className="text-2xl text-center">选择答题模式</DialogTitle>
-            <DialogDescription className="text-center">
-              {selectedPaper && (
-                <>
-                  {selectedPaper.year}年{selectedPaper.month}月 - {selectedPaper.subject} -{' '}
-                  {selectedPaper.category}
-                </>
-              )}
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid grid-cols-2 gap-4 py-4">
-            <Card
-              className="cursor-pointer border-2 border-blue-200 hover:border-blue-500 hover:shadow-lg transition-all"
-              onClick={() => handleModeSelect('practice')}
+      {/* 模式选择弹窗 */}
+      {showModeDialog && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+          <div
+            className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm"
+            onClick={() => setShowModeDialog(false)}
+          />
+          <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl sm:p-7">
+            <button
+              onClick={() => setShowModeDialog(false)}
+              className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
+              aria-label="关闭"
             >
-              <CardContent className="p-6 text-center">
-                <FileText className="w-12 h-12 mx-auto mb-3 text-blue-600" />
-                <h3 className="text-lg mb-2 text-slate-800">练习模式</h3>
-                <p className="text-sm text-slate-600 mb-3">边做边学，即时反馈</p>
-                <div className="space-y-1 text-xs text-slate-500">
-                  <div className="flex items-center gap-1">
-                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                    每题显示详细解析
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                    不限制答题时间
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
-                    可随时查看答案
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+              <X className="h-5 w-5" />
+            </button>
 
-            <Card
-              className="cursor-pointer border-2 border-red-200 hover:border-red-500 hover:shadow-lg transition-all"
-              onClick={() => handleModeSelect('exam')}
-            >
-              <CardContent className="p-6 text-center">
-                <GraduationCap className="w-12 h-12 mx-auto mb-3 text-red-600" />
-                <h3 className="text-lg mb-2 text-slate-800">考试模式</h3>
-                <p className="text-sm text-slate-600 mb-3">模拟考试，检验实力</p>
-                <div className="space-y-1 text-xs text-slate-500">
-                  <div className="flex items-center gap-1">
-                    <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                    完成后统一查看解析
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                    模拟真实考试环境
-                  </div>
-                  <div className="flex items-center gap-1">
-                    <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
-                    全面检验学习成果
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
+            <h2 className="mb-2 pr-10 text-center text-2xl font-semibold text-slate-800">选择答题模式</h2>
+            {selectedPaper && (
+              <p className="mb-6 text-center text-base text-slate-500">
+                {selectedPaper.year}年{selectedPaper.month}月 · {selectedPaper.subject}
+              </p>
+            )}
+
+            <div className="grid grid-cols-2 gap-4">
+              <button
+                onClick={() => handleModeSelect('practice')}
+                className="flex h-40 flex-col items-center justify-center rounded-xl border-2 border-blue-200 bg-blue-50 p-5 transition-all hover:-translate-y-0.5 hover:border-blue-500 hover:bg-blue-100 hover:shadow-lg"
+              >
+                <FileText className="mb-3 h-11 w-11 text-blue-600" />
+                <div className="text-lg font-semibold text-slate-800">练习模式</div>
+                <div className="mt-2 text-center text-sm text-slate-500">即时显示解析</div>
+              </button>
+
+              <button
+                onClick={() => handleModeSelect('exam')}
+                className="flex h-40 flex-col items-center justify-center rounded-xl border-2 border-red-200 bg-red-50 p-5 transition-all hover:-translate-y-0.5 hover:border-red-500 hover:bg-red-100 hover:shadow-lg"
+              >
+                <GraduationCap className="mb-3 h-11 w-11 text-red-600" />
+                <div className="text-lg font-semibold text-slate-800">考试模式</div>
+                <div className="mt-2 text-center text-sm text-slate-500">交卷后查看</div>
+              </button>
+            </div>
           </div>
-        </DialogContent>
-      </Dialog>
+        </div>
+      )}
     </div>
   );
 }
