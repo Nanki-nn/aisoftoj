@@ -1,112 +1,264 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { ArrowRight, FilePenLine, Gauge, NotebookPen, PenTool, SearchCheck, Sparkles } from 'lucide-react';
-import { AppHeader } from './AppHeader';
+import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
+import { Badge } from './ui/badge';
+import {
+  ArrowRight,
+  Award,
+  ExternalLink,
+  FileText,
+  Lightbulb,
+  PenTool,
+} from 'lucide-react';
+import { supportedSubjects } from '../data/examPapers';
+import { AppHeader } from './AppHeader';
 
 interface EssaySprintPageProps {
   onShowAuth: () => void;
   onShowProfile: () => void;
 }
 
-const sprintBlocks = [
-  { title: '项目底稿', desc: '准备一个可复用项目，提前写清背景、目标、架构和难点。', icon: NotebookPen },
-  { title: '主题套写', desc: '围绕质量属性、架构设计、项目管理等主题拆成可替换段落。', icon: PenTool },
-  { title: 'AI 批改', desc: '检查结构、论点密度、字数节奏和题目贴合度。', icon: SearchCheck },
-  { title: '考场节奏', desc: '训练开头、主体、结尾的时间分配，减少临场卡壳。', icon: Gauge },
+interface EssayExample {
+  title: string;
+  topic: string;
+  summary: string;
+  githubUrl: string;
+  tags: string[];
+  subjects: string[];
+}
+
+const essayExamples: EssayExample[] = [
+  {
+    title: '论软件架构风格的选择与应用',
+    topic: '架构设计',
+    summary: '结合项目实践，讨论如何根据业务需求选择合适的架构风格（如分层架构、微服务架构等），并分析其优缺点',
+    githubUrl: 'https://github.com/Nanki-nn/aisoftoj',
+    tags: ['架构风格', '分层架构', '微服务'],
+    subjects: ['系统架构设计师', '系统分析师'],
+  },
+  {
+    title: '论软件系统的可靠性设计',
+    topic: '质量属性',
+    summary: '探讨如何通过冗余设计、容错机制、故障恢复等手段提升软件系统的可靠性',
+    githubUrl: 'https://github.com/Nanki-nn/aisoftoj',
+    tags: ['可靠性', '容错', '高可用'],
+    subjects: ['系统架构设计师', '系统分析师', '软件设计师'],
+  },
+  {
+    title: '论软件系统的性能优化',
+    topic: '质量属性',
+    summary: '分析性能瓶颈识别方法，讨论缓存策略、数据库优化、负载均衡等性能优化手段',
+    githubUrl: 'https://github.com/Nanki-nn/aisoftoj',
+    tags: ['性能优化', '缓存', '负载均衡'],
+    subjects: ['系统架构设计师', '软件设计师', '系统分析师'],
+  },
+  {
+    title: '论大型项目的质量管理',
+    topic: '项目管理',
+    summary: '结合实际项目经验，讨论质量计划、质量保证、质量控制的实施方法',
+    githubUrl: 'https://github.com/Nanki-nn/aisoftoj',
+    tags: ['质量管理', 'QA', '测试'],
+    subjects: ['信息系统项目管理师', '系统分析师'],
+  },
+  {
+    title: '论软件项目的风险管理',
+    topic: '项目管理',
+    summary: '探讨风险识别、风险评估、风险应对的方法，结合案例说明风险管理的重要性',
+    githubUrl: 'https://github.com/Nanki-nn/aisoftoj',
+    tags: ['风险管理', '项目管理', 'PMBOK'],
+    subjects: ['信息系统项目管理师', '系统分析师'],
+  },
+  {
+    title: '论分布式系统的设计与实现',
+    topic: '架构设计',
+    summary: '讨论分布式系统的特点、挑战以及设计原则，包括一致性、可用性、分区容错性的权衡',
+    githubUrl: 'https://github.com/Nanki-nn/aisoftoj',
+    tags: ['分布式', 'CAP', '一致性'],
+    subjects: ['系统架构设计师', '系统分析师'],
+  },
 ];
+
+const topicColors: Record<string, string> = {
+  架构设计: 'bg-blue-100 text-blue-700 border-blue-200',
+  质量属性: 'bg-emerald-100 text-emerald-700 border-emerald-200',
+  项目管理: 'bg-violet-100 text-violet-700 border-violet-200',
+};
 
 export function EssaySprintPage({ onShowAuth, onShowProfile }: EssaySprintPageProps) {
   const navigate = useNavigate();
+  const [selectedSubject, setSelectedSubject] = useState<string>('全部科目');
+
+  const filteredEssays =
+    selectedSubject === '全部科目'
+      ? essayExamples
+      : essayExamples.filter((e) => e.subjects.includes(selectedSubject));
 
   return (
-    <div className="min-h-screen bg-[#faf6ed] text-slate-900">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <AppHeader onShowAuth={onShowAuth} onShowProfile={onShowProfile} />
 
-      <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6">
-        <section className="overflow-hidden bg-white shadow-sm ring-1 ring-slate-900/8">
-          <div className="grid lg:grid-cols-[1.08fr_0.92fr]">
-            <div className="p-7 lg:p-10">
-              <div className="mb-8 inline-flex items-center gap-2 bg-amber-50 px-3 py-2 text-sm font-semibold text-amber-700">
-                <FilePenLine className="h-4 w-4" />
-                论文冲刺
-              </div>
-              <h1 className="max-w-3xl text-[clamp(2.35rem,6vw,4.8rem)] font-semibold leading-[0.92] text-slate-950">
-                论文不是灵感题，
-                <span className="block text-amber-700">是预案题。</span>
-              </h1>
-              <p className="mt-6 max-w-2xl text-[1.05rem] leading-8 text-slate-600">
-                最后一阶段不再泛泛看范文，而是用一个项目底稿覆盖多个主题，反复写、反复改，把可复现的表达带上考场。
-              </p>
-              <div className="mt-8 flex flex-col gap-3 sm:flex-row">
-                <Button
-                  onClick={() => navigate('/essay')}
-                  className="h-12 rounded-[4px] bg-amber-700 px-6 text-white hover:bg-amber-800"
-                >
-                  开始 AI 批改
-                  <ArrowRight className="ml-2 h-4 w-4" />
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => navigate('/papers')}
-                  className="h-12 rounded-[4px] border-slate-900/20 bg-white px-6"
-                >
-                  先刷真题
-                </Button>
-              </div>
-            </div>
-
-            <div className="border-t border-slate-900/10 bg-slate-950 p-6 text-white lg:border-l lg:border-t-0 lg:p-8">
-              <Sparkles className="mb-8 h-8 w-8 text-amber-300" />
-              <div className="space-y-5">
-                {[
-                  ['开头', '背景 + 问题 + 本文主线'],
-                  ['主体', '方法 + 过程 + 取舍 + 效果'],
-                  ['结尾', '复盘 + 改进 + 个人职责'],
-                ].map(([title, desc], index) => (
-                    <div key={title} className="bg-white/[0.04] p-5 ring-1 ring-white/10">
-                      <div className="mb-4 text-sm text-amber-200">0{index + 1}</div>
-                      <h2 className="text-xl font-semibold">{title}</h2>
-                      <p className="mt-2 text-sm leading-6 text-slate-300">{desc}</p>
-                    </div>
-                ))}
-              </div>
-            </div>
+      <div className="max-w-7xl mx-auto px-4 py-8">
+        {/* 页面标题 */}
+        <div className="mb-8">
+          <div className="flex items-center gap-3 mb-4">
+            <PenTool className="w-8 h-8 text-blue-600" />
+            <h1 className="text-3xl text-slate-800">论文冲刺</h1>
           </div>
-        </section>
+        </div>
 
-        <section className="mt-8 grid gap-3 md:grid-cols-2 lg:grid-cols-4">
-          {sprintBlocks.map((item) => {
-            const Icon = item.icon;
-            return (
-              <article key={item.title} className="bg-white p-6 shadow-sm ring-1 ring-slate-900/8">
-                <Icon className="mb-7 h-7 w-7 text-amber-700" />
-                <h2 className="text-lg font-semibold text-slate-950">{item.title}</h2>
-                <p className="mt-3 text-sm leading-6 text-slate-600">{item.desc}</p>
-              </article>
-            );
-          })}
-        </section>
+        {/* 科目选择器 */}
+        <div className="mb-6">
+          <div className="flex flex-wrap gap-2">
+            <Button
+              variant={selectedSubject === '全部科目' ? 'default' : 'outline'}
+              onClick={() => setSelectedSubject('全部科目')}
+              className={selectedSubject === '全部科目' ? 'bg-blue-600 hover:bg-blue-700' : ''}
+            >
+              全部科目
+            </Button>
+            {supportedSubjects.map((subject) => (
+              <Button
+                key={subject}
+                variant={selectedSubject === subject ? 'default' : 'outline'}
+                onClick={() => setSelectedSubject(subject)}
+                className={selectedSubject === subject ? 'bg-blue-600 hover:bg-blue-700' : ''}
+              >
+                {subject}
+              </Button>
+            ))}
+          </div>
+        </div>
 
-        <section className="mt-8 bg-[#fff9e8] p-7 shadow-sm ring-1 ring-slate-900/8 lg:p-9">
-          <div className="grid gap-6 lg:grid-cols-[0.9fr_1.1fr]">
-            <div>
-              <p className="text-sm font-semibold text-amber-700">冲刺安排</p>
-              <h2 className="mt-3 text-3xl font-semibold leading-tight text-slate-950">
-                一周三篇，不求多，求每篇都能改出下一版。
-              </h2>
-            </div>
-            <div className="grid gap-3">
-              {['第一篇：确认项目素材能不能撑住主题', '第二篇：压缩废话，提高论证密度', '第三篇：按考试时间完整写完'].map((item) => (
-                <div key={item} className="flex items-center justify-between border border-slate-900/10 bg-white px-4 py-4 text-sm text-slate-700">
-                  <span>{item}</span>
-                  <ArrowRight className="h-4 w-4 text-amber-700" />
+        {/* 统计信息 */}
+        <div className="flex items-center gap-4 mb-8">
+          <Badge variant="outline" className="px-4 py-2 text-base">
+            <FileText className="w-4 h-4 mr-2" />
+            共 {filteredEssays.length} 篇论文案例
+          </Badge>
+          <Badge variant="outline" className="px-4 py-2 text-base">
+            <ExternalLink className="w-4 h-4 mr-2" />
+            点击卡片跳转 GitHub
+          </Badge>
+        </div>
+
+        {/* 论文案例列表 */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          {filteredEssays.map((essay, index) => (
+            <Card
+              key={`${essay.title}-${index}`}
+              className="group hover:shadow-xl transition-all duration-300 cursor-pointer border border-slate-200/50 hover:border-slate-300"
+              onClick={() => window.open(essay.githubUrl, '_blank')}
+            >
+              <CardHeader className="pb-4">
+                <div className="flex items-start justify-between mb-3">
+                  <Badge
+                    variant="secondary"
+                    className={topicColors[essay.topic] || 'bg-slate-100 text-slate-700 border-slate-200'}
+                  >
+                    {essay.topic}
+                  </Badge>
+                  <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-blue-600 transition-colors" />
                 </div>
-              ))}
+                <CardTitle className="text-lg group-hover:text-blue-600 transition-colors leading-relaxed">
+                  {essay.title}
+                </CardTitle>
+              </CardHeader>
+              <CardContent className="pt-0">
+                <p className="text-slate-600 mb-4 text-sm leading-relaxed">{essay.summary}</p>
+                <div className="flex flex-wrap gap-2">
+                  {essay.tags.map((tag) => (
+                    <Badge key={tag} variant="outline" className="text-xs border-slate-200 text-slate-600">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+
+        {/* AI批改CTA */}
+        <Card className="bg-gradient-to-br from-violet-500 to-violet-600 text-white border-0 mb-8">
+          <CardContent className="p-8">
+            <div className="flex flex-col md:flex-row items-center justify-between gap-6">
+              <div className="flex-1">
+                <div className="flex items-center gap-3 mb-3">
+                  <div className="w-12 h-12 rounded-full bg-white/20 flex items-center justify-center">
+                    <Lightbulb className="w-6 h-6" />
+                  </div>
+                  <h3 className="text-2xl">AI 论文批改</h3>
+                </div>
+                <p className="text-violet-100 mb-4">
+                  智能分析你的论文，提供六维评分和针对性改进建议
+                </p>
+                <div className="flex flex-wrap gap-3">
+                  <Badge variant="secondary" className="bg-white/20 border-white/30 text-white">
+                    <Award className="w-3 h-3 mr-1" />
+                    六维评分
+                  </Badge>
+                  <Badge variant="secondary" className="bg-white/20 border-white/30 text-white">
+                    <FileText className="w-3 h-3 mr-1" />
+                    详细建议
+                  </Badge>
+                  <Badge variant="secondary" className="bg-white/20 border-white/30 text-white">
+                    <PenTool className="w-3 h-3 mr-1" />
+                    快速提升
+                  </Badge>
+                </div>
+              </div>
+              <Button
+                size="lg"
+                variant="secondary"
+                onClick={() => navigate('/essay')}
+                className="bg-white text-violet-600 hover:bg-violet-50 px-8"
+              >
+                用 AI 批改我的论文
+                <ArrowRight className="w-5 h-5 ml-2" />
+              </Button>
             </div>
-          </div>
-        </section>
-      </main>
+          </CardContent>
+        </Card>
+
+        {/* 论文写作技巧 */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card className="border border-slate-200/50">
+            <CardContent className="p-6">
+              <div className="w-12 h-12 rounded-full bg-blue-100 flex items-center justify-center mb-4">
+                <FileText className="w-6 h-6 text-blue-600" />
+              </div>
+              <h3 className="text-lg text-slate-800 mb-2">摘要写作</h3>
+              <p className="text-slate-600 text-sm">
+                280-320字，概括项目背景、采用技术、取得成效
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="border border-slate-200/50">
+            <CardContent className="p-6">
+              <div className="w-12 h-12 rounded-full bg-emerald-100 flex items-center justify-center mb-4">
+                <PenTool className="w-6 h-6 text-emerald-600" />
+              </div>
+              <h3 className="text-lg text-slate-800 mb-2">正文结构</h3>
+              <p className="text-slate-600 text-sm">
+                2000-3000字，项目概述、技术应用、问题解决、总结反思
+              </p>
+            </CardContent>
+          </Card>
+
+          <Card className="border border-slate-200/50">
+            <CardContent className="p-6">
+              <div className="w-12 h-12 rounded-full bg-violet-100 flex items-center justify-center mb-4">
+                <Award className="w-6 h-6 text-violet-600" />
+              </div>
+              <h3 className="text-lg text-slate-800 mb-2">评分标准</h3>
+              <p className="text-slate-600 text-sm">
+                题目贴合度、技术深度、论据充分性、语言流畅度
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }
