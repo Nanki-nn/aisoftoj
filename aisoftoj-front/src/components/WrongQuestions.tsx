@@ -4,6 +4,7 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
+import { ArrowLeft } from 'lucide-react';
 import { importanceLevels } from '../types/record';
 import { PracticeRecord } from '../types/record';
 import { fetchWrongQuestions } from '../lib/api';
@@ -72,18 +73,25 @@ export function WrongQuestions({ onBack, onViewQuestion }: WrongQuestionsProps) 
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+      {/* 顶部导航栏 */}
+      <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
+        <div className="max-w-7xl mx-auto px-4 py-3">
+          <div className="flex items-center gap-4">
+            <Button variant="ghost" onClick={onBack} className="flex items-center gap-2">
+              <ArrowLeft className="w-4 h-4" />
+              返回
+            </Button>
+            <div className="text-slate-500">题库列表 {'>'} 错题记录</div>
+          </div>
+        </div>
+      </div>
+
       {/* 主体内容 */}
       <div className="max-w-7xl mx-auto px-4 py-6">
         <Card className="bg-white shadow-sm border border-slate-200">
           <CardHeader className="border-b border-slate-100">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-3">
-                <Button variant="ghost" size="sm" onClick={onBack} className="text-slate-600">
-                  首页
-                </Button>
-                <CardTitle>错题记录</CardTitle>
-                <span className="hidden text-slate-400 text-sm sm:inline">题库列表 {'>'} 错题记录</span>
-              </div>
+              <CardTitle>错题记录</CardTitle>
               <div className="flex items-center gap-3">
                 <div className="hidden items-center gap-2 text-sm text-slate-500 sm:flex">
                   <span>每页</span>
