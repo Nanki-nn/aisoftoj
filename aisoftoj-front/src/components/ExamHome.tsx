@@ -3,9 +3,9 @@ import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { Progress } from './ui/progress';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from './ui/dialog';
 import {
   BookOpen,
-  Clock,
   Play,
   RotateCcw,
   Trophy,
@@ -13,13 +13,10 @@ import {
   GraduationCap,
   Calendar,
   FileText,
-  ChevronRight,
   History,
   AlertCircle,
-  X,
-  Zap,
-  CheckCircle2,
-  PenLine,
+  Star,
+  Users,
 } from 'lucide-react';
 import { supportedSubjects, supportedCategories, ExamPaper } from '../data/examPapers';
 import { AppHeader } from './AppHeader';
@@ -158,120 +155,56 @@ export function ExamHome({ onStartPaper, onShowProfile, onShowAuth, onShowPracti
       <div className="max-w-7xl mx-auto px-4 py-8">
         {/* Hero */}
         <div className="mb-8">
-          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/50 overflow-hidden">
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-0">
-              {/* 左侧：主张 */}
-              <div className="p-8 lg:p-10">
-                <div className="inline-flex items-center gap-1.5 bg-blue-50 text-blue-700 text-xs font-medium px-3 py-1.5 rounded-full mb-5">
-                  <Zap className="w-3.5 h-3.5" />
-                  专为在职备考设计
-                </div>
-                <h1 className="text-3xl lg:text-4xl font-bold text-slate-900 leading-tight mb-3">
-                  碎片时间备考软考
-                  <br />
-                  <span className="text-blue-600">从真题出发</span>
-                </h1>
-                <p className="text-slate-500 text-base mb-2 leading-relaxed">
-                  下班后 1-2 小时，跟着真题走，不走弯路。
+          <div className="bg-white rounded-2xl shadow-sm border border-slate-200/50 p-8">
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
+              <div>
+                <h2 className="text-3xl text-slate-800 mb-4">
+                  开始你的软考之旅
+                </h2>
+                <p className="text-slate-600 mb-6 text-lg">
+                  精选历年真题，智能分析错题，助你高效备考软考
                 </p>
-                <p className="text-slate-400 text-sm mb-7 leading-relaxed">
-                  作者本人 23 届计算机，工作一年后用 2 个月拿下架构师，
-                  这套备考路径直接做进了平台里。
-                </p>
-                <div className="flex flex-wrap gap-3">
+                <div className="flex gap-4">
                   <Button
-                    className="bg-blue-600 hover:bg-blue-700 shadow-md hover:shadow-lg transition-all"
+                    className="bg-blue-600 hover:bg-blue-700 shadow-lg hover:shadow-xl transition-all"
                     onClick={() => document.getElementById('paper-list')?.scrollIntoView({ behavior: 'smooth' })}
                   >
-                    <Play className="w-4 h-4 mr-2" />
-                    开始刷真题
+                    <Trophy className="w-4 h-4 mr-2" />
+                    开始练习
                   </Button>
                   {!isAuthenticated && (
                     <Button variant="outline" className="border-slate-200 hover:bg-slate-50" onClick={onShowAuth}>
-                      注册免费使用
+                      <Target className="w-4 h-4 mr-2" />
+                      注册使用
                     </Button>
                   )}
                 </div>
               </div>
-
-              {/* 右侧：三阶段备考路径 */}
-              <div className="bg-slate-50 border-l border-slate-100 p-8 lg:p-10">
-                <p className="text-xs font-semibold text-slate-400 uppercase tracking-wider mb-5">备考路径</p>
-                <div className="space-y-4">
-                  {[
-                    {
-                      week: '第 1-4 周',
-                      title: '打基础',
-                      desc: '视频 + 电子笔记 + 思维导图，快速过一遍知识点',
-                      icon: BookOpen,
-                      color: 'text-blue-600 bg-blue-100',
-                    },
-                    {
-                      week: '第 5-6 周',
-                      title: '刷真题',
-                      desc: '只刷近 5 年真题，做两遍，重点在订正和复盘',
-                      icon: CheckCircle2,
-                      color: 'text-emerald-600 bg-emerald-100',
-                    },
-                    {
-                      week: '第 7-8 周',
-                      title: '论文冲刺',
-                      desc: '准备一个万金油项目，覆盖 3-4 个主题，AI 批改打分',
-                      icon: PenLine,
-                      color: 'text-violet-600 bg-violet-100',
-                    },
-                  ].map((step) => {
-                    const Icon = step.icon;
-                    return (
-                      <div key={step.week} className="flex items-start gap-4 bg-white rounded-xl p-4 border border-slate-200/60">
-                        <div className={`w-9 h-9 rounded-lg flex items-center justify-center shrink-0 ${step.color}`}>
-                          <Icon className="w-4.5 h-4.5 w-[18px] h-[18px]" />
-                        </div>
-                        <div>
-                          <div className="flex items-center gap-2 mb-0.5">
-                            <span className="text-xs text-slate-400">{step.week}</span>
-                            <span className="text-sm font-semibold text-slate-800">{step.title}</span>
-                          </div>
-                          <p className="text-xs text-slate-500 leading-relaxed">{step.desc}</p>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
+              <div className="grid grid-cols-2 gap-4">
+                <Card
+                  className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 cursor-pointer hover:shadow-xl transition-all transform hover:scale-105"
+                  onClick={onShowPracticeHistory}
+                >
+                  <CardContent className="p-6 text-center">
+                    <History className="w-8 h-8 mx-auto mb-2" />
+                    <h3 className="mb-1">刷题记录</h3>
+                    <p className="text-2xl">{totalAnswered}+</p>
+                  </CardContent>
+                </Card>
+                <Card
+                  className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-0 cursor-pointer hover:shadow-xl transition-all transform hover:scale-105"
+                  onClick={onShowWrongQuestions}
+                >
+                  <CardContent className="p-6 text-center">
+                    <AlertCircle className="w-8 h-8 mx-auto mb-2" />
+                    <h3 className="mb-1">错题记录</h3>
+                    <p className="text-2xl">{wrongCount}</p>
+                  </CardContent>
+                </Card>
               </div>
             </div>
           </div>
         </div>
-
-        {/* 已登录用户的学习数据 */}
-        {isAuthenticated && (
-          <div className="grid grid-cols-2 gap-4 mb-8">
-            <Card
-              className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 cursor-pointer hover:shadow-lg transition-all"
-              onClick={onShowPracticeHistory}
-            >
-              <CardContent className="p-5 flex items-center gap-4">
-                <History className="w-8 h-8 opacity-80 shrink-0" />
-                <div>
-                  <p className="text-blue-100 text-sm">累计答题</p>
-                  <p className="text-2xl font-bold">{totalAnswered}</p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card
-              className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-0 cursor-pointer hover:shadow-lg transition-all"
-              onClick={onShowWrongQuestions}
-            >
-              <CardContent className="p-5 flex items-center gap-4">
-                <AlertCircle className="w-8 h-8 opacity-80 shrink-0" />
-                <div>
-                  <p className="text-emerald-100 text-sm">错题记录</p>
-                  <p className="text-2xl font-bold">{wrongCount}</p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
-        )}
 
         {/* 分类筛选 */}
         <div className="mb-8">
@@ -398,94 +331,99 @@ export function ExamHome({ onStartPaper, onShowProfile, onShowAuth, onShowPracti
           )}
         </div>
 
-        {/* 方法论亮点 */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-8">
-          {[
-            {
-              icon: FileText,
-              color: 'text-blue-600 bg-blue-50',
-              title: '只刷真题，不做杂题',
-              desc: '近 5 年历年真题，每道题标注考频，把时间花在刀刃上',
-            },
-            {
-              icon: Clock,
-              color: 'text-amber-600 bg-amber-50',
-              title: '碎片时间也够用',
-              desc: '每天下班后 1-2 小时，按阶段推进，不需要整块时间',
-            },
-            {
-              icon: PenLine,
-              color: 'text-violet-600 bg-violet-50',
-              title: 'AI 论文批改',
-              desc: '准备好万金油项目，AI 帮你批改论文、找出扣分点',
-            },
-          ].map((item) => {
-            const Icon = item.icon;
-            return (
-              <div key={item.title} className="bg-white rounded-xl border border-slate-200/60 p-5 flex items-start gap-4">
-                <div className={`w-10 h-10 rounded-lg flex items-center justify-center shrink-0 ${item.color}`}>
-                  <Icon className="w-5 h-5" />
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-slate-800 mb-1">{item.title}</p>
-                  <p className="text-xs text-slate-500 leading-relaxed">{item.desc}</p>
-                </div>
-              </div>
-            );
-          })}
+        {/* 底部统计信息 */}
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mt-8">
+          <Card className="bg-gradient-to-br from-violet-500 to-purple-600 text-white border-0">
+            <CardContent className="p-6 text-center">
+              <Users className="w-8 h-8 mx-auto mb-3" />
+              <h3 className="mb-2">学习用户</h3>
+              <p className="text-2xl mb-1">10,000+</p>
+              <p className="text-violet-100 text-sm">正在使用平台学习</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-rose-500 to-pink-600 text-white border-0">
+            <CardContent className="p-6 text-center">
+              <Star className="w-8 h-8 mx-auto mb-3" />
+              <h3 className="mb-2">通过率</h3>
+              <p className="text-2xl mb-1">85%</p>
+              <p className="text-rose-100 text-sm">使用平台学习的通过率</p>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-br from-teal-500 to-cyan-600 text-white border-0">
+            <CardContent className="p-6 text-center">
+              <BookOpen className="w-8 h-8 mx-auto mb-3" />
+              <h3 className="mb-2">题库题目</h3>
+              <p className="text-2xl mb-1">5,000+</p>
+              <p className="text-teal-100 text-sm">历年真题及模拟题</p>
+            </CardContent>
+          </Card>
         </div>
       </div>
 
       {/* 模式选择弹窗（原生 fixed overlay，不依赖 Radix Portal） */}
-      {showModeDialog && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
-          {/* 半透明遮罩 */}
-          <div
-            className="absolute inset-0 bg-slate-950/50 backdrop-blur-sm"
-            onClick={() => setShowModeDialog(false)}
-          />
-          {/* 弹窗主体 */}
-          <div className="relative w-full max-w-md rounded-2xl bg-white p-6 shadow-2xl sm:p-7">
-            {/* 关闭按钮 */}
-            <button
-              onClick={() => setShowModeDialog(false)}
-              className="absolute right-4 top-4 flex h-10 w-10 items-center justify-center rounded-full text-slate-400 transition-colors hover:bg-slate-100 hover:text-slate-600"
-              aria-label="关闭"
+      <Dialog open={showModeDialog} onOpenChange={setShowModeDialog}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="text-2xl text-center">选择答题模式</DialogTitle>
+            <DialogDescription className="text-center">
+              {selectedPaper && `${selectedPaper.year}年${selectedPaper.month}月 · ${selectedPaper.subject}`}
+            </DialogDescription>
+          </DialogHeader>
+          <div className="grid grid-cols-2 gap-4 py-4">
+            <Card
+              className="cursor-pointer border-2 border-blue-200 hover:border-blue-500 hover:shadow-lg transition-all"
+              onClick={() => handleModeSelect('practice')}
             >
-              <X className="h-5 w-5" />
-            </button>
+              <CardContent className="p-6 text-center">
+                <FileText className="w-12 h-12 mx-auto mb-3 text-blue-600" />
+                <h3 className="text-lg mb-2 text-slate-800">练习模式</h3>
+                <p className="text-sm text-slate-600 mb-3">边做边学，即时反馈</p>
+                <div className="space-y-1 text-xs text-slate-500">
+                  <div className="flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                    每题显示详细解析
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                    不限制答题时间
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-blue-500" />
+                    可随时查看答案
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
 
-            <h2 className="mb-2 pr-10 text-center text-2xl font-semibold text-slate-800">选择答题模式</h2>
-            {selectedPaper && (
-              <p className="mb-6 text-center text-base text-slate-500">
-                {selectedPaper.year}年{selectedPaper.month}月 · {selectedPaper.subject}
-              </p>
-            )}
-
-            <div className="grid grid-cols-2 gap-4">
-              {/* 练习模式 */}
-              <button
-                onClick={() => handleModeSelect('practice')}
-                className="flex h-40 flex-col items-center justify-center rounded-xl border-2 border-blue-200 bg-blue-50 p-5 transition-all hover:-translate-y-0.5 hover:border-blue-500 hover:bg-blue-100 hover:shadow-lg"
-              >
-                <FileText className="mb-3 h-11 w-11 text-blue-600" />
-                <div className="text-lg font-semibold text-slate-800">练习模式</div>
-                <div className="mt-2 text-center text-sm text-slate-500">即时显示解析</div>
-              </button>
-
-              {/* 考试模式 */}
-              <button
-                onClick={() => handleModeSelect('exam')}
-                className="flex h-40 flex-col items-center justify-center rounded-xl border-2 border-red-200 bg-red-50 p-5 transition-all hover:-translate-y-0.5 hover:border-red-500 hover:bg-red-100 hover:shadow-lg"
-              >
-                <GraduationCap className="mb-3 h-11 w-11 text-red-600" />
-                <div className="text-lg font-semibold text-slate-800">考试模式</div>
-                <div className="mt-2 text-center text-sm text-slate-500">交卷后查看</div>
-              </button>
-            </div>
+            <Card
+              className="cursor-pointer border-2 border-red-200 hover:border-red-500 hover:shadow-lg transition-all"
+              onClick={() => handleModeSelect('exam')}
+            >
+              <CardContent className="p-6 text-center">
+                <GraduationCap className="w-12 h-12 mx-auto mb-3 text-red-600" />
+                <h3 className="text-lg mb-2 text-slate-800">考试模式</h3>
+                <p className="text-sm text-slate-600 mb-3">模拟考试，检验实力</p>
+                <div className="space-y-1 text-xs text-slate-500">
+                  <div className="flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                    完成后统一查看解析
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                    模拟真实考试环境
+                  </div>
+                  <div className="flex items-center gap-1">
+                    <div className="w-1.5 h-1.5 rounded-full bg-red-500" />
+                    全面检验学习成果
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
           </div>
-        </div>
-      )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
