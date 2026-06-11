@@ -21,13 +21,11 @@ import {
   Clock,
   Edit,
   Camera,
-  ArrowLeft,
   Star,
   BarChart3,
   Activity
 } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
-import { BrandLogo } from './BrandLogo';
 import { User as UserType, UserStats } from '../types/user';
 
 interface ProfilePageProps {
@@ -138,27 +136,18 @@ export function ProfilePage({ onBack }: ProfilePageProps) {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* 顶部导航 */}
-      <div className="bg-white/70 backdrop-blur-sm border-b border-slate-200/50 sticky top-0 z-10">
-        <div className="max-w-6xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <BrandLogo />
-              <span className="text-slate-300">|</span>
-              <Button variant="ghost" size="sm" onClick={onBack} className="flex items-center gap-1 text-slate-600">
-                首页
-              </Button>
-            </div>
-            <h1 className="text-xl text-slate-800">个人中心</h1>
-            <Button variant="outline" onClick={logout}>
-              退出登录
-            </Button>
+    <main className="app-page">
+      <div className="app-page-content">
+        <section className="app-page-heading">
+          <div>
+            <h1>个人中心</h1>
+            <p>管理个人资料与学习数据</p>
           </div>
-        </div>
-      </div>
-
-      <div className="max-w-6xl mx-auto px-4 py-8">
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" onClick={onBack} className="app-secondary-button">返回首页</Button>
+            <Button variant="outline" size="sm" onClick={logout} className="app-secondary-button">退出登录</Button>
+          </div>
+        </section>
         {/* 用户基本信息卡片 */}
         <Card className="mb-8 bg-white/80 backdrop-blur-sm border border-slate-200/50">
           <CardContent className="p-8">
@@ -462,6 +451,6 @@ export function ProfilePage({ onBack }: ProfilePageProps) {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </main>
   );
 }

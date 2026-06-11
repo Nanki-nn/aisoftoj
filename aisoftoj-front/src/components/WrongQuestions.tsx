@@ -71,10 +71,10 @@ export function WrongQuestions({ onBack, onViewQuestion }: WrongQuestionsProps) 
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+    <main className="app-page">
       {/* 主体内容 */}
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <Card className="bg-white shadow-sm border border-slate-200">
+      <div className="app-page-content">
+        <Card className="app-surface">
           <CardHeader className="border-b border-slate-100">
             <div className="flex items-center justify-between">
               <div className="flex items-center gap-3">
@@ -189,6 +189,6 @@ export function WrongQuestions({ onBack, onViewQuestion }: WrongQuestionsProps) 
           </CardContent>
         </Card>
       </div>
-    </div>
+    </main>
   );
 }

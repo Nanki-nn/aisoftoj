@@ -18,10 +18,8 @@ import {
   BookOpen,
   RotateCcw,
   Home,
-  BookMarked,
-  ArrowLeft
+  BookMarked
 } from 'lucide-react';
-import { BrandLogo } from './BrandLogo';
 import { ExamSession, Question, QuestionOption } from '../types/exam';
 
 function sanitizeQuestionHtml(html: string): string {
@@ -146,25 +144,8 @@ export function ExamResult({ session, onRestartExam, onBackToHome, onContinuePra
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* 顶部导航栏 */}
-      <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <BrandLogo />
-              <span className="text-slate-300">|</span>
-              <Button variant="ghost" size="sm" onClick={onBackToExam} className="flex items-center gap-1 text-slate-600">
-                首页
-              </Button>
-            </div>
-            <h1 className="text-lg text-slate-800">考试结果</h1>
-            <div className="w-20"></div>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-4xl mx-auto p-6">
+    <main className="app-page">
+      <div className="app-page-content max-w-4xl">
         {/* 成绩概览 */}
         <Card className="mb-6">
           <CardHeader>
@@ -398,6 +379,6 @@ export function ExamResult({ session, onRestartExam, onBackToHome, onContinuePra
           </Button>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

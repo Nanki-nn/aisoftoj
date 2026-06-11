@@ -3,7 +3,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { GraduationCap, FileText, ArrowLeft, Clock, Save, Loader2, CheckCircle } from 'lucide-react';
+import { FileText, ArrowLeft, Clock, Save, Loader2, CheckCircle } from 'lucide-react';
 import { getEssayQuestions, submitEssay, EssayQuestion } from '../lib/api';
 
 function formatTime(seconds: number): string {
@@ -135,7 +135,7 @@ export function EssayEditor() {
 
   if (questionLoading) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex items-center justify-center">
+      <div className="app-page flex items-center justify-center">
         <div className="text-slate-400">加载题目中…</div>
       </div>
     );
@@ -143,7 +143,7 @@ export function EssayEditor() {
 
   if (!question) {
     return (
-      <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex flex-col items-center justify-center">
+      <div className="app-page flex flex-col items-center justify-center">
         <div className="bg-white rounded-2xl shadow-sm border border-slate-200/50 p-12 text-center max-w-md w-full">
           <p className="text-slate-500 mb-2 text-sm">题目 #{questionId} 不存在</p>
           <h2 className="text-xl text-slate-700 mb-6">未找到对应题目</h2>
@@ -165,43 +165,23 @@ export function EssayEditor() {
       : { background: '#fef3c7', color: '#92400e' };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* 顶部导航栏 */}
-      <div className="bg-white/70 backdrop-blur-sm border-b border-slate-200/50 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => navigate('/')}
-                className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors"
-              >
-                <GraduationCap className="w-7 h-7 text-blue-600" />
-                <span className="text-lg text-slate-700">知构软考刷题平台</span>
-              </button>
-              <span className="text-slate-300">/</span>
-              <button
-                onClick={() => navigate('/essay')}
-                className="flex items-center gap-1 text-slate-500 hover:text-slate-700 transition-colors"
-              >
-                <FileText className="w-4 h-4" />
-                <span className="text-base">AI 论文批改</span>
-              </button>
-              <span className="text-slate-300">/</span>
-              <span className="text-base text-blue-600 truncate max-w-xs">{question.name || `题目 #${question.id}`}</span>
+    <main className="app-page">
+      <div className="app-page-content">
+        <section className="app-page-heading">
+          <div className="flex min-w-0 items-center gap-3">
+            <span className="app-page-icon">
+              <FileText className="h-5 w-5" />
+            </span>
+            <div className="min-w-0">
+              <h1 className="truncate">{question.name || `题目 #${question.id}`}</h1>
+              <p>AI 论文批改</p>
             </div>
-            <Button
-              variant="ghost"
-              onClick={() => navigate('/essay')}
-              className="text-slate-600 hover:text-slate-800 hover:bg-slate-100"
-            >
-              <ArrowLeft className="w-4 h-4 mr-1" />
-              返回列表
-            </Button>
           </div>
-        </div>
-      </div>
-
-      <div className="max-w-7xl mx-auto px-4 py-6">
+          <Button variant="outline" size="sm" onClick={() => navigate('/essay')} className="app-secondary-button">
+            <ArrowLeft className="mr-1 h-4 w-4" />
+            返回列表
+          </Button>
+        </section>
         {/* 草稿恢复通知 */}
         {showRestoreNotice && (
           <div
@@ -361,6 +341,6 @@ export function EssayEditor() {
           </div>
         </div>
       </div>
-    </div>
+    </main>
   );
 }

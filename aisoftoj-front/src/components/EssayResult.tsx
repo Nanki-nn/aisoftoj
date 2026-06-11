@@ -2,7 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
-import { GraduationCap, FileText, AlertTriangle, XCircle } from 'lucide-react';
+import { AlertTriangle, XCircle } from 'lucide-react';
 import {
   RadarChart,
   PolarGrid,
@@ -37,7 +37,7 @@ const SUGGESTION_BADGE_STYLES: Record<number, { background: string; color: strin
 
 function LoadingState() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex flex-col items-center justify-center gap-6">
+    <div className="app-page flex flex-col items-center justify-center gap-6">
       <div
         className="w-16 h-16 rounded-full border-4 border-blue-200 border-t-blue-600 animate-spin"
         style={{ borderTopColor: '#2563eb', borderColor: '#bfdbfe' }}
@@ -70,7 +70,7 @@ function LoadingState() {
 
 function FailedState({ onRetry }: { onRetry: () => void }) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex flex-col items-center justify-center gap-6">
+    <div className="app-page flex flex-col items-center justify-center gap-6">
       <div
         className="w-16 h-16 rounded-full flex items-center justify-center"
         style={{ background: '#fee2e2' }}
@@ -94,7 +94,7 @@ function FailedState({ onRetry }: { onRetry: () => void }) {
 
 function TimeoutState({ onViewHistory }: { onViewHistory: () => void }) {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 flex flex-col items-center justify-center gap-6">
+    <div className="app-page flex flex-col items-center justify-center gap-6">
       <div
         className="w-16 h-16 rounded-full flex items-center justify-center"
         style={{ background: '#fef3c7' }}
@@ -132,25 +132,8 @@ function ReportState({ data, onBack, onViewHistory }: {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* Top nav */}
-      <div className="bg-white/70 backdrop-blur-sm border-b border-slate-200/50 sticky top-0 z-10">
-        <div className="max-w-4xl mx-auto px-4 py-4">
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-2 text-slate-600">
-              <GraduationCap className="w-7 h-7 text-blue-600" />
-              <span className="text-lg text-slate-700">知构软考刷题平台</span>
-            </div>
-            <span className="text-slate-300">/</span>
-            <div className="flex items-center gap-1 text-blue-600">
-              <FileText className="w-5 h-5" />
-              <span className="text-base">AI 批改报告</span>
-            </div>
-          </div>
-        </div>
-      </div>
-
-      <div className="max-w-4xl mx-auto px-4 py-8 space-y-6">
+    <main className="app-page">
+      <div className="app-page-content max-w-4xl space-y-6">
 
         {/* 1. Score header card */}
         <Card className="bg-white border border-slate-200/50 shadow-sm">
@@ -270,7 +253,7 @@ function ReportState({ data, onBack, onViewHistory }: {
           </Button>
         </div>
       </div>
-    </div>
+    </main>
   );
 }
 

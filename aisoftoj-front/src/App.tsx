@@ -409,8 +409,11 @@ export default function App() {
           path={ROUTES.home}
           element={
             <ExamHome
+              onStartPaper={handleStartPaper}
               onShowAuth={handleShowAuth}
               onShowProfile={handleShowProfile}
+              onShowPracticeHistory={handleShowPracticeHistory}
+              onShowWrongQuestions={handleShowWrongQuestions}
             />
           }
         />
@@ -427,7 +430,14 @@ export default function App() {
           }
         />
         <Route path={ROUTES.auth} element={<AuthPage onLoginSuccess={handleLoginSuccess} />} />
-        <Route path={ROUTES.profile} element={<ProfilePage onBack={handleBackToHome} />} />
+        <Route
+          path={ROUTES.profile}
+          element={
+            <AppShell onShowAuth={handleShowAuth} onShowProfile={handleShowProfile}>
+              <ProfilePage onBack={handleBackToHome} />
+            </AppShell>
+          }
+        />
         <Route
           path={ROUTES.practiceHistory}
           element={
@@ -450,7 +460,11 @@ export default function App() {
         />
         <Route
           path={ROUTES.examConfig}
-          element={<ExamConfig onStartExam={handleStartExam} initialConfig={examConfigDraft} />}
+          element={
+            <AppShell onShowAuth={handleShowAuth} onShowProfile={handleShowProfile}>
+              <ExamConfig onStartExam={handleStartExam} initialConfig={examConfigDraft} />
+            </AppShell>
+          }
         />
         <Route
           path={`${ROUTES.examSessionBase}/:sessionId`}
@@ -469,19 +483,49 @@ export default function App() {
         <Route
           path={`${ROUTES.examResultBase}/:sessionId`}
           element={
-            <ResultRoute
-              currentSession={currentSession}
-              onRestartExam={handleRestartExam}
-              onBackToHome={handleBackToHome}
-              onContinuePractice={handleContinuePractice}
-              onBackToExam={handleBackToExam}
-            />
+            <AppShell onShowAuth={handleShowAuth} onShowProfile={handleShowProfile}>
+              <ResultRoute
+                currentSession={currentSession}
+                onRestartExam={handleRestartExam}
+                onBackToHome={handleBackToHome}
+                onContinuePractice={handleContinuePractice}
+                onBackToExam={handleBackToExam}
+              />
+            </AppShell>
           }
         />
-        <Route path={ROUTES.essay} element={<EssayHome />} />
-        <Route path={`${ROUTES.essayWriteBase}/:questionId`} element={<EssayEditor />} />
-        <Route path={`${ROUTES.essayResultBase}/:submissionId`} element={<EssayResult />} />
-        <Route path={ROUTES.essayHistory} element={<EssayHistory />} />
+        <Route
+          path={ROUTES.essay}
+          element={
+            <AppShell onShowAuth={handleShowAuth} onShowProfile={handleShowProfile}>
+              <EssayHome />
+            </AppShell>
+          }
+        />
+        <Route
+          path={`${ROUTES.essayWriteBase}/:questionId`}
+          element={
+            <AppShell onShowAuth={handleShowAuth} onShowProfile={handleShowProfile}>
+              <EssayEditor />
+            </AppShell>
+          }
+        />
+        <Route
+          path={`${ROUTES.essayResultBase}/:submissionId`}
+          element={
+            <AppShell onShowAuth={handleShowAuth} onShowProfile={handleShowProfile}>
+              <EssayResult />
+            </AppShell>
+          }
+        />
+        <Route
+          path={ROUTES.essayHistory}
+          element={
+            <AppShell onShowAuth={handleShowAuth} onShowProfile={handleShowProfile}>
+              <EssayHistory />
+            </AppShell>
+          }
+        />
         <Route
           path="/admin"
           element={

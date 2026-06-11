@@ -12,7 +12,7 @@ import {
 } from 'recharts';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
-import { GraduationCap, FileText, Calendar, ArrowLeft } from 'lucide-react';
+import { FileText, Calendar, ArrowLeft } from 'lucide-react';
 import { useAuth } from '../hooks/useAuth';
 import { getEssayHistory, EssayHistoryItem } from '../lib/api';
 
@@ -89,50 +89,23 @@ export function EssayHistory() {
     }));
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* 顶部导航栏 */}
-      <div className="bg-white/70 backdrop-blur-sm border-b border-slate-200/50 sticky top-0 z-10">
-        <div className="max-w-5xl mx-auto px-4 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-3">
-              <button
-                onClick={() => navigate('/')}
-                className="flex items-center gap-2 text-slate-600 hover:text-slate-900 transition-colors"
-              >
-                <GraduationCap className="w-7 h-7 text-blue-600" />
-                <span className="text-lg text-slate-700">知构软考刷题平台</span>
-              </button>
-              <span className="text-slate-300">/</span>
-              <div className="flex items-center gap-1 text-blue-600">
-                <FileText className="w-5 h-5" />
-                <span className="text-base">AI 论文批改</span>
-              </div>
-              <span className="text-slate-300">/</span>
-              <div className="flex items-center gap-1 text-slate-600">
-                <Calendar className="w-5 h-5" />
-                <span className="text-base">练习历史</span>
-              </div>
+    <main className="app-page">
+      <div className="app-page-content">
+        <section className="app-page-heading">
+          <div className="flex items-center gap-3">
+            <span className="app-page-icon">
+              <Calendar className="h-5 w-5" />
+            </span>
+            <div>
+              <h1>论文练习历史</h1>
+              {!loading && <p>共 {history.length} 篇</p>}
             </div>
-            <Button
-              variant="ghost"
-              onClick={() => navigate('/essay')}
-              className="text-slate-600 hover:text-slate-800 hover:bg-slate-100"
-            >
-              <ArrowLeft className="w-4 h-4 mr-1" />
-              返回题目列表
-            </Button>
           </div>
-        </div>
-      </div>
-
-      <div className="max-w-5xl mx-auto px-4 py-8">
-        {/* 页面标题 */}
-        <div className="mb-8">
-          <h1 className="text-2xl text-slate-800 mb-1">论文练习历史</h1>
-          {!loading && (
-            <p className="text-slate-500">共 {history.length} 篇</p>
-          )}
-        </div>
+          <Button variant="outline" size="sm" onClick={() => navigate('/essay')} className="app-secondary-button">
+            <ArrowLeft className="mr-1 h-4 w-4" />
+            返回题目列表
+          </Button>
+        </section>
 
         {loading ? (
           <div className="flex items-center justify-center py-24">
@@ -155,7 +128,7 @@ export function EssayHistory() {
           <>
             {/* 得分趋势图 */}
             <div
-              className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-sm border border-slate-200/50 p-6 mb-8"
+              className="app-surface mb-6 p-6"
             >
               <h2 className="text-base text-slate-700 mb-4">得分趋势</h2>
               <ResponsiveContainer width="100%" height={220}>
@@ -204,7 +177,7 @@ export function EssayHistory() {
             </div>
 
             {/* 历史列表表格 */}
-            <div className="bg-white/70 backdrop-blur-sm rounded-2xl shadow-sm border border-slate-200/50 overflow-hidden">
+            <div className="app-surface overflow-hidden">
               <table className="w-full">
                 <thead>
                   <tr className="border-b border-slate-200/70">
@@ -257,7 +230,7 @@ export function EssayHistory() {
                             e.stopPropagation();
                             navigate(`/essay/result/${item.submissionId}`);
                           }}
-                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 px-2 h-7"
+                              className="h-7 px-2 text-orange-700 hover:bg-orange-50 hover:text-orange-800"
                         >
                           查看报告
                         </Button>
@@ -270,6 +243,6 @@ export function EssayHistory() {
           </>
         )}
       </div>
-    </div>
+    </main>
   );
 }

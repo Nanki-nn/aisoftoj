@@ -8,7 +8,6 @@ import { Switch } from './ui/switch';
 import { Badge } from './ui/badge';
 import { BookOpen, Clock, Shuffle, Target, FileText, GraduationCap, X } from 'lucide-react';
 import { ExamConfig as ExamConfigType } from '../types/exam';
-import { BrandLogo } from './BrandLogo';
 import { subjects, getCategoriesBySubject, filterQuestions } from '../data/questions';
 
 interface ExamConfigProps {
@@ -96,20 +95,16 @@ export function ExamConfig({ onStartExam, initialConfig = null }: ExamConfigProp
   const availableCount = getAvailableQuestionCount();
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* 顶部导航栏 */}
-      <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-3">
-          <BrandLogo />
+    <main className="app-page">
+      <div className="app-page-content max-w-2xl">
+      <section className="app-page-heading">
+        <div>
+          <h1>考试配置</h1>
+          <p>选择考试科目和配置，开始你的学习之旅</p>
         </div>
-      </div>
-      <div className="max-w-2xl mx-auto p-6">
-      <div className="text-center mb-8">
-        <h1 className="mb-2">软考刷题系统</h1>
-        <p className="text-muted-foreground">选择考试科目和配置，开始你的学习之旅</p>
-      </div>
+      </section>
 
-      <Card>
+      <Card className="app-surface">
         <CardHeader>
           <CardTitle className="flex items-center gap-2">
             <Target className="w-5 h-5" />
@@ -349,6 +344,6 @@ export function ExamConfig({ onStartExam, initialConfig = null }: ExamConfigProp
         </CardContent>
       </Card>
     </div>
-    </div>
+    </main>
   );
 }

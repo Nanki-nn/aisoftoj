@@ -65,10 +65,9 @@ export function PracticeHistory({ onBack, onContinue, onViewResult }: PracticeHi
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
-      {/* 主体内容 */}
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <Card className="bg-white shadow-sm border border-slate-200">
+    <main className="app-page">
+      <div className="app-page-content">
+        <Card className="app-surface">
           <CardContent className="p-6">
             <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between mb-6">
               <div className="flex items-center gap-3">
@@ -150,7 +149,7 @@ export function PracticeHistory({ onBack, onContinue, onViewResult }: PracticeHi
                             onClick={() => handleContinue(record.id)}
                             className={
                               record.status === 'completed'
-                                ? 'text-blue-600 hover:text-blue-700 hover:bg-blue-50'
+                                ? 'text-orange-700 hover:text-orange-800 hover:bg-orange-50'
                                 : 'text-orange-600 hover:text-orange-700 hover:bg-orange-50'
                             }
                           >
@@ -197,6 +196,6 @@ export function PracticeHistory({ onBack, onContinue, onViewResult }: PracticeHi
           </CardContent>
         </Card>
       </div>
-    </div>
+    </main>
   );
 }
