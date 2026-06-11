@@ -1,6 +1,6 @@
-import React, { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
+import React, { createContext, useContext, useEffect, useMemo } from 'react';
 
-type Theme = 'light' | 'dark';
+type Theme = 'light';
 
 type ThemeContextValue = {
   theme: Theme;
@@ -10,37 +10,25 @@ type ThemeContextValue = {
 const THEME_STORAGE_KEY = 'aisoftoj-theme';
 const ThemeContext = createContext<ThemeContextValue | null>(null);
 
-function getInitialTheme(): Theme {
-  if (typeof window === 'undefined') {
-    return 'light';
-  }
-
-  const storedTheme = window.localStorage.getItem(THEME_STORAGE_KEY);
-  if (storedTheme === 'light' || storedTheme === 'dark') {
-    return storedTheme;
-  }
-
-  return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
-}
-
 export function ThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setTheme] = useState<Theme>(() => getInitialTheme());
-
   useEffect(() => {
     const root = document.documentElement;
-    root.classList.toggle('dark', theme === 'dark');
-    root.style.colorScheme = theme;
-    window.localStorage.setItem(THEME_STORAGE_KEY, theme);
-  }, [theme]);
-
-  const toggleTheme = useCallback(() => {
-    setTheme((currentTheme) => currentTheme === 'dark' ? 'light' : 'dark');
+    root.classList.remove('dark');
+    root.style.colorScheme = 'light';
+    // 清掉历史持久化，避免下次进来又被读成 dark
+    try {
+      window.localStorage.removeItem(THEME_STORAGE_KEY);
+    } catch {
+      /* ignore */
+    }
   }, []);
 
   const value = useMemo<ThemeContextValue>(() => ({
-    theme,
-    toggleTheme,
-  }), [theme, toggleTheme]);
+    theme: 'light',
+    toggleTheme: () => {
+      /* 暂只支持 light 主题 */
+    },
+  }), []);
 
   return <ThemeContext.Provider value={value}>{children}</ThemeContext.Provider>;
 }
