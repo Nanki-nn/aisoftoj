@@ -16,11 +16,17 @@ interface AppHeaderProps {
   onShowProfile: () => void;
 }
 
+const HIDE_FOUNDATION_AND_ESSAY = false;
+
 const NAV_LINKS = [
   { path: '/foundation', label: '打基础' },
   { path: '/papers', label: '刷真题' },
   { path: '/essay-sprint', label: '论文冲刺' },
 ];
+
+const VISIBLE_NAV_LINKS = HIDE_FOUNDATION_AND_ESSAY
+  ? NAV_LINKS.filter((l) => l.path === '/papers')
+  : NAV_LINKS;
 
 export function AppHeader({ onShowAuth, onShowProfile }: AppHeaderProps) {
   const { user, logout, isAuthenticated } = useAuth();
@@ -38,29 +44,29 @@ export function AppHeader({ onShowAuth, onShowProfile }: AppHeaderProps) {
   }, []);
 
   return (
-    <div className="bg-white/70 backdrop-blur-sm border-b border-slate-200/50 sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 py-4">
+    <div className="bg-white border-b border-slate-100 sticky top-0 z-50">
+      <div className="max-w-7xl mx-auto px-4 py-3">
         <div className="flex items-center justify-between">
           {/* 左侧：Logo + 主导航 */}
-          <div className="flex items-center gap-6">
+          <div className="flex items-center gap-8">
             <button
               onClick={() => navigate('/')}
               className="flex items-center gap-2 hover:opacity-80 transition-opacity bg-transparent border-none cursor-pointer p-0"
             >
-              <GraduationCap className="w-8 h-8 text-blue-600" />
-              <h1 className="text-xl text-slate-800">知构软考</h1>
+              <GraduationCap className="w-7 h-7 text-blue-600" />
+              <h1 className="text-xl font-semibold text-slate-800">知构软考</h1>
             </button>
 
-            <nav className="hidden md:flex items-center gap-2">
-              {NAV_LINKS.map((link) => (
+            <nav className="hidden md:flex items-center gap-7">
+              {VISIBLE_NAV_LINKS.map((link) => (
                 <Button
                   key={link.path}
-                  variant={currentPath === link.path ? 'default' : 'ghost'}
+                  variant="ghost"
                   onClick={() => navigate(link.path)}
                   className={
                     currentPath === link.path
-                      ? 'bg-blue-600 hover:bg-blue-700 text-white shadow-md'
-                      : 'text-slate-600 hover:text-slate-800 hover:bg-slate-100'
+                      ? 'text-blue-700 bg-blue-50 hover:bg-blue-50 font-semibold'
+                      : 'text-slate-600 hover:text-slate-900 hover:bg-slate-50 font-semibold'
                   }
                 >
                   {link.label}
@@ -71,7 +77,7 @@ export function AppHeader({ onShowAuth, onShowProfile }: AppHeaderProps) {
 
           {/* 右侧：倒计时 + GitHub + 用户菜单 */}
           <div className="flex items-center gap-4">
-            <div className="flex items-center gap-2 bg-amber-100 text-amber-800 px-4 py-2 rounded-lg border border-amber-200">
+            <div className="flex items-center gap-2 bg-amber-50 text-amber-800 px-4 py-2 rounded-lg border border-amber-200">
               <Calendar className="w-4 h-4" />
               <span className="hidden sm:inline">距离考试还有</span>
               <span className="font-semibold">{daysLeft}天</span>
@@ -81,7 +87,7 @@ export function AppHeader({ onShowAuth, onShowProfile }: AppHeaderProps) {
               href="https://github.com/Nanki-nn/aisoftoj"
               target="_blank"
               rel="noopener noreferrer"
-              className="hidden sm:inline-flex items-center gap-2 text-sm font-medium px-3 py-1.5 rounded-md text-slate-600 hover:text-slate-900 hover:bg-slate-100 transition-colors no-underline"
+              className="hidden sm:inline-flex items-center gap-2 text-sm font-semibold px-3 py-2 rounded-md text-slate-800 hover:text-slate-950 hover:bg-slate-50 transition-colors no-underline"
             >
               <Github className="w-4 h-4" />
               <span>Star</span>
@@ -123,7 +129,7 @@ export function AppHeader({ onShowAuth, onShowProfile }: AppHeaderProps) {
                 </DropdownMenuContent>
               </DropdownMenu>
             ) : (
-              <Button onClick={onShowAuth} variant="outline">
+              <Button onClick={onShowAuth} variant="outline" className="font-semibold border-slate-200 shadow-sm hover:bg-slate-50">
                 登录 / 注册
               </Button>
             )}
