@@ -173,28 +173,30 @@ export function PapersPage({
 
         {/* 已登录用户的学习数据 */}
         {isAuthenticated && (
-          <div className="grid grid-cols-2 gap-4 mb-8">
+          <div className="mb-8 flex flex-wrap gap-3">
             <Card
               className="bg-gradient-to-br from-blue-500 to-blue-600 text-white border-0 cursor-pointer hover:shadow-lg transition-all"
+              style={{ width: 220 }}
               onClick={onShowPracticeHistory}
             >
-              <CardContent className="p-5 flex items-center gap-4">
-                <History className="w-8 h-8 opacity-80 shrink-0" />
+              <CardContent className="p-3 flex items-center gap-3">
+                <History className="w-5 h-5 opacity-80 shrink-0" />
                 <div>
-                  <p className="text-blue-100 text-sm">累计答题</p>
-                  <p className="text-2xl font-bold">{totalAnswered}</p>
+                  <p className="text-blue-100 text-xs">累计答题</p>
+                  <p className="text-xl font-bold leading-tight">{totalAnswered}</p>
                 </div>
               </CardContent>
             </Card>
             <Card
               className="bg-gradient-to-br from-emerald-500 to-emerald-600 text-white border-0 cursor-pointer hover:shadow-lg transition-all"
+              style={{ width: 220 }}
               onClick={onShowWrongQuestions}
             >
-              <CardContent className="p-5 flex items-center gap-4">
-                <AlertCircle className="w-8 h-8 opacity-80 shrink-0" />
+              <CardContent className="p-3 flex items-center gap-3">
+                <AlertCircle className="w-5 h-5 opacity-80 shrink-0" />
                 <div>
-                  <p className="text-emerald-100 text-sm">错题记录</p>
-                  <p className="text-2xl font-bold">{wrongCount}</p>
+                  <p className="text-emerald-100 text-xs">错题记录</p>
+                  <p className="text-xl font-bold leading-tight">{wrongCount}</p>
                 </div>
               </CardContent>
             </Card>
