@@ -54,7 +54,7 @@ export function AppHeader({ onShowAuth, onShowProfile }: AppHeaderProps) {
               className="flex items-center gap-2 hover:opacity-80 transition-opacity bg-transparent border-none cursor-pointer p-0"
             >
               <GraduationCap className="w-7 h-7 text-blue-600" />
-              <h1 className="text-xl font-semibold text-slate-800">知构软考</h1>
+              <span className="text-xl font-semibold text-slate-800">知构软考</span>
             </button>
 
             <nav className="hidden md:flex items-center gap-7">
