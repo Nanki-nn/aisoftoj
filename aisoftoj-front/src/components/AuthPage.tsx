@@ -73,43 +73,46 @@ export function AuthPage({ onLoginSuccess }: AuthPageProps) {
   };
 
   return (
-      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-indigo-50 to-purple-50 flex items-center justify-center p-4">
+      <div
+        className="relative min-h-screen flex items-center justify-center p-4"
+        style={{ background: 'var(--app-page-bg)' }}
+      >
         <div className="w-full max-w-6xl mx-auto grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
           {/* 左侧展示区域 */}
           <div className="hidden lg:block">
-            <div className="bg-white/80 backdrop-blur-sm rounded-2xl p-8 shadow-lg border border-white/20">
+            <div className="app-card rounded-2xl p-8">
               <div className="text-center mb-8">
                 <div className="flex items-center justify-center gap-3 mb-4">
-                  <GraduationCap className="w-12 h-12 text-blue-600" />
-                  <h1 className="text-3xl text-slate-800">知构软考刷题平台</h1>
+                  <GraduationCap className="w-12 h-12 text-primary" />
+                  <h1 className="app-title text-3xl">知构软考刷题平台</h1>
                 </div>
-                <p className="text-lg text-slate-600">
+                <p className="app-body text-lg">
                   专业的软考备考平台，助你轻松通过考试
                 </p>
               </div>
 
               <div className="space-y-6">
-                <div className="flex items-center gap-4 p-4 bg-blue-50 rounded-xl">
-                  <BookOpen className="w-8 h-8 text-blue-600" />
+                <div className="app-card flex items-center gap-4 rounded-xl p-4">
+                  <BookOpen className="w-8 h-8 text-primary" />
                   <div>
-                    <h3 className="text-slate-800 mb-1">海量题库</h3>
-                    <p className="text-slate-600 text-sm">精选历年真题，覆盖所有考试科目</p>
+                    <h3 className="app-title mb-1">海量题库</h3>
+                    <p className="app-body text-sm">精选历年真题，覆盖所有考试科目</p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4 p-4 bg-emerald-50 rounded-xl">
-                  <Trophy className="w-8 h-8 text-emerald-600" />
+                <div className="app-card flex items-center gap-4 rounded-xl p-4">
+                  <Trophy className="w-8 h-8 text-teal-700" />
                   <div>
-                    <h3 className="text-slate-800 mb-1">智能分析</h3>
-                    <p className="text-slate-600 text-sm">个性化学习报告，精准定位薄弱环节</p>
+                    <h3 className="app-title mb-1">智能分析</h3>
+                    <p className="app-body text-sm">个性化学习报告，精准定位薄弱环节</p>
                   </div>
                 </div>
 
-                <div className="flex items-center gap-4 p-4 bg-amber-50 rounded-xl">
-                  <Target className="w-8 h-8 text-amber-600" />
+                <div className="app-card flex items-center gap-4 rounded-xl p-4">
+                  <Target className="w-8 h-8 text-primary" />
                   <div>
-                    <h3 className="text-slate-800 mb-1">高效备考</h3>
-                    <p className="text-slate-600 text-sm">科学的学习计划，提升备考效率</p>
+                    <h3 className="app-title mb-1">高效备考</h3>
+                    <p className="app-body text-sm">科学的学习计划，提升备考效率</p>
                   </div>
                 </div>
               </div>
@@ -118,10 +121,10 @@ export function AuthPage({ onLoginSuccess }: AuthPageProps) {
 
           {/* 右侧登录注册表单 */}
           <div className="w-full max-w-md mx-auto">
-            <Card className="bg-white/90 backdrop-blur-sm shadow-xl border border-white/20">
+            <Card className="app-card">
               <CardHeader className="text-center pb-4">
                 <div className="flex items-center justify-center gap-2 mb-2 lg:hidden">
-                  <GraduationCap className="w-8 h-8 text-blue-600" />
+                  <GraduationCap className="w-8 h-8 text-primary" />
                   <CardTitle className="text-xl">知构软考刷题平台</CardTitle>
                 </div>
               </CardHeader>
@@ -203,7 +206,7 @@ export function AuthPage({ onLoginSuccess }: AuthPageProps) {
 
                       <Button
                           type="submit"
-                          className="w-full bg-blue-600 hover:bg-blue-700"
+                      className="w-full"
                           disabled={isLoading}
                       >
                         {isLoading ? '登录中...' : '登录'}
@@ -337,7 +340,7 @@ export function AuthPage({ onLoginSuccess }: AuthPageProps) {
 
                       <Button
                           type="submit"
-                          className="w-full bg-blue-600 hover:bg-blue-700"
+                      className="w-full"
                           disabled={isLoading || registerForm.password !== registerForm.confirmPassword || !registerForm.agreeToTerms}
                       >
                         {isLoading ? '注册中...' : '注册'}

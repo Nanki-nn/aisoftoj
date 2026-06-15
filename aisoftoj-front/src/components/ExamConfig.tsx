@@ -140,16 +140,16 @@ export function ExamConfig({ onStartExam, initialConfig = null }: ExamConfigProp
               <Card 
                 className={`cursor-pointer border-2 transition-all ${
                   config.examMode === 'exam' 
-                    ? 'border-red-500 bg-red-50' 
-                    : 'border-slate-200 hover:border-red-300'
+                    ? 'border-teal-500 bg-teal-50' 
+                    : 'border-slate-200 hover:border-teal-300'
                 }`}
                 onClick={() => setConfig(prev => ({ ...prev, examMode: 'exam' }))}
               >
-                <CardContent className="p-4 text-center">
+                  <CardContent className="p-4 text-center">
                   <GraduationCap className={`w-8 h-8 mx-auto mb-2 ${
-                    config.examMode === 'exam' ? 'text-red-600' : 'text-slate-400'
+                    config.examMode === 'exam' ? 'text-teal-700' : 'text-slate-400'
                   }`} />
-                  <h3 className={config.examMode === 'exam' ? 'text-red-900' : 'text-slate-700'}>
+                  <h3 className={config.examMode === 'exam' ? 'text-teal-900' : 'text-slate-700'}>
                     考试模式
                   </h3>
                   <p className="text-sm text-slate-500 mt-1">完成后统一查看</p>
@@ -331,9 +331,9 @@ export function ExamConfig({ onStartExam, initialConfig = null }: ExamConfigProp
 
                   <button
                     onClick={() => startExamWithMode('exam')}
-                    className="flex h-40 flex-col items-center justify-center rounded-xl border-2 border-orange-200 bg-orange-50 p-5 transition-all hover:-translate-y-0.5 hover:border-orange-500 hover:bg-orange-100 hover:shadow-lg"
+                    className="flex h-40 flex-col items-center justify-center rounded-xl border-2 border-amber-200 bg-amber-50 p-5 transition-all hover:-translate-y-0.5 hover:border-amber-500 hover:bg-amber-100 hover:shadow-lg"
                   >
-                    <GraduationCap className="mb-3 h-11 w-11 text-orange-600" />
+                    <GraduationCap className="mb-3 h-11 w-11 text-amber-700" />
                     <div className="text-lg font-semibold text-slate-800">考试模式</div>
                     <div className="mt-2 text-center text-sm text-slate-500">交卷后查看</div>
                   </button>

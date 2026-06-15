@@ -147,7 +147,7 @@ export function ExamResult({ session, onRestartExam, onBackToHome, onContinuePra
     <main className="app-page">
       <div className="app-page-content max-w-4xl">
         {/* 成绩概览 */}
-        <Card className="mb-6">
+        <Card className="app-card mb-6">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
               <Trophy className="w-6 h-6 text-yellow-600" />
@@ -158,7 +158,7 @@ export function ExamResult({ session, onRestartExam, onBackToHome, onContinuePra
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
               {isSubjectiveExam ? (
                 <div className="text-center">
-                  <div className="text-2xl mb-2 text-slate-500">主观题</div>
+                  <div className="text-2xl mb-2 app-meta">主观题</div>
                   <div className="text-muted-foreground">待人工评分</div>
                 </div>
               ) : (
@@ -229,18 +229,18 @@ export function ExamResult({ session, onRestartExam, onBackToHome, onContinuePra
           </CardContent>
         </Card>
 
-        <Card className="mb-6 border-blue-100 bg-white/95 shadow-sm">
+        <Card className="app-card mb-6">
           <CardContent className="flex flex-col gap-3 pt-6 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <div className="text-sm text-slate-500">考试完成后常用操作</div>
-              <div className="text-slate-800">重新作答、继续练习和返回首页都放在这里，首屏就能点。</div>
+              <div className="text-sm app-meta">考试完成后常用操作</div>
+              <div className="app-body">重新作答、继续练习和返回首页都放在这里，首屏就能点。</div>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row">
               <Button onClick={onRestartExam} variant="outline" className="flex items-center gap-2">
                 <RotateCcw className="w-4 h-4" />
                 重新答题
               </Button>
-              <Button onClick={onContinuePractice} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700">
+              <Button onClick={onContinuePractice} className="flex items-center gap-2 app-primary-button">
                 <BookMarked className="w-4 h-4" />
                 继续刷题
               </Button>
@@ -253,7 +253,7 @@ export function ExamResult({ session, onRestartExam, onBackToHome, onContinuePra
         </Card>
 
         {/* 答题详情 */}
-        <Card className="mb-6">
+        <Card className="app-card mb-6">
           <CardHeader>
             <CardTitle>答题详情</CardTitle>
           </CardHeader>
@@ -280,7 +280,7 @@ export function ExamResult({ session, onRestartExam, onBackToHome, onContinuePra
                         <div className="flex items-center gap-2 mb-2">
                           <span>第 {index + 1} 题</span>
                           {isEssay ? (
-                            <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                            <Badge variant="secondary" className="bg-slate-100 text-slate-700">
                               {hasAnswer ? '已作答' : '未作答'}
                             </Badge>
                           ) : (
@@ -328,9 +328,9 @@ export function ExamResult({ session, onRestartExam, onBackToHome, onContinuePra
 
                         {isEssay ? (
                           result.question.explanation && (
-                            <Alert className="border-blue-200 bg-blue-50">
+                            <Alert className="app-status-note app-status-note-info">
                               <AlertCircle className="h-4 w-4 text-blue-600" />
-                              <AlertDescription className="text-blue-800">
+                              <AlertDescription className="app-body">
                                 <strong>参考要点：</strong>
                                 <div className="markdown-body text-sm mt-1">
                                   <ReactMarkdown remarkPlugins={[remarkGfm]} rehypePlugins={[rehypeRaw]}>
@@ -369,7 +369,7 @@ export function ExamResult({ session, onRestartExam, onBackToHome, onContinuePra
             <RotateCcw className="w-4 h-4" />
             重新答题
           </Button>
-          <Button onClick={onContinuePractice} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700">
+          <Button onClick={onContinuePractice} className="flex items-center gap-2 app-primary-button">
             <BookMarked className="w-4 h-4" />
             继续刷题
           </Button>

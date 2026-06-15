@@ -9,8 +9,8 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
   servlet:
     multipart:
-      max-file-size: 10MB
-      max-request-size: 10MB
+      max-file-size: 50MB
+      max-request-size: 50MB
 
 mybatis-plus:
   mapper-locations: classpath:mapper/*.xml
@@ -24,6 +24,14 @@ file:
     path: ${FILE_UPLOAD_PATH:./uploads/}
     url-prefix: ${FILE_UPLOAD_URL_PREFIX:/uploads/}
 
+knowledge:
+  upload:
+    path: ${KNOWLEDGE_UPLOAD_PATH:./uploads/knowledge/}
+  max-file-size: ${KNOWLEDGE_MAX_FILE_SIZE:52428800}
+  processing-timeout-minutes: ${KNOWLEDGE_PROCESSING_TIMEOUT_MINUTES:120}
+  callback:
+    secret: ${KNOWLEDGE_CALLBACK_SECRET:}
+
 app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173}
@@ -32,6 +40,10 @@ auth:
   jwt:
     secret: ${AUTH_JWT_SECRET:dev-change-me-before-prod}
     expire-hours: ${AUTH_JWT_EXPIRE_HOURS:168}
+
+ai-service:
+  url: ${AI_SERVICE_URL:http://localhost:8090}
+  secret: ${AI_SERVICE_SECRET:}
 
 logging:
   level:

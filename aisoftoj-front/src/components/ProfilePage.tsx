@@ -124,7 +124,7 @@ export function ProfilePage({ onBack }: ProfilePageProps) {
       case 'beginner': return { name: '初学者', color: 'bg-green-500', progress: 25 };
       case 'intermediate': return { name: '进阶者', color: 'bg-blue-500', progress: 50 };
       case 'advanced': return { name: '高级者', color: 'bg-purple-500', progress: 75 };
-      case 'expert': return { name: '专家', color: 'bg-orange-500', progress: 100 };
+      case 'expert': return { name: '专家', color: 'bg-teal-500', progress: 100 };
       default: return { name: '初学者', color: 'bg-green-500', progress: 25 };
     }
   };

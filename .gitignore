@@ -15,3 +15,16 @@ aisoftoj-front/README.md
 aisoftoj-front/TEST_GUIDE.md
 aisoftoj-front/src/Attributions.md
 aisoftoj-front/src/guidelines/
+
+aisoftoj-ai-service/.env
+aisoftoj-ai-service/.venv/
+aisoftoj-ai-service/.pytest_cache/
+aisoftoj-ai-service/.ruff_cache/
+aisoftoj-ai-service/.uv-cache/
+aisoftoj-ai-service/.test-tmp/
+aisoftoj-ai-service/pytest-cache-files-*/
+aisoftoj-ai-service/**/__pycache__/
+aisoftoj-ai-service/**/*.py[cod]
+aisoftoj-ai-service/data/
+
+*.log

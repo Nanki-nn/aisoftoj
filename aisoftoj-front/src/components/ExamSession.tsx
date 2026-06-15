@@ -121,10 +121,10 @@ export function ExamSession({
   const shouldRevealAnswer = isReadOnly || session.examMode === 'practice';
   const modeLabel = isReadOnly ? '已完成' : (shouldRevealAnswer ? '练习模式' : '考试模式');
   const modeBadgeClass = isReadOnly
-    ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
+    ? 'bg-emerald-50 text-emerald-700 border border-emerald-200'
     : shouldRevealAnswer
-    ? 'bg-blue-100 text-blue-700 border border-blue-200'
-    : 'bg-amber-100 text-amber-800 border border-amber-200';
+    ? 'bg-slate-100 text-slate-700 border border-slate-200'
+    : 'bg-amber-50 text-amber-700 border border-amber-200';
   const answeredCount = session.questions.filter((question) => {
     const answer = session.answers[question.id];
     if (Array.isArray(answer)) return answer.length > 0;
@@ -304,10 +304,10 @@ export function ExamSession({
 
   const getDifficultyColor = (difficulty: string) => {
     switch (difficulty) {
-      case 'easy': return 'bg-green-100 text-green-800';
-      case 'medium': return 'bg-yellow-100 text-yellow-800';
-      case 'hard': return 'bg-red-100 text-red-800';
-      default: return 'bg-gray-100 text-gray-800';
+      case 'easy': return 'bg-emerald-50 text-emerald-700 border border-emerald-200';
+      case 'medium': return 'bg-amber-50 text-amber-700 border border-amber-200';
+      case 'hard': return 'bg-red-50 text-red-700 border border-red-200';
+      default: return 'bg-slate-100 text-slate-700 border border-slate-200';
     }
   };
 
@@ -377,19 +377,17 @@ export function ExamSession({
                 <Label
                   key={optionValue || index}
                   htmlFor={`option-${index}`}
-                  className={`
-                    flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all
-                    ${isSelected
+                  className={`app-option-card ${
+                    isSelected
                       ? (!shouldRevealAnswer
-                          ? 'bg-blue-50 border-blue-500 text-blue-900'
+                          ? 'is-selected'
                           : isCorrect
-                          ? 'bg-green-50 border-green-500 text-green-900' 
-                          : 'bg-red-50 border-red-500 text-red-900')
+                          ? 'is-correct'
+                          : 'is-wrong')
                       : (shouldRevealAnswer && isAnswered && isCorrectOption
-                          ? 'bg-green-50 border-green-300 text-green-800'
-                          : 'bg-white border-slate-200 hover:border-blue-300 hover:bg-blue-50')
-                    }
-                  `}
+                          ? 'is-correct'
+                          : '')
+                  }`}
                 >
                   <RadioGroupItem value={optionValue} id={`option-${index}`} />
                   <span className="flex-1 leading-relaxed">{optionLabel}. {optionText}</span>
@@ -411,8 +409,8 @@ export function ExamSession({
         
         return (
           <div className="grid gap-4">
-            <Alert className="border-blue-200 bg-blue-50">
-              <AlertDescription className="text-blue-800">
+            <Alert className="app-status-note app-status-note-info">
+              <AlertDescription className="app-body">
                 多选题支持选择多个答案。选完后点击“确认答案”再提交本题，不会因为点第一个选项就立刻判错。
               </AlertDescription>
             </Alert>
@@ -428,19 +426,17 @@ export function ExamSession({
                 <Label
                   key={optionValue || index}
                   htmlFor={`option-${index}`}
-                  className={`
-                    flex items-center gap-3 p-4 rounded-lg border-2 cursor-pointer transition-all
-                    ${isSelected 
+                  className={`app-option-card ${
+                    isSelected
                       ? (!shouldRevealAnswer
-                          ? 'bg-blue-50 border-blue-500 text-blue-900'
+                          ? 'is-selected'
                           : isMultipleCorrect
-                          ? 'bg-green-50 border-green-500 text-green-900' 
-                          : 'bg-red-50 border-red-500 text-red-900')
+                          ? 'is-correct'
+                          : 'is-wrong')
                       : (shouldRevealAnswer && isMultipleAnswered && isCorrectOption
-                          ? 'bg-green-50 border-green-300 text-green-800'
-                          : 'bg-white border-slate-200 hover:border-blue-300 hover:bg-blue-50')
-                    }
-                  `}
+                          ? 'is-correct'
+                          : '')
+                  }`}
                 >
                     <Checkbox
                       id={`option-${index}`}
@@ -464,13 +460,13 @@ export function ExamSession({
               );
             })}
             <div className="flex flex-wrap items-center gap-3 pt-2">
-              <Button onClick={handleConfirmMultipleAnswer} disabled={isReadOnly} className="bg-blue-600 hover:bg-blue-700">
+              <Button onClick={handleConfirmMultipleAnswer} disabled={isReadOnly} className="app-primary-button">
                 {isMultipleAnswered ? '更新答案' : '确认答案'}
               </Button>
               <Button variant="outline" onClick={() => setMultipleDraft(committedMultipleAnswers)} disabled={isReadOnly}>
                 撤销修改
               </Button>
-              <div className="text-sm text-slate-500">
+              <div className="text-sm app-meta">
                 当前已选 {multipleDraft.length} 项
                 {hasDraftChanges && <span className="ml-2 text-amber-600">未确认</span>}
               </div>
@@ -516,11 +512,11 @@ export function ExamSession({
       <div className="border-b border-slate-200 bg-white/80">
         <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <Button variant="ghost" size="sm" onClick={onBackToConfig} className="w-fit text-slate-600">
+            <Button variant="ghost" size="sm" onClick={onBackToConfig} className="w-fit app-secondary-button">
               首页
             </Button>
             <div className="flex flex-col gap-1 sm:items-center">
-              <h1 className="text-lg text-slate-800">
+              <h1 className="app-title text-lg">
                 {session.subject} - {session.category}
               </h1>
               <Badge className={modeBadgeClass}>
@@ -544,7 +540,7 @@ export function ExamSession({
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           {/* 左侧：题目区域 */}
           <div ref={questionCardRef} className="lg:col-span-2">
-            <Card className="bg-white shadow-sm border border-slate-200">
+            <Card className="app-card">
               <CardContent className="pt-6">
                 {/* 题目内容 */}
                 <div className="space-y-6">
@@ -563,7 +559,7 @@ export function ExamSession({
                       return (
                       <Badge className={
                         !shouldRevealAnswer
-                          ? 'bg-blue-100 text-blue-700'
+                      ? 'bg-slate-100 text-slate-700'
                           : currentAnswerCorrect
                             ? 'bg-green-100 text-green-700'
                             : 'bg-red-100 text-red-700'
@@ -617,7 +613,7 @@ export function ExamSession({
                         size="sm"
                         onClick={() => setShowAnswer(true)}
                         disabled={showAnswer}
-                        className="text-blue-700 hover:bg-blue-50 border-blue-300"
+                        className="app-secondary-button"
                       >
                         <BookOpen className="w-3.5 h-3.5 mr-1.5" />
                         查看答案
@@ -637,7 +633,7 @@ export function ExamSession({
                     <Button
                       onClick={handleNext}
                       disabled={currentQuestionIndex === session.questions.length - 1}
-                      className="bg-blue-600 hover:bg-blue-700 px-6"
+                      className="app-primary-button px-6"
                     >
                       下一题
                     </Button>
@@ -762,7 +758,7 @@ export function ExamSession({
               </span>
             </div>
 
-            <Card className="bg-white shadow-sm border border-slate-200 sticky top-20 max-h-[400px] flex flex-col">
+            <Card className="app-card sticky top-20 max-h-[400px] flex flex-col">
               <CardHeader className="border-b border-slate-100 flex-shrink-0">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg">答题卡</CardTitle>
@@ -839,7 +835,7 @@ export function ExamSession({
                         <ChevronLeft className="w-4 h-4" />
                       </Button>
                       
-                      <span className="text-slate-600">
+                      <span className="app-meta">
                         {answerCardPage + 1} / {totalPages}
                       </span>
 
@@ -859,43 +855,43 @@ export function ExamSession({
                 {/* 统计信息 */}
                 <div className="mt-4 pt-4 border-t border-slate-100 space-y-2 text-sm">
                   <div className="grid grid-cols-2 gap-2 text-xs">
-                    <div className="flex items-center gap-2 text-slate-600">
+                    <div className="flex items-center gap-2 app-meta">
                       <span className="inline-block h-3 w-3 rounded border border-slate-300 bg-white"></span>
                       未答
                     </div>
                     {shouldRevealAnswer && (
                       <>
-                        <div className="flex items-center gap-2 text-slate-600">
+                        <div className="flex items-center gap-2 app-meta">
                           <span className="inline-block h-3 w-3 rounded border border-green-200 bg-green-50"></span>
                           正确
                         </div>
-                        <div className="flex items-center gap-2 text-slate-600">
+                        <div className="flex items-center gap-2 app-meta">
                           <span className="inline-block h-3 w-3 rounded border border-red-200 bg-red-50"></span>
                           错误
                         </div>
                       </>
                     )}
-                    <div className="flex items-center gap-2 text-slate-600">
+                    <div className="flex items-center gap-2 app-meta">
                       <span className="inline-block h-3 w-3 rounded border border-blue-200 bg-blue-50"></span>
                       已答
                     </div>
-                    <div className="flex items-center gap-2 text-slate-600">
+                    <div className="flex items-center gap-2 app-meta">
                       <span className="inline-block h-3 w-3 rounded ring-2 ring-orange-500"></span>
                       已标记
                     </div>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-600">总题数：</span>
-                    <span className="text-slate-800">{session.questions.length}</span>
+                    <span className="app-meta">总题数：</span>
+                    <span className="app-body">{session.questions.length}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-600">已答题：</span>
-                    <span className="text-slate-800">{answeredCount}</span>
+                    <span className="app-meta">已答题：</span>
+                    <span className="app-body">{answeredCount}</span>
                   </div>
                   {shouldRevealAnswer && answeredCount > 0 && (
                     <>
                       <div className="flex justify-between">
-                        <span className="text-slate-600">正确：</span>
+                        <span className="app-meta">正确：</span>
                         <span className="text-green-600">
                           {session.questions.filter(q => {
                             const answer = session.answers[q.id];
@@ -904,7 +900,7 @@ export function ExamSession({
                         </span>
                       </div>
                       <div className="flex justify-between">
-                        <span className="text-slate-600">错误：</span>
+                        <span className="app-meta">错误：</span>
                         <span className="text-red-600">
                           {session.questions.filter(q => {
                             const answer = session.answers[q.id];
@@ -915,11 +911,11 @@ export function ExamSession({
                     </>
                   )}
                   <div className="flex justify-between">
-                    <span className="text-slate-600">未答题：</span>
+                    <span className="app-meta">未答题：</span>
                     <span className="text-slate-400">{session.questions.length - answeredCount}</span>
                   </div>
                   <div className="flex justify-between">
-                    <span className="text-slate-600">已标记：</span>
+                    <span className="app-meta">已标记：</span>
                     <span className="text-orange-600">{markedQuestions.size}</span>
                   </div>
                 </div>
@@ -929,7 +925,7 @@ export function ExamSession({
                   <div className="mt-4 pt-4 border-t border-slate-100">
                     <Button
                       onClick={handleSubmit}
-                      className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2"
+                      className="w-full app-primary-button font-medium py-2"
                     >
                       交卷
                     </Button>
@@ -944,7 +940,7 @@ export function ExamSession({
       {/* 确认提交对话框 */}
       {showConfirmSubmit && (
         <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
-          <Card className="w-full max-w-md mx-4">
+          <Card className="app-card w-full max-w-md mx-4">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <AlertCircle className="w-5 h-5 text-yellow-600" />

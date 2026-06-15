@@ -100,7 +100,7 @@ export function EssayHome() {
                           {question.year && <span className="paper-category-badge px-2 py-0.5 text-xs">{question.year} 年</span>}
                           <span className="paper-category-badge px-2 py-0.5 text-xs">{subject}</span>
                         </div>
-                        <CardTitle className="text-base leading-snug text-slate-800 transition-colors group-hover:text-orange-700">
+                        <CardTitle className="text-base leading-snug text-slate-800 transition-colors group-hover:text-teal-700">
                           {question.name || `题目 #${question.id}`}
                         </CardTitle>
                       </CardHeader>

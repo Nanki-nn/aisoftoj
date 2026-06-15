@@ -1,3 +1,6 @@
+DROP TABLE IF EXISTS `knowledge_document`;
+DROP TABLE IF EXISTS `ai_chat_message`;
+DROP TABLE IF EXISTS `ai_chat_session`;
 DROP TABLE IF EXISTS `user_wrong_question_stat`;
 DROP TABLE IF EXISTS `practice_session_question_record`;
 DROP TABLE IF EXISTS `practice_session`;
@@ -25,6 +28,56 @@ CREATE TABLE `user` (
   UNIQUE KEY `uk_email` (`email`),
   UNIQUE KEY `uk_login_name` (`login_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='用户表';
+
+CREATE TABLE `ai_chat_session` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '会话ID',
+  `user_id` bigint NOT NULL COMMENT '用户ID',
+  `title` varchar(128) NOT NULL DEFAULT '新对话' COMMENT '会话标题',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除',
+  PRIMARY KEY (`id`),
+  INDEX `idx_ai_chat_session_user_time` (`user_id`, `is_deleted`, `update_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI问答会话';
+
+CREATE TABLE `ai_chat_message` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '消息ID',
+  `session_id` bigint NOT NULL COMMENT '会话ID',
+  `role` varchar(16) NOT NULL COMMENT 'user/assistant',
+  `content` longtext NOT NULL COMMENT '消息内容',
+  `web_enabled` tinyint NOT NULL DEFAULT 0 COMMENT '是否启用联网',
+  `thinking_enabled` tinyint NOT NULL DEFAULT 0 COMMENT '是否启用思考模式',
+  `reasoning_content` longtext DEFAULT NULL COMMENT '模型思考内容',
+  `status` varchar(16) NOT NULL DEFAULT 'completed' COMMENT 'streaming/completed/failed',
+  `citations` json DEFAULT NULL COMMENT '引用来源',
+  `error_message` varchar(512) DEFAULT NULL COMMENT '失败原因',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  INDEX `idx_ai_chat_message_session` (`session_id`, `id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI问答消息';
+
+CREATE TABLE `knowledge_document` (
+  `id` bigint NOT NULL AUTO_INCREMENT COMMENT '文档ID',
+  `user_id` bigint NOT NULL COMMENT '用户ID',
+  `knowledge_base_id` varchar(64) NOT NULL COMMENT '向量库知识库标识',
+  `document_id` varchar(64) NOT NULL COMMENT '向量库文档标识',
+  `file_name` varchar(255) NOT NULL COMMENT '原始文件名',
+  `file_type` varchar(16) NOT NULL COMMENT '文件类型',
+  `file_size` bigint NOT NULL DEFAULT 0 COMMENT '文件大小',
+  `storage_path` varchar(512) NOT NULL COMMENT '本地存储路径',
+  `job_id` varchar(128) DEFAULT NULL COMMENT '解析任务ID',
+  `status` varchar(16) NOT NULL DEFAULT 'processing' COMMENT 'processing/ready/failed',
+  `chunk_count` int NOT NULL DEFAULT 0 COMMENT '入库分块数',
+  `version` int NOT NULL DEFAULT 1 COMMENT '解析版本',
+  `error_message` varchar(512) DEFAULT NULL COMMENT '失败原因',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `is_deleted` tinyint NOT NULL DEFAULT 0 COMMENT '软删除',
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_knowledge_document_id` (`document_id`),
+  INDEX `idx_knowledge_document_user_status` (`user_id`, `is_deleted`, `status`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='用户知识库文档';
 
 CREATE TABLE `paper` (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '主键',

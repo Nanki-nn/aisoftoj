@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { lazy, Suspense, useEffect, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { ExamHome } from './components/ExamHome';
 import { PapersPage } from './components/PapersPage';
@@ -46,7 +46,12 @@ const ROUTES = {
   essayWriteBase: '/essay/write',
   essayResultBase: '/essay/result',
   essayHistory: '/essay/history',
+  aiChat: '/ai-chat',
+  knowledgeBase: '/knowledge-base',
 } as const;
+
+const AiChatPage = lazy(() => import('./components/AiChatPage'));
+const KnowledgeBasePage = lazy(() => import('./components/KnowledgeBasePage'));
 
 function SessionRoute({
   currentSession,
@@ -178,7 +183,7 @@ export default function App() {
     resetSession,
     setSession,
   } = useExamSession();
-  const { checkAuthStatus } = useAuth();
+  const { checkAuthStatus, isAuthenticated, isInitialized } = useAuth();
   const navigate = useNavigate();
   const location = useLocation();
 
@@ -290,13 +295,7 @@ export default function App() {
     navigate(ROUTES.examConfig);
   };
 
-  const handleBackToHome = () => {
-    resetSession();
-    setExamConfigDraft(null);
-    navigate(ROUTES.home);
-  };
-
-  const handleBackToConfig = () => {
+  const handleReturnHome = () => {
     resetSession();
     setExamConfigDraft(null);
     navigate(ROUTES.home);
@@ -399,8 +398,33 @@ export default function App() {
   };
 
   const handleLoginSuccess = () => {
-    navigate(ROUTES.home);
+    const returnPath = (location.state as { from?: string } | null)?.from;
+    navigate(returnPath || ROUTES.home, { replace: true });
   };
+
+  const shell = (children: React.ReactNode) => (
+    <AppShell onShowAuth={handleShowAuth} onShowProfile={handleShowProfile}>
+      {children}
+    </AppShell>
+  );
+
+  if (!isInitialized) {
+    return (
+      <div className="flex min-h-screen items-center justify-center bg-slate-50 text-sm text-slate-500">
+        正在检查登录状态...
+      </div>
+    );
+  }
+
+  if (!isAuthenticated && location.pathname !== ROUTES.auth) {
+    return (
+      <Navigate
+        to={ROUTES.auth}
+        state={{ from: `${location.pathname}${location.search}` }}
+        replace
+      />
+    );
+  }
 
   return (
     <div className="min-h-screen bg-background text-foreground">
@@ -432,97 +456,83 @@ export default function App() {
         <Route path={ROUTES.auth} element={<AuthPage onLoginSuccess={handleLoginSuccess} />} />
         <Route
           path={ROUTES.profile}
-          element={
-            <AppShell onShowAuth={handleShowAuth} onShowProfile={handleShowProfile}>
-              <ProfilePage onBack={handleBackToHome} />
-            </AppShell>
-          }
+          element={shell(<ProfilePage onBack={handleReturnHome} />)}
         />
         <Route
           path={ROUTES.practiceHistory}
-          element={
-            <AppShell onShowAuth={handleShowAuth} onShowProfile={handleShowProfile}>
-              <PracticeHistory
-                onBack={handleBackToHome}
-                onContinue={handleContinuePracticeFromHistory}
-                onViewResult={handleViewPracticeResultFromHistory}
-              />
-            </AppShell>
-          }
+          element={shell(
+            <PracticeHistory
+              onBack={handleReturnHome}
+              onContinue={handleContinuePracticeFromHistory}
+              onViewResult={handleViewPracticeResultFromHistory}
+            />
+          )}
         />
         <Route
           path={ROUTES.wrongQuestions}
-          element={
-            <AppShell onShowAuth={handleShowAuth} onShowProfile={handleShowProfile}>
-              <WrongQuestions onBack={handleBackToHome} onViewQuestion={handleViewWrongQuestion} />
-            </AppShell>
-          }
+          element={shell(<WrongQuestions onBack={handleReturnHome} onViewQuestion={handleViewWrongQuestion} />)}
         />
         <Route
           path={ROUTES.examConfig}
-          element={
-            <AppShell onShowAuth={handleShowAuth} onShowProfile={handleShowProfile}>
-              <ExamConfig onStartExam={handleStartExam} initialConfig={examConfigDraft} />
-            </AppShell>
-          }
+          element={shell(<ExamConfig onStartExam={handleStartExam} initialConfig={examConfigDraft} />)}
         />
         <Route
           path={`${ROUTES.examSessionBase}/:sessionId`}
-          element={
-            <AppShell onShowAuth={handleShowAuth} onShowProfile={handleShowProfile}>
-              <SessionRoute
-                currentSession={currentSession}
-                setSession={setSession}
-                updateAnswer={handleUpdateAnswer}
-                onCompleteExam={handleCompleteExam}
-                onBackToConfig={handleBackToConfig}
-              />
-            </AppShell>
-          }
+          element={shell(
+            <SessionRoute
+              currentSession={currentSession}
+              setSession={setSession}
+              updateAnswer={handleUpdateAnswer}
+              onCompleteExam={handleCompleteExam}
+              onBackToConfig={handleReturnHome}
+            />
+          )}
         />
         <Route
           path={`${ROUTES.examResultBase}/:sessionId`}
-          element={
-            <AppShell onShowAuth={handleShowAuth} onShowProfile={handleShowProfile}>
-              <ResultRoute
-                currentSession={currentSession}
-                onRestartExam={handleRestartExam}
-                onBackToHome={handleBackToHome}
-                onContinuePractice={handleContinuePractice}
-                onBackToExam={handleBackToExam}
-              />
-            </AppShell>
-          }
+          element={shell(
+            <ResultRoute
+              currentSession={currentSession}
+              onRestartExam={handleRestartExam}
+              onBackToHome={handleReturnHome}
+              onContinuePractice={handleContinuePractice}
+              onBackToExam={handleBackToExam}
+            />
+          )}
         />
         <Route
           path={ROUTES.essay}
-          element={
-            <AppShell onShowAuth={handleShowAuth} onShowProfile={handleShowProfile}>
-              <EssayHome />
-            </AppShell>
-          }
+          element={shell(<EssayHome />)}
         />
         <Route
           path={`${ROUTES.essayWriteBase}/:questionId`}
-          element={
-            <AppShell onShowAuth={handleShowAuth} onShowProfile={handleShowProfile}>
-              <EssayEditor />
-            </AppShell>
-          }
+          element={shell(<EssayEditor />)}
         />
         <Route
           path={`${ROUTES.essayResultBase}/:submissionId`}
+          element={shell(<EssayResult />)}
+        />
+        <Route
+          path={ROUTES.essayHistory}
+          element={shell(<EssayHistory />)}
+        />
+        <Route
+          path={ROUTES.aiChat}
           element={
             <AppShell onShowAuth={handleShowAuth} onShowProfile={handleShowProfile}>
-              <EssayResult />
+              <Suspense fallback={<div className="p-8 text-slate-500">正在加载 AI 问答...</div>}>
+                <AiChatPage />
+              </Suspense>
             </AppShell>
           }
         />
         <Route
-          path={ROUTES.essayHistory}
+          path={ROUTES.knowledgeBase}
           element={
             <AppShell onShowAuth={handleShowAuth} onShowProfile={handleShowProfile}>
-              <EssayHistory />
+              <Suspense fallback={<div className="p-8 text-slate-500">正在加载知识库...</div>}>
+                <KnowledgeBasePage />
+              </Suspense>
             </AppShell>
           }
         />

@@ -1,0 +1,74 @@
+from typing import Literal
+
+from pydantic import BaseModel, Field, HttpUrl, model_validator
+
+from aisoftoj_ai.rag.models import SearchResult
+
+
+class UrlIngestRequest(BaseModel):
+    """通过 URL 触发入库的请求体。"""
+    url: HttpUrl
+    knowledge_base_id: str = Field(min_length=1)
+    document_id: str = Field(min_length=1)
+    version: int = 1
+
+
+class JobResponse(BaseModel):
+    """异步任务返回体。"""
+    job_id: str
+    status: str
+
+
+class ParseOptions(BaseModel):
+    backend: str = "hybrid-engine"
+    effort: str = "medium"
+    parse_method: str = "auto"
+    lang_list: list[str] = Field(default_factory=lambda: ["ch"])
+    formula_enable: bool = True
+    table_enable: bool = True
+    image_analysis: bool = False
+    return_md: bool = True
+    return_content_list: bool = True
+    return_middle_json: bool = False
+    return_model_output: bool = False
+    return_images: bool = True
+    start_page_id: int = Field(default=0, ge=0)
+    end_page_id: int = Field(default=99999, ge=0)
+    chunk_size: int = Field(default=600, ge=100, le=4000)
+    chunk_overlap: int = Field(default=100, ge=0, le=1000)
+
+    @model_validator(mode="after")
+    def validate_ranges(self):
+        if self.end_page_id < self.start_page_id:
+            raise ValueError("end_page_id must be greater than or equal to start_page_id")
+        if self.chunk_overlap >= self.chunk_size:
+            raise ValueError("chunk_overlap must be smaller than chunk_size")
+        return self
+
+
+class SearchRequest(BaseModel):
+    """知识库检索请求体。"""
+    query: str = Field(min_length=1)
+    knowledge_base_ids: list[str] = Field(default_factory=list)
+    limit: int = Field(default=8, ge=1, le=20)
+
+
+class SearchResponse(BaseModel):
+    """检索响应体。"""
+    results: list[SearchResult]
+
+
+class ChatMessage(BaseModel):
+    """对话历史消息。"""
+    role: Literal["user", "assistant"]
+    content: str
+
+
+class ChatRequest(BaseModel):
+    """AI 对话请求体，支持知识库、联网搜索和思考流。"""
+    question: str = Field(min_length=1)
+    knowledge_base_ids: list[str] = Field(default_factory=list)
+    history: list[ChatMessage] = Field(default_factory=list)
+    web_enabled: bool = False
+    thinking_enabled: bool = False
+    rewrite_count: int = Field(default=3, ge=1, le=5)

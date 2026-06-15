@@ -715,3 +715,352 @@ export async function uploadOssFile(file: File, dir?: string): Promise<string> {
   }
   return payload.data as string;
 }
+
+// AI Chat API
+export type AiChatCitation = {
+  index: number;
+  result_id: string;
+  title: string;
+  source: string;
+  content: string;
+  score: number;
+  document_id?: string | null;
+  page?: number | null;
+  heading_path?: string[];
+  url?: string | null;
+  asset_url?: string | null;
+};
+
+export type AiChatMessage = {
+  id: number | string;
+  role: 'user' | 'assistant';
+  content: string;
+  webEnabled: boolean;
+  thinkingEnabled: boolean;
+  reasoningContent?: string | null;
+  status: 'streaming' | 'completed' | 'failed';
+  citations: AiChatCitation[];
+  errorMessage?: string | null;
+  createTime: string;
+};
+
+export type AiChatSession = {
+  id: number;
+  title: string;
+  createTime: string;
+  updateTime: string;
+  knowledgeBaseIds?: number[];
+  messages?: AiChatMessage[];
+};
+
+export async function createAiChatSession(): Promise<AiChatSession> {
+  return request<AiChatSession>('/ai/chat/sessions', { method: 'POST' });
+}
+
+export async function listAiChatSessions(): Promise<AiChatSession[]> {
+  return request<AiChatSession[]>('/ai/chat/sessions');
+}
+
+export async function getAiChatSession(sessionId: number): Promise<AiChatSession> {
+  return request<AiChatSession>(`/ai/chat/sessions/${sessionId}`);
+}
+
+export async function deleteAiChatSession(sessionId: number): Promise<void> {
+  await request(`/ai/chat/sessions/${sessionId}`, { method: 'DELETE' });
+}
+
+export type KnowledgeDocumentStatus =
+  | 'uploaded'
+  | 'queued'
+  | 'parsing'
+  | 'normalizing'
+  | 'chunking'
+  | 'embedding'
+  | 'indexing'
+  | 'ready'
+  | 'failed'
+  | 'cancelled';
+
+export type KnowledgeBase = {
+  id: number;
+  name: string;
+  description?: string | null;
+  color?: string | null;
+  isDefault: boolean;
+  documentCount: number;
+  readyCount: number;
+  createTime: string;
+  updateTime: string;
+};
+
+export type KnowledgeParseOptions = {
+  backend: string;
+  effort: 'low' | 'medium' | 'high';
+  parse_method: 'auto' | 'txt' | 'ocr';
+  lang_list: string[];
+  formula_enable: boolean;
+  table_enable: boolean;
+  image_analysis: boolean;
+  start_page_id: number;
+  end_page_id: number;
+  return_md: boolean;
+  return_content_list: boolean;
+  return_middle_json: boolean;
+  return_model_output: boolean;
+  return_images: boolean;
+  chunk_size: number;
+  chunk_overlap: number;
+};
+
+export type KnowledgeDocumentVersion = {
+  id: number;
+  version: number;
+  status: KnowledgeDocumentStatus;
+  progress: number;
+  queuedAhead?: number | null;
+  chunkCount: number;
+  errorMessage?: string | null;
+  mineruTaskId?: string | null;
+  traceId?: string | null;
+  failureType?: string | null;
+  stageDurationMs?: number | null;
+  totalDurationMs?: number | null;
+  options?: Partial<KnowledgeParseOptions> | null;
+  startedTime?: string | null;
+  completedTime?: string | null;
+  createTime: string;
+  updateTime: string;
+};
+
+export type KnowledgeDocument = {
+  id: number;
+  documentId: string;
+  knowledgeBaseId: number;
+  knowledgeBaseName: string;
+  fileName: string;
+  fileType: string;
+  fileSize: number;
+  status: KnowledgeDocumentStatus;
+  chunkCount: number;
+  errorMessage?: string | null;
+  version: number;
+  progress: number;
+  queuedAhead?: number | null;
+  options?: Partial<KnowledgeParseOptions> | null;
+  versions?: KnowledgeDocumentVersion[];
+  createTime: string;
+  updateTime: string;
+};
+
+export type KnowledgeCapabilities = {
+  mineru?: { title?: string; version?: string };
+  parseOptionsSchema?: {
+    properties?: Record<string, { enum?: string[]; default?: unknown }>;
+  };
+  presets?: Record<string, Partial<KnowledgeParseOptions>>;
+};
+
+export async function listKnowledgeDocuments(
+  knowledgeBaseId?: number
+): Promise<KnowledgeDocument[]> {
+  const query = knowledgeBaseId ? `?knowledgeBaseId=${knowledgeBaseId}` : '';
+  return request<KnowledgeDocument[]>(`/knowledge/documents${query}`);
+}
+
+export async function uploadKnowledgeDocument(
+  knowledgeBaseId: number,
+  file: File,
+  options: KnowledgeParseOptions
+): Promise<KnowledgeDocument> {
+  const formData = new FormData();
+  formData.append('knowledgeBaseId', String(knowledgeBaseId));
+  formData.append('file', file);
+  formData.append('options', JSON.stringify(options));
+  const authToken = localStorage.getItem('authToken');
+  const response = await fetch(`${API_BASE_URL}/knowledge/documents`, {
+    method: 'POST',
+    headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+    body: formData,
+  });
+  const payload = await response.json().catch(() => null);
+  if (!response.ok || !payload || payload.code !== 200) {
+    throw new Error(payload?.message || `文档上传失败: ${response.status}`);
+  }
+  return payload.data as KnowledgeDocument;
+}
+
+export async function retryKnowledgeDocument(
+  id: number,
+  options?: Partial<KnowledgeParseOptions>
+): Promise<KnowledgeDocument> {
+  return request<KnowledgeDocument>(`/knowledge/documents/${id}/retry`, {
+    method: 'POST',
+    body: JSON.stringify(options || {}),
+  });
+}
+
+export async function deleteKnowledgeDocument(id: number): Promise<void> {
+  await request(`/knowledge/documents/${id}`, { method: 'DELETE' });
+}
+
+export async function listKnowledgeBases(): Promise<KnowledgeBase[]> {
+  return request<KnowledgeBase[]>('/knowledge-bases');
+}
+
+export async function createKnowledgeBase(data: {
+  name: string;
+  description?: string;
+  color?: string;
+}): Promise<KnowledgeBase> {
+  return request<KnowledgeBase>('/knowledge-bases', {
+    method: 'POST',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateKnowledgeBase(
+  id: number,
+  data: { name: string; description?: string; color?: string }
+): Promise<KnowledgeBase> {
+  return request<KnowledgeBase>(`/knowledge-bases/${id}`, {
+    method: 'PUT',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteKnowledgeBase(id: number): Promise<void> {
+  await request(`/knowledge-bases/${id}`, { method: 'DELETE' });
+}
+
+export async function getKnowledgeDocument(id: number): Promise<KnowledgeDocument> {
+  return request<KnowledgeDocument>(`/knowledge/documents/${id}`);
+}
+
+export async function getKnowledgeCapabilities(): Promise<KnowledgeCapabilities> {
+  return request<KnowledgeCapabilities>('/knowledge/documents/capabilities');
+}
+
+export async function cancelKnowledgeDocument(id: number): Promise<void> {
+  await request(`/knowledge/documents/${id}/cancel`, { method: 'POST' });
+}
+
+export async function moveKnowledgeDocument(
+  id: number,
+  knowledgeBaseId: number
+): Promise<KnowledgeDocument> {
+  return request<KnowledgeDocument>(`/knowledge/documents/${id}/move`, {
+    method: 'PATCH',
+    body: JSON.stringify({ knowledgeBaseId }),
+  });
+}
+
+export async function getKnowledgeArtifact(
+  id: number,
+  version: number,
+  kind: 'markdown' | 'content-list' | 'raw' | 'chunks'
+): Promise<string> {
+  const authToken = localStorage.getItem('authToken');
+  const response = await fetch(
+    `${API_BASE_URL}/knowledge/documents/${id}/versions/${version}/artifacts/${kind}`,
+    { headers: authToken ? { Authorization: `Bearer ${authToken}` } : {} }
+  );
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null);
+    throw new Error(payload?.message || `读取解析产物失败: ${response.status}`);
+  }
+  return response.text();
+}
+
+export async function downloadKnowledgeOriginal(id: number, fileName: string): Promise<void> {
+  const authToken = localStorage.getItem('authToken');
+  const response = await fetch(`${API_BASE_URL}/knowledge/documents/${id}/original`, {
+    headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+  });
+  if (!response.ok) {
+    throw new Error(`下载原文件失败: ${response.status}`);
+  }
+  const url = URL.createObjectURL(await response.blob());
+  const anchor = document.createElement('a');
+  anchor.href = url;
+  anchor.download = fileName;
+  anchor.click();
+  URL.revokeObjectURL(url);
+}
+
+export async function updateAiChatKnowledgeBases(
+  sessionId: number,
+  knowledgeBaseIds: number[]
+): Promise<AiChatSession> {
+  return request<AiChatSession>(`/ai/chat/sessions/${sessionId}/knowledge-bases`, {
+    method: 'PUT',
+    body: JSON.stringify({ knowledgeBaseIds }),
+  });
+}
+
+type AiChatStreamHandlers = {
+  onStatus?: (message: string) => void;
+  onWarning?: (message: string) => void;
+  onToken?: (token: string) => void;
+  onReasoning?: (token: string) => void;
+  onCitation?: (citations: AiChatCitation[]) => void;
+  onDone?: () => void;
+};
+
+export async function streamAiChatMessage(
+  sessionId: number,
+  question: string,
+  webEnabled: boolean,
+  thinkingEnabled: boolean,
+  handlers: AiChatStreamHandlers,
+  signal?: AbortSignal
+): Promise<void> {
+  const authToken = localStorage.getItem('authToken');
+  const response = await fetch(`${API_BASE_URL}/ai/chat/sessions/${sessionId}/messages/stream`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      ...(authToken ? { Authorization: `Bearer ${authToken}` } : {}),
+    },
+    body: JSON.stringify({ question, webEnabled, thinkingEnabled }),
+    signal,
+  });
+
+  if (!response.ok || !response.body) {
+    const payload = await response.json().catch(() => null);
+    throw new Error(payload?.message || `问答请求失败: ${response.status}`);
+  }
+
+  const reader = response.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = '';
+  let eventName = 'message';
+
+  const dispatch = (dataText: string) => {
+    const data = JSON.parse(dataText);
+    if (eventName === 'status') handlers.onStatus?.(data.message || '');
+    if (eventName === 'warning') handlers.onWarning?.(data.message || '');
+    if (eventName === 'reasoning') handlers.onReasoning?.(data.content || '');
+    if (eventName === 'token') handlers.onToken?.(data.content || '');
+    if (eventName === 'citation') handlers.onCitation?.(data.citations || []);
+    if (eventName === 'done') handlers.onDone?.();
+    if (eventName === 'error') throw new Error(data.message || '问答服务暂时不可用');
+  };
+
+  while (true) {
+    const { done, value } = await reader.read();
+    buffer += decoder.decode(value || new Uint8Array(), { stream: !done });
+    const blocks = buffer.split(/\r?\n\r?\n/);
+    buffer = blocks.pop() || '';
+
+    for (const block of blocks) {
+      let dataText = '';
+      for (const line of block.split(/\r?\n/)) {
+        if (line.startsWith('event:')) eventName = line.slice(6).trim();
+        if (line.startsWith('data:')) dataText += line.slice(5).trim();
+      }
+      if (dataText) dispatch(dataText);
+      eventName = 'message';
+    }
+    if (done) break;
+  }
+}

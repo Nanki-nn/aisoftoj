@@ -16,6 +16,7 @@ import { LoginForm, RegisterForm, User } from '../types/user';
 type AuthContextValue = {
   user: User | null;
   isAuthenticated: boolean;
+  isInitialized: boolean;
   isLoading: boolean;
   error: string | null;
   login: (form: LoginForm) => Promise<boolean>;
@@ -29,6 +30,7 @@ const AuthContext = createContext<AuthContextValue | null>(null);
 
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [isInitialized, setIsInitialized] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -36,6 +38,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     const token = localStorage.getItem('authToken');
     if (!token) {
       setUser(null);
+      setIsInitialized(true);
       return;
     }
 
@@ -49,6 +52,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       setUser(null);
     } finally {
       setIsLoading(false);
+      setIsInitialized(true);
     }
   }, []);
 
@@ -59,6 +63,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await loginByEmail(form);
       localStorage.setItem('authToken', response.token);
       setUser(response.user);
+      setIsInitialized(true);
       return true;
     } catch (loginError) {
       setError((loginError as Error).message || '登录失败');
@@ -75,6 +80,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const response = await registerByEmail(form);
       localStorage.setItem('authToken', response.token);
       setUser(response.user);
+      setIsInitialized(true);
       return true;
     } catch (registerError) {
       setError((registerError as Error).message || '注册失败');
@@ -106,6 +112,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const value = useMemo<AuthContextValue>(() => ({
     user,
     isAuthenticated: Boolean(user),
+    isInitialized,
     isLoading,
     error,
     login,
@@ -115,6 +122,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     updateUser,
   }), [
     user,
+    isInitialized,
     isLoading,
     error,
     login,

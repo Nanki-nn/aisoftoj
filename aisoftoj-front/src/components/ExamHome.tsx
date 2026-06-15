@@ -355,7 +355,7 @@ export function ExamHome({ onStartPaper, onShowProfile, onShowAuth, onShowPracti
                   <CardHeader className="p-4 pb-3">
                     <div className="flex items-start justify-between">
                       <div>
-                        <CardTitle className="text-base text-slate-800 transition-colors group-hover:text-orange-700">
+                        <CardTitle className="text-base text-slate-800 transition-colors group-hover:text-teal-700">
                           {paper.year}年{paper.month}月真题
                         </CardTitle>
                         <p className="mt-1 text-xs text-slate-500">{paper.subject}</p>

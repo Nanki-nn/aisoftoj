@@ -164,6 +164,7 @@ CREATE DATABASE aisoftoj DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_general_c
 
 ```bash
 mysql -uroot -p aisoftoj < db_schema.sql
+mysql -uroot -p aisoftoj < db_migration_knowledge.sql
 ```
 
 导入初始数据（可选）：
