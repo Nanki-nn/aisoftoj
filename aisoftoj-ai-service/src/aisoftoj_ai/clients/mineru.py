@@ -1,4 +1,5 @@
 import asyncio
+import json
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -94,12 +95,16 @@ class Mineru:
         content_list = result.get("content_list") or result.get("content") or []
         markdown = result.get("md_content") or result.get("markdown") or ""
         if isinstance(content_list, str):
-            markdown = markdown or content_list
-            content_list = []
+            try:
+                content_list = json.loads(content_list)
+            except json.JSONDecodeError:
+                markdown = markdown or content_list
+                content_list = []
         if not isinstance(content_list, list):
             content_list = []
 
-        blocks = self._normalize_items(content_list)
+        images = result.get("images") if isinstance(result.get("images"), dict) else {}
+        blocks = self._normalize_items(content_list, images)
         if not blocks and markdown.strip():
             blocks = [DocumentBlock(content=markdown)]
         if not blocks:
@@ -111,17 +116,25 @@ class Mineru:
             blocks=blocks,
         )
 
-    def _normalize_items(self, items: list[dict[str, Any]]) -> list[DocumentBlock]:
+    def _normalize_items(
+        self,
+        items: list[dict[str, Any]],
+        images: dict[str, str] | None = None,
+    ) -> list[DocumentBlock]:
         blocks: list[DocumentBlock] = []
         headings: list[str] = []
         for item in items:
             if not isinstance(item, dict):
                 continue
             content_type = item.get("type", "text")
-            if content_type in {"title", "heading"}:
+            if content_type in {"title", "heading"} or (
+                content_type == "text" and item.get("text_level") is not None
+            ):
                 title = item.get("text") or item.get("content") or ""
                 level = int(item.get("text_level") or item.get("level") or 1)
-                headings = headings[: max(0, level - 1)] + [str(title).strip()]
+                title = str(title).strip()
+                if title:
+                    headings = headings[: max(0, level - 1)] + [title]
                 continue
             mapped_type = {
                 "table": "table",
@@ -134,8 +147,12 @@ class Mineru:
                 or item.get("content")
                 or item.get("table_body")
                 or item.get("caption")
+                or "\n".join(str(value) for value in item.get("list_items", []))
                 or ""
             )
+            asset_url = item.get("img_path") or item.get("image_path")
+            if asset_url and images:
+                asset_url = images.get(Path(str(asset_url)).name, asset_url)
             blocks.append(
                 DocumentBlock(
                     content=str(content),
@@ -143,7 +160,7 @@ class Mineru:
                     heading_path=list(headings),
                     page=item.get("page_idx", item.get("page")),
                     bbox=item.get("bbox"),
-                    asset_url=item.get("img_path") or item.get("image_path"),
+                    asset_url=asset_url,
                 )
             )
         return blocks

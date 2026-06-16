@@ -725,11 +725,31 @@ export type AiChatCitation = {
   content: string;
   score: number;
   document_id?: string | null;
+  version?: number | null;
+  content_type?: 'text' | 'table' | 'formula' | 'image' | 'web';
+  asset_name?: string | null;
   page?: number | null;
   heading_path?: string[];
   url?: string | null;
   asset_url?: string | null;
 };
+
+export async function loadKnowledgeCitationAsset(
+  documentId: string,
+  version: number,
+  filename: string
+): Promise<string> {
+  const authToken = localStorage.getItem('authToken');
+  const response = await fetch(
+    `${API_BASE_URL}/knowledge/documents/external/${encodeURIComponent(documentId)}` +
+      `/versions/${version}/assets/${encodeURIComponent(filename)}`,
+    {
+      headers: authToken ? { Authorization: `Bearer ${authToken}` } : {},
+    }
+  );
+  if (!response.ok) throw new Error('图片资源加载失败');
+  return URL.createObjectURL(await response.blob());
+}
 
 export type AiChatMessage = {
   id: number | string;
@@ -854,6 +874,7 @@ export type KnowledgeDocument = {
 
 export type KnowledgeCapabilities = {
   mineru?: { title?: string; version?: string };
+  maxFileSize?: number;
   parseOptionsSchema?: {
     properties?: Record<string, { enum?: string[]; default?: unknown }>;
   };

@@ -5,10 +5,15 @@ from aisoftoj_ai.rag.agent.state import RagState
 from aisoftoj_ai.rag.agent.tools import build_tools
 
 
-def build_rag_graph(chat, search, searxng):
+def build_rag_graph(chat, search, searxng, storage=None):
     """构建完整的 RAG LangGraph 工作流。"""
     search_tool, web_tool = build_tools(search, searxng)
-    rewrite, retrieve, judge, search_web, answer = build_nodes(chat, search_tool, web_tool)
+    rewrite, retrieve, judge, search_web, answer = build_nodes(
+        chat,
+        search_tool,
+        web_tool,
+        storage,
+    )
 
     graph = StateGraph(RagState)
     graph.add_node("改写查询", rewrite)

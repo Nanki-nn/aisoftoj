@@ -201,6 +201,19 @@ async def get_artifact(document_id: str, version: int, kind: str):
     return FileResponse(path, media_type=media_type, filename=filename)
 
 
+@router.get("/index/documents/{document_id}/versions/{version}/assets/{filename}")
+async def get_document_asset(document_id: str, version: int, filename: str):
+    safe_name = Path(filename).name
+    if safe_name != filename:
+        raise HTTPException(status_code=400, detail="Invalid asset name")
+    path = get_services().pipeline.storage.path(
+        f"documents/{document_id}/{version}/images/{safe_name}"
+    )
+    if not path.exists() or not path.is_file():
+        raise HTTPException(status_code=404, detail="Asset not found")
+    return FileResponse(path)
+
+
 @router.delete("/index/documents/{document_id}")
 async def delete_document(document_id: str) -> dict:
     """删除指定文档的索引数据。"""
@@ -252,7 +265,12 @@ async def chat_stream(body: ChatRequest) -> StreamingResponse:
                 yield _sse("done", {"traceId": trace_id})
                 return
 
-            graph = build_rag_graph(services.chat, services.search, services.searxng)
+            graph = build_rag_graph(
+                services.chat,
+                services.search,
+                services.searxng,
+                services.pipeline.storage,
+            )
             async for part in graph.astream(
                 {
                     "question": body.question,

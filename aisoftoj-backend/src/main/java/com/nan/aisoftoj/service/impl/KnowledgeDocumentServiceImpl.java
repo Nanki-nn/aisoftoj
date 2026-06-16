@@ -44,7 +44,7 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
     @Value("${ai-service.url:http://localhost:8090}") private String aiServiceUrl;
     @Value("${ai-service.secret:}") private String aiServiceSecret;
     @Value("${knowledge.upload.path:./uploads/knowledge/}") private String uploadPath;
-    @Value("${knowledge.max-file-size:52428800}") private long maxFileSize;
+    @Value("${knowledge.max-file-size:209715200}") private long maxFileSize;
 
     @Override
     public List<KnowledgeBaseDTO> listBases(Long userId) {
@@ -253,6 +253,15 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
     }
 
     @Override
+    public byte[] asset(Long userId, String documentId, Integer version, String filename) {
+        requireDocumentByExternalId(userId, documentId);
+        String safeName = Paths.get(filename).getFileName().toString();
+        if (!safeName.equals(filename)) throw new IllegalArgumentException("非法图片名称");
+        return callBytes("/api/v1/index/documents/" + documentId
+                + "/versions/" + version + "/assets/" + safeName);
+    }
+
+    @Override
     public byte[] original(Long userId, Long id) {
         try { return Files.readAllBytes(Paths.get(requireDocument(userId, id).getStoragePath())); }
         catch (IOException exception) { throw new IllegalStateException("原始文档读取失败", exception); }
@@ -265,14 +274,20 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
 
     @Override
     public Map<String, Object> capabilities() {
-        return callJson("/api/v1/index/capabilities", "GET", null);
+        Map<String, Object> capabilities = new LinkedHashMap<>(
+                callJson("/api/v1/index/capabilities", "GET", null));
+        capabilities.put("maxFileSize", maxFileSize);
+        return capabilities;
     }
 
     @Override
     public List<String> readyVectorIds(Long userId, List<Long> baseIds) {
+        if (baseIds == null || baseIds.isEmpty()) {
+            return Collections.emptyList();
+        }
         LambdaQueryWrapper<KnowledgeBase> query = new LambdaQueryWrapper<KnowledgeBase>()
-                .eq(KnowledgeBase::getUserId, userId);
-        if (baseIds != null && !baseIds.isEmpty()) query.in(KnowledgeBase::getId, baseIds);
+                .eq(KnowledgeBase::getUserId, userId)
+                .in(KnowledgeBase::getId, baseIds);
         List<String> result = new ArrayList<>();
         for (KnowledgeBase base : baseMapper.selectList(query)) {
             Long count = documentMapper.selectCount(new LambdaQueryWrapper<KnowledgeDocument>()
@@ -532,6 +547,15 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
         return document;
     }
 
+    private KnowledgeDocument requireDocumentByExternalId(Long userId, String documentId) {
+        KnowledgeDocument document = documentMapper.selectOne(
+                new LambdaQueryWrapper<KnowledgeDocument>()
+                        .eq(KnowledgeDocument::getDocumentId, documentId)
+                        .eq(KnowledgeDocument::getUserId, userId).last("LIMIT 1"));
+        if (document == null) throw new IllegalArgumentException("文档不存在或无权访问");
+        return document;
+    }
+
     private KnowledgeDocumentVersion currentVersion(KnowledgeDocument document) {
         KnowledgeDocumentVersion version = versionMapper.selectOne(
                 new LambdaQueryWrapper<KnowledgeDocumentVersion>()
@@ -574,12 +598,20 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
 
     private void validate(MultipartFile file) {
         if (file == null || file.isEmpty()) throw new IllegalArgumentException("请选择文件");
-        if (file.getSize() > maxFileSize) throw new IllegalArgumentException("文件大小不能超过 50MB");
+        if (file.getSize() > maxFileSize) {
+            throw new IllegalArgumentException(
+                    "文件大小不能超过 " + formatFileSize(maxFileSize));
+        }
         String extension = extensionOf(safeFileName(file.getOriginalFilename()));
         if (!ALLOWED_EXTENSIONS.contains(extension)) {
             throw new IllegalArgumentException(
                     "支持 PDF、图片、DOCX、PPTX、XLSX、TXT、Markdown；DOC/PPT 请先转换");
         }
+    }
+
+    private String formatFileSize(long bytes) {
+        long megabytes = bytes / (1024L * 1024L);
+        return megabytes > 0 ? megabytes + "MB" : bytes + "B";
     }
 
     private HttpURLConnection connection(String path, String method) throws IOException {

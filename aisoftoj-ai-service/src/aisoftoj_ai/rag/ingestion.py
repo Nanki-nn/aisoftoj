@@ -1,3 +1,4 @@
+import mimetypes
 from collections.abc import Awaitable, Callable
 from pathlib import Path
 
@@ -92,6 +93,12 @@ class IngestionPipeline:
         for index, block in enumerate(blocks):
             if not block.asset_url:
                 continue
+            if block.asset_url.startswith("data:"):
+                media_type = block.asset_url.split(";", 1)[0].split(":", 1)[-1]
+                suffix = mimetypes.guess_extension(media_type) or ".bin"
+                key = f"documents/{document_id}/{version}/images/{index}{suffix}"
+                block.asset_url = await self.storage.write_data_url(block.asset_url, key)
+                continue
             path = Path(block.asset_url)
             if not path.exists():
                 continue
@@ -119,7 +126,7 @@ class IngestionPipeline:
         for index, chunk in enumerate(chunks):
             if vectors[index] is None:
                 vectors[index] = await self.embedding.embed_image(
-                    chunk.asset_url or "",
+                    await self.storage.as_data_url(chunk.asset_url or ""),
                     "\n".join([*chunk.heading_path, chunk.content]),
                 )
         return [vector for vector in vectors if vector is not None]

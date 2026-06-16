@@ -1,4 +1,5 @@
 ﻿import React, { useCallback, useEffect, useRef, useState } from 'react';
+import { createPortal } from 'react-dom';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import {
@@ -16,16 +17,10 @@ import {
   Trash2,
   UserRound,
   WifiOff,
+  X,
 } from 'lucide-react';
 import { Button } from './ui/button';
 import { Checkbox } from './ui/checkbox';
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-} from './ui/dialog';
 import { Popover, PopoverContent, PopoverTrigger } from './ui/popover';
 import { Switch } from './ui/switch';
 import { Textarea } from './ui/textarea';
@@ -46,6 +41,7 @@ import {
   getAiChatSession,
   listAiChatSessions,
   listKnowledgeBases,
+  loadKnowledgeCitationAsset,
   streamAiChatMessage,
   updateAiChatKnowledgeBases,
 } from '../lib/api';
@@ -141,6 +137,134 @@ function ReasoningBlock({ message }: { message: AiChatMessage }) {
   );
 }
 
+function CitationViewer({
+  citation,
+  onClose,
+}: {
+  citation: AiChatCitation | null;
+  onClose: () => void;
+}) {
+  const [imageUrl, setImageUrl] = useState('');
+
+  useEffect(() => {
+    let cancelled = false;
+    let objectUrl = '';
+    setImageUrl('');
+
+    if (
+      citation?.content_type === 'image'
+      && citation.document_id
+      && citation.version != null
+      && citation.asset_name
+    ) {
+      void loadKnowledgeCitationAsset(
+        citation.document_id,
+        citation.version,
+        citation.asset_name,
+      ).then((url) => {
+        if (cancelled) {
+          URL.revokeObjectURL(url);
+          return;
+        }
+        objectUrl = url;
+        setImageUrl(url);
+      }).catch(() => setImageUrl(''));
+    }
+
+    return () => {
+      cancelled = true;
+      if (objectUrl) URL.revokeObjectURL(objectUrl);
+    };
+  }, [citation]);
+
+  if (!citation || typeof document === 'undefined') return null;
+
+  return createPortal(
+    <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-8">
+      <button
+        type="button"
+        className="absolute inset-0 cursor-default bg-slate-950/35 backdrop-blur-[1px]"
+        aria-label="关闭检索详情"
+        onClick={onClose}
+      />
+      <aside
+        className="relative flex max-h-[86dvh] w-full max-w-4xl flex-col overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-2xl"
+        aria-label="检索结果详情"
+      >
+        <header className="flex items-start justify-between gap-4 border-b border-slate-200 bg-slate-50/80 px-6 py-5">
+          <div className="flex min-w-0 items-start gap-3">
+            <div className="mt-0.5 rounded-lg bg-teal-50 p-2 text-teal-700">
+              <FileText className="h-4 w-4" />
+            </div>
+            <div className="min-w-0">
+              <h3 className="text-base font-semibold leading-6 app-title">
+                [{citation.index}] {citation.title}
+              </h3>
+              <p className="mt-1 text-xs app-meta">
+                {citation.source}
+                {citation.page != null ? ` · 第 ${citation.page + 1} 页` : ''}
+                {citation.score > 0 ? ` · 融合得分 ${citation.score.toFixed(4)}` : ''}
+              </p>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onClose}
+            className="flex h-10 w-10 shrink-0 items-center justify-center rounded-lg border border-slate-200 text-slate-500 transition-colors hover:bg-slate-100 hover:text-slate-900"
+            aria-label="关闭检索详情"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </header>
+
+        <div className="min-h-0 flex-1 overflow-y-auto px-6 py-5">
+          {imageUrl && (
+            <figure className="mb-5 overflow-hidden rounded-xl border border-slate-200 bg-slate-50 p-3">
+              <img
+                src={imageUrl}
+                alt={citation.content || citation.title}
+                className="mx-auto max-h-[42dvh] w-auto rounded-lg object-contain"
+              />
+            </figure>
+          )}
+          {citation.heading_path?.length > 0 && (
+            <section className="mb-4 rounded-xl border border-slate-200 bg-slate-50 px-4 py-3">
+              <p className="text-xs font-medium app-meta">文档位置</p>
+              <p className="mt-1 text-sm leading-6 app-body">
+                {citation.heading_path.join(' / ')}
+              </p>
+            </section>
+          )}
+
+          <section>
+            <p className="mb-2 text-xs font-medium app-meta">实际检索片段</p>
+            <div className="whitespace-pre-wrap rounded-xl border border-slate-200 bg-white p-4 text-sm leading-7 app-body">
+              {citation.content || '该历史引用未保存检索片段，请重新提问。'}
+            </div>
+          </section>
+
+          <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs app-meta">
+            <span className="break-all">
+              {citation.document_id
+                ? `文档 ID：${citation.document_id}`
+                : `结果 ID：${citation.result_id || '未知'}`}
+            </span>
+            {citation.url && (
+              <Button asChild variant="outline" size="sm" className="gap-2">
+                <a href={citation.url} target="_blank" rel="noreferrer">
+                  打开原网页
+                  <ExternalLink className="h-3.5 w-3.5" />
+                </a>
+              </Button>
+            )}
+          </div>
+        </div>
+      </aside>
+    </div>,
+    document.body,
+  );
+}
+
 function AssistantContent({ message }: { message: AiChatMessage }) {
   const [selectedCitation, setSelectedCitation] = useState<AiChatCitation | null>(null);
 
@@ -169,71 +293,10 @@ function AssistantContent({ message }: { message: AiChatMessage }) {
           </div>
         </div>
       )}
-      <Dialog
-        open={selectedCitation !== null}
-        onOpenChange={(open) => {
-          if (!open) setSelectedCitation(null);
-        }}
-      >
-        <DialogContent className="max-h-[82vh] max-w-3xl overflow-hidden p-0">
-          {selectedCitation && (
-            <>
-              <DialogHeader className="border-b border-slate-100 px-6 py-5 text-left">
-                <div className="flex items-start gap-3 pr-8">
-                  <div className="mt-0.5 rounded-lg bg-teal-50 p-2 text-teal-700">
-                    <FileText className="h-4 w-4" />
-                  </div>
-                  <div className="min-w-0">
-                    <DialogTitle className="leading-6">
-                      [{selectedCitation.index}] {selectedCitation.title}
-                    </DialogTitle>
-                    <DialogDescription className="mt-1.5">
-                      {selectedCitation.source}
-                      {selectedCitation.page != null
-                        ? ` · 第 ${selectedCitation.page + 1} 页`
-                        : ''}
-                      {selectedCitation.score > 0
-                        ? ` · 检索得分 ${selectedCitation.score.toFixed(4)}`
-                        : ''}
-                    </DialogDescription>
-                  </div>
-                </div>
-              </DialogHeader>
-              <div className="max-h-[calc(82vh-9rem)] overflow-y-auto px-6 py-5">
-                {selectedCitation.heading_path?.length > 0 && (
-                  <div className="mb-4 rounded-lg border border-slate-200 bg-slate-50 px-4 py-3">
-                    <p className="text-xs font-medium app-meta">文档位置</p>
-                    <p className="mt-1 text-sm app-body">
-                      {selectedCitation.heading_path.join(' / ')}
-                    </p>
-                  </div>
-                )}
-                <div>
-                  <p className="mb-2 text-xs font-medium app-meta">实际检索片段</p>
-                  <div className="whitespace-pre-wrap rounded-xl border border-slate-200 bg-white p-4 text-sm leading-7 app-body">
-                    {selectedCitation.content || '该历史引用未保存检索片段，请重新提问。'}
-                  </div>
-                </div>
-                <div className="mt-4 flex flex-wrap items-center justify-between gap-3 text-xs app-meta">
-                  <span>
-                    {selectedCitation.document_id
-                      ? `文档 ID：${selectedCitation.document_id}`
-                      : `结果 ID：${selectedCitation.result_id || '未知'}`}
-                  </span>
-                  {selectedCitation.url && (
-                    <Button asChild variant="outline" size="sm" className="gap-2">
-                      <a href={selectedCitation.url} target="_blank" rel="noreferrer">
-                        打开原网页
-                        <ExternalLink className="h-3.5 w-3.5" />
-                      </a>
-                    </Button>
-                  )}
-                </div>
-              </div>
-            </>
-          )}
-        </DialogContent>
-      </Dialog>
+      <CitationViewer
+        citation={selectedCitation}
+        onClose={() => setSelectedCitation(null)}
+      />
       {message.status === 'failed' && (
         <p className="mt-3 text-xs text-red-600">{message.errorMessage || '回答生成失败'}</p>
       )}

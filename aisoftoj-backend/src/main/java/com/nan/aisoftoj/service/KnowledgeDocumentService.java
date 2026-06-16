@@ -23,6 +23,7 @@ public interface KnowledgeDocumentService {
     void delete(Long userId, Long id);
     List<KnowledgeDocumentVersionDTO> versions(Long userId, Long id);
     byte[] artifact(Long userId, Long id, Integer version, String kind);
+    byte[] asset(Long userId, String documentId, Integer version, String filename);
     byte[] original(Long userId, Long id);
     String originalFileName(Long userId, Long id);
     Map<String, Object> capabilities();

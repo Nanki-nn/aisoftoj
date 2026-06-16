@@ -14,7 +14,7 @@ from aisoftoj_ai.rag.citations import build_citations
 from aisoftoj_ai.rag.models import SearchResult
 
 
-def build_nodes(chat, search_tool, web_tool):
+def build_nodes(chat, search_tool, web_tool, storage=None):
     """Build the nodes used by the RAG workflow."""
 
     async def rewrite_query(state: RagState) -> dict:
@@ -97,8 +97,21 @@ def build_nodes(chat, search_tool, web_tool):
 
     async def search_web(state: RagState) -> dict:
         """Search public web sources when knowledge-base evidence is insufficient."""
-        raw = await web_tool.ainvoke({"query": state["rewritten_query"]})
-        return {"web_results": [_as_result(item) for item in raw]}
+        writer = get_stream_writer()
+        writer({"type": "status", "message": "正在联网检索公开资料"})
+        try:
+            raw = await web_tool.ainvoke({"query": state["rewritten_query"]})
+        except Exception as exc:
+            writer(
+                {
+                    "type": "warning",
+                    "message": f"联网检索暂时不可用，继续使用已有信息回答：{exc}",
+                }
+            )
+            return {"web_results": []}
+        results = [_as_result(item) for item in raw]
+        writer({"type": "status", "message": f"已获取 {len(results)} 条网页资料"})
+        return {"web_results": results}
 
     async def answer(state: RagState) -> dict:
         """Generate a streamed answer and citations from the collected evidence."""
@@ -106,16 +119,33 @@ def build_nodes(chat, search_tool, web_tool):
         results = [*state.get("knowledge_results", []), *state.get("web_results", [])]
         citations = build_citations(results)
         context = _format_context(results)
-        messages = [
-            {"role": "system", "content": ANSWER_SYSTEM},
-            *state.get("history", [])[-6:],
+        user_content = [
             {
-                "role": "user",
-                "content": (
+                "type": "text",
+                "text": (
                     f"问题：{state['question']}\n\n"
                     f"可用资料：\n{context or '没有可用资料'}"
                 ),
-            },
+            }
+        ]
+        image_results = [
+            item
+            for item in results
+            if item.content_type == "image" and item.asset_url
+        ][:3]
+        for item in image_results:
+            image_url = (
+                await storage.as_data_url(item.asset_url)
+                if storage is not None
+                else item.asset_url
+            )
+            user_content.append(
+                {"type": "image_url", "image_url": {"url": image_url}}
+            )
+        messages = [
+            {"role": "system", "content": ANSWER_SYSTEM},
+            *state.get("history", [])[-6:],
+            {"role": "user", "content": user_content},
         ]
         writer({"type": "status", "message": "正在组织回答"})
         answer_text = ""

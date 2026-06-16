@@ -1,3 +1,5 @@
+from pathlib import PurePosixPath
+
 from aisoftoj_ai.rag.models import Citation, SearchResult
 
 
@@ -14,6 +16,9 @@ def build_citations(results: list[SearchResult]) -> list[Citation]:
                 content=item.content,
                 score=item.score,
                 document_id=item.document_id,
+                version=item.version,
+                content_type=item.content_type,
+                asset_name=PurePosixPath(item.asset_url).name if item.asset_url else None,
                 page=item.page,
                 heading_path=item.heading_path,
                 url=item.url,

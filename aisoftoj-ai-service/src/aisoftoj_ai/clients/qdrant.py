@@ -199,6 +199,8 @@ class QdrantStore:
         limit: int,
     ) -> list[SearchResult]:
         """使用 dense + sparse RRF 执行混合检索。"""
+        if not knowledge_base_ids:
+            return []
         if not await self.client.collection_exists(self.collection):
             return []
         filters = [
@@ -228,6 +230,8 @@ class QdrantStore:
                     content=payload.get("content", ""),
                     score=float(point.score or 0),
                     document_id=payload.get("document_id"),
+                    version=payload.get("version"),
+                    content_type=payload.get("content_type", "text"),
                     title=(payload.get("heading_path") or [None])[-1],
                     heading_path=payload.get("heading_path", []),
                     page=payload.get("page"),

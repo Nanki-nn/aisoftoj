@@ -1,25 +1,36 @@
+# OS / editor
 .DS_Store
-.idea/workspace.xml
-.idea/dataSources.local.xml
+Thumbs.db
+.idea/
+!.idea/codeStyles/
+!.idea/inspectionProfiles/
+*.iml
 .vscode/
 
+# Java / Maven
 target/
 */target/
+*.class
+*.jar
+*.war
+*.ear
 
+# Frontend / Vite
 aisoftoj-front/node_modules/
 aisoftoj-front/build/
+aisoftoj-front/dist/
 aisoftoj-front/.vite/
+aisoftoj-front/.env
+aisoftoj-front/.env.local
+aisoftoj-front/.env.*.local
 
-docs/
-aisoftoj-front/README.md
-aisoftoj-front/TEST_GUIDE.md
-aisoftoj-front/src/Attributions.md
-aisoftoj-front/src/guidelines/
-
+# Python AI service
 aisoftoj-ai-service/.env
 aisoftoj-ai-service/.venv/
+aisoftoj-ai-service/venv/
 aisoftoj-ai-service/.pytest_cache/
 aisoftoj-ai-service/.ruff_cache/
+aisoftoj-ai-service/.mypy_cache/
 aisoftoj-ai-service/.uv-cache/
 aisoftoj-ai-service/.test-tmp/
 aisoftoj-ai-service/pytest-cache-files-*/
@@ -27,4 +38,31 @@ aisoftoj-ai-service/**/__pycache__/
 aisoftoj-ai-service/**/*.py[cod]
 aisoftoj-ai-service/data/
 
+# Runtime uploads / generated files
+aisoftoj-backend/uploads/
+aisoftoj-backend/logs/
+uploads/
+logs/
+tmp/
+temp/
+
+# Local-only config
+*.local
+application-local.yml
+application-local.yaml
+application-dev-local.yml
+application-dev-local.yaml
+
+# Logs
 *.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# Project generated docs / templates kept out of this repo
+docs/
+aisoftoj-front/README.md
+aisoftoj-front/TEST_GUIDE.md
+aisoftoj-front/src/Attributions.md
+aisoftoj-front/src/guidelines/

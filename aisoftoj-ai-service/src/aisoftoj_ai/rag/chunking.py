@@ -19,34 +19,22 @@ def split_blocks(
     chunk_size: int = 600,
     overlap: int = 100,
 ) -> list[Chunk]:
-    """按标题感知和字符窗口切分文档块，保留元数据供 embedding 使用。"""
+    """Merge adjacent text blocks before applying the requested sliding window."""
     text_splitter = RecursiveCharacterTextSplitter(
         chunk_size=chunk_size,
         chunk_overlap=overlap,
-        separators=["\n\n", "\n", "。", "；", "，", " ", ""],
+        separators=["\n\n", "\n", "。", "！", "？", "；", "，", " ", ""],
         keep_separator="end",
     )
     markdown_splitter = MarkdownHeaderTextSplitter(
         headers_to_split_on=HEADERS,
         strip_headers=True,
     )
-    chunks: list[Chunk] = []
 
+    normalized_blocks: list[DocumentBlock] = []
     for block in blocks:
-        if block.content_type != "text":
-            chunks.append(_make_chunk(block, knowledge_base_id, document_id, version))
-            continue
-
-        if block.heading_path:
-            chunks.extend(
-                _split_text_block(
-                    block,
-                    text_splitter,
-                    knowledge_base_id,
-                    document_id,
-                    version,
-                )
-            )
+        if block.content_type != "text" or block.heading_path:
+            normalized_blocks.append(block)
             continue
 
         documents = markdown_splitter.split_text(block.content)
@@ -56,23 +44,66 @@ def split_blocks(
                 for key in (f"h{level}" for level in range(1, 7))
                 if key in document.metadata
             ]
-            markdown_block = block.model_copy(
-                update={
-                    "content": document.page_content,
-                    "heading_path": heading_path,
-                }
+            normalized_blocks.append(
+                block.model_copy(
+                    update={
+                        "content": document.page_content,
+                        "heading_path": heading_path,
+                    }
+                )
             )
+
+    chunks: list[Chunk] = []
+    for block in _merge_adjacent_text_blocks(normalized_blocks):
+        if block.content_type == "text":
             chunks.extend(
                 _split_text_block(
-                    markdown_block,
+                    block,
                     text_splitter,
                     knowledge_base_id,
                     document_id,
                     version,
                 )
             )
+        else:
+            chunks.append(_make_chunk(block, knowledge_base_id, document_id, version))
 
     return [chunk for chunk in chunks if chunk.content.strip() or chunk.asset_url]
+
+
+def _merge_adjacent_text_blocks(blocks: list[DocumentBlock]) -> list[DocumentBlock]:
+    """Use non-text blocks and heading changes as semantic merge boundaries."""
+    merged: list[DocumentBlock] = []
+    pending: DocumentBlock | None = None
+
+    for block in blocks:
+        if block.content_type != "text":
+            if pending is not None:
+                merged.append(pending)
+                pending = None
+            merged.append(block)
+            continue
+
+        content = block.content.strip()
+        if not content:
+            continue
+        if pending is None or pending.heading_path != block.heading_path:
+            if pending is not None:
+                merged.append(pending)
+            pending = block.model_copy(update={"content": content})
+            continue
+
+        same_box = pending.page == block.page and pending.bbox == block.bbox
+        pending = pending.model_copy(
+            update={
+                "content": f"{pending.content.rstrip()}\n\n{content}",
+                "bbox": pending.bbox if same_box else None,
+            }
+        )
+
+    if pending is not None:
+        merged.append(pending)
+    return merged
 
 
 def _split_text_block(
@@ -82,7 +113,6 @@ def _split_text_block(
     document_id: str,
     version: int,
 ) -> list[Chunk]:
-    """对文本块进行递归切分，生成 Chunk。"""
     return [
         _make_chunk(
             block.model_copy(update={"content": text}),
@@ -101,13 +131,13 @@ def _make_chunk(
     document_id: str,
     version: int,
 ) -> Chunk:
-    """根据文档位置和内容生成稳定的 Chunk ID。"""
     raw_id = "|".join(
         [
             document_id,
             str(version),
             "/".join(block.heading_path),
             str(block.page),
+            str(block.bbox),
             block.content,
             block.asset_url or "",
         ]

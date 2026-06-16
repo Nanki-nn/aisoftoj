@@ -62,6 +62,7 @@ import {
 } from '../lib/api';
 
 const ACCEPTED_EXTENSIONS = ['pdf', 'png', 'jpg', 'jpeg', 'webp', 'docx', 'pptx', 'xlsx', 'txt', 'md', 'markdown'];
+const DEFAULT_MAX_FILE_SIZE = 200 * 1024 * 1024;
 const RUNNING_STATUSES: KnowledgeDocumentStatus[] = [
   'uploaded', 'queued', 'parsing', 'normalizing', 'chunking', 'embedding', 'indexing',
 ];
@@ -293,6 +294,8 @@ export default function KnowledgeBasePage() {
     return documents.filter((document) => !query || document.fileName.toLowerCase().includes(query));
   }, [documents, keyword]);
 
+  const maxFileSize = capabilities?.maxFileSize || DEFAULT_MAX_FILE_SIZE;
+
   const chooseFiles = (files: File[]) => {
     const legacy = files.find((file) => ['doc', 'ppt'].includes(file.name.split('.').pop()?.toLowerCase() || ''));
     if (legacy) {
@@ -301,10 +304,10 @@ export default function KnowledgeBasePage() {
     }
     const accepted = files.filter((file) => {
       const extension = file.name.split('.').pop()?.toLowerCase() || '';
-      return ACCEPTED_EXTENSIONS.includes(extension) && file.size <= 50 * 1024 * 1024;
+      return ACCEPTED_EXTENSIONS.includes(extension) && file.size <= maxFileSize;
     });
     if (!accepted.length) {
-      setError('请选择 50MB 以内的 PDF、图片、DOCX、PPTX、XLSX、TXT 或 Markdown 文件。');
+      setError(`请选择 ${formatSize(maxFileSize)} 以内的 PDF、图片、DOCX、PPTX、XLSX、TXT 或 Markdown 文件。`);
       return;
     }
     setSelectedFiles(accepted);
@@ -581,7 +584,7 @@ export default function KnowledgeBasePage() {
                     拖放文件到这里，或点击选择
                   </strong>
                   <span className="mt-1 block text-xs text-slate-500">
-                    PDF、图片、DOCX、PPTX、XLSX、TXT、Markdown，单文件 50MB
+                    PDF、图片、DOCX、PPTX、XLSX、TXT、Markdown，单文件 {formatSize(maxFileSize)}
                   </span>
                 </div>
                 <span className="hidden rounded-lg border border-slate-200 bg-white px-3 py-2 text-xs font-medium text-slate-600 sm:block">

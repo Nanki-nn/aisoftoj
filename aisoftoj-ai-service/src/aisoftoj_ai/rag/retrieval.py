@@ -28,6 +28,8 @@ class HybridSearch:
         limit: int | None = None,
     ) -> list[SearchResult]:
         """先从 Qdrant 召回，再使用重排模型截取 Top 结果。"""
+        if not knowledge_base_ids:
+            return []
         dense = (await self.embedding.embed_texts([query]))[0]
         recalled = await self.store.search(
             query=query,

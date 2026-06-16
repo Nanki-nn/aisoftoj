@@ -37,6 +37,8 @@ class SearchResult(BaseModel):
     score: float = 0
     source: Literal["knowledge_base", "web"] = "knowledge_base"
     document_id: str | None = None
+    version: int | None = None
+    content_type: ContentType = "text"
     title: str | None = None
     heading_path: list[str] = Field(default_factory=list)
     page: int | None = None
@@ -53,6 +55,9 @@ class Citation(BaseModel):
     content: str
     score: float = 0
     document_id: str | None = None
+    version: int | None = None
+    content_type: ContentType = "text"
+    asset_name: str | None = None
     page: int | None = None
     heading_path: list[str] = Field(default_factory=list)
     url: str | None = None

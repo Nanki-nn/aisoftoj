@@ -9,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ContentDisposition;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
+import org.springframework.http.MediaTypeFactory;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -106,6 +107,20 @@ public class KnowledgeDocumentController {
         return ResponseEntity.ok().headers(headers)
                 .contentType(MediaType.APPLICATION_OCTET_STREAM)
                 .body(documentService.original(userId, id));
+    }
+
+    @GetMapping("/external/{documentId}/versions/{version}/assets/{filename:.+}")
+    public ResponseEntity<byte[]> asset(
+            @PathVariable String documentId,
+            @PathVariable Integer version,
+            @PathVariable String filename,
+            HttpServletRequest request) {
+        MediaType mediaType = MediaTypeFactory.getMediaType(filename)
+                .orElse(MediaType.APPLICATION_OCTET_STREAM);
+        return ResponseEntity.ok()
+                .contentType(mediaType)
+                .body(documentService.asset(
+                        userId(request), documentId, version, filename));
     }
 
     @DeleteMapping("/{id}")

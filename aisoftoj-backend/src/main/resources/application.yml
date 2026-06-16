@@ -9,8 +9,8 @@ spring:
     driver-class-name: com.mysql.cj.jdbc.Driver
   servlet:
     multipart:
-      max-file-size: 50MB
-      max-request-size: 50MB
+      max-file-size: ${SPRING_SERVLET_MULTIPART_MAX_FILE_SIZE:200MB}
+      max-request-size: ${SPRING_SERVLET_MULTIPART_MAX_REQUEST_SIZE:220MB}
 
 mybatis-plus:
   mapper-locations: classpath:mapper/*.xml
@@ -27,7 +27,7 @@ file:
 knowledge:
   upload:
     path: ${KNOWLEDGE_UPLOAD_PATH:./uploads/knowledge/}
-  max-file-size: ${KNOWLEDGE_MAX_FILE_SIZE:52428800}
+  max-file-size: ${KNOWLEDGE_MAX_FILE_SIZE:209715200}
   processing-timeout-minutes: ${KNOWLEDGE_PROCESSING_TIMEOUT_MINUTES:120}
   callback:
     secret: ${KNOWLEDGE_CALLBACK_SECRET:}
