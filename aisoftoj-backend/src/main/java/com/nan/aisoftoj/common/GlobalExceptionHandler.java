@@ -1,5 +1,7 @@
 package com.nan.aisoftoj.common;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
@@ -9,6 +11,7 @@ import javax.servlet.http.HttpServletRequest;
 
 @ControllerAdvice
 public class GlobalExceptionHandler {
+    private static final Logger log = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(IllegalArgumentException.class)
     @ResponseBody
@@ -40,6 +43,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(Exception.class)
     @ResponseBody
     public ErrorResponse handleGeneralException(HttpServletRequest request, Exception ex) {
+        log.error("Unhandled request exception: {}", request.getRequestURI(), ex);
         return new ErrorResponse(500, "服务器内部错误", request.getRequestURI());
     }
 }

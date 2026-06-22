@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nan.aisoftoj.common.ForbiddenException;
 import com.nan.aisoftoj.consts.PracticeSessionState;
 import com.nan.aisoftoj.dto.*;
+import com.nan.aisoftoj.dto.recommendation.WrongQuestionEvidenceDTO;
 import com.nan.aisoftoj.entity.Paper;
 import com.nan.aisoftoj.entity.PracticeSession;
 import com.nan.aisoftoj.entity.PracticeSessionQuestionRecord;
@@ -15,6 +16,8 @@ import com.nan.aisoftoj.mapper.UserWrongQuestionStatMapper;
 import com.nan.aisoftoj.service.PaperService;
 import com.nan.aisoftoj.service.PracticeSessionService;
 import com.nan.aisoftoj.service.QuestionService;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,6 +25,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -30,6 +34,7 @@ import java.util.stream.Collectors;
 
 @Service
 public class PracticeSessionServiceImpl implements PracticeSessionService {
+    private static final Logger LOGGER = LoggerFactory.getLogger(PracticeSessionServiceImpl.class);
 
     @Autowired
     private PaperService paperService;
@@ -41,6 +46,8 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
     private PracticeSessionQuestionRecordMapper practiceSessionQuestionRecordMapper;
     @Autowired
     private UserWrongQuestionStatMapper userWrongQuestionStatMapper;
+    @Autowired
+    private Neo4jRecommendationGraphClient graphClient;
 
 
     @Override
@@ -350,19 +357,60 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
             insertStat.setLastWrongTime(now);
             insertStat.setIsDeleted(0);
             userWrongQuestionStatMapper.insert(insertStat);
+            syncWrongQuestionToGraph(userId, paper, question, 1, now);
             return;
         }
 
+        int nextErrorCount = (existingStat.getErrorCount() == null ? 0 : existingStat.getErrorCount()) + 1;
         UserWrongQuestionStat updateStat = new UserWrongQuestionStat();
         updateStat.setId(existingStat.getId());
         updateStat.setPaperId(paperId);
         updateStat.setQuestionName(question.getName());
         updateStat.setPaperName(paper == null ? existingStat.getPaperName() : paper.getName());
         updateStat.setTopicType(getQuestionTypeName(question.getQuestionType()));
-        updateStat.setErrorCount((existingStat.getErrorCount() == null ? 0 : existingStat.getErrorCount()) + 1);
+        updateStat.setErrorCount(nextErrorCount);
         updateStat.setLastWrongTime(now);
         updateStat.setIsDeleted(0);
         userWrongQuestionStatMapper.updateById(updateStat);
+        syncWrongQuestionToGraph(userId, paper, question, nextErrorCount, now);
+    }
+
+    private void syncWrongQuestionToGraph(
+            Integer userId,
+            Paper paper,
+            Question question,
+            Integer errorCount,
+            Date lastWrongTime) {
+        try {
+            WrongQuestionEvidenceDTO evidence = new WrongQuestionEvidenceDTO();
+            evidence.setQuestionId(question.getId());
+            evidence.setQuestionName(question.getName());
+            evidence.setKnowledgePointName(firstNonBlank(question.getCategoryName(), question.getName()));
+            evidence.setSubjectName(firstNonBlank(question.getSubjectName(), paper == null ? null : paper.getSubjectName()));
+            evidence.setPaperName(paper == null ? null : paper.getName());
+            evidence.setQuestionType(getQuestionTypeName(question.getQuestionType()));
+            evidence.setQuestionIntro(question.getIntro());
+            evidence.setOptions(question.getOptions());
+            evidence.setAnalysis(question.getAnalysis());
+            evidence.setDifficulty(question.getDifficulty());
+            evidence.setPaperYear(question.getPaperYear() == null && paper != null ? paper.getPaperYear() : question.getPaperYear());
+            evidence.setErrorCount(errorCount);
+            evidence.setImportanceLevel("medium");
+            evidence.setLastWrongTime(lastWrongTime);
+            graphClient.syncWrongQuestionEvidence(userId, Collections.singletonList(evidence));
+        } catch (Exception exception) {
+            LOGGER.warn("Failed to sync wrong question to Neo4j graph, questionId={}", question.getId(), exception);
+        }
+    }
+
+    private String firstNonBlank(String first, String second) {
+        if (first != null && !first.trim().isEmpty() && !"null".equalsIgnoreCase(first.trim())) {
+            return first.trim();
+        }
+        if (second != null && !second.trim().isEmpty() && !"null".equalsIgnoreCase(second.trim())) {
+            return second.trim();
+        }
+        return null;
     }
 
     private String getQuestionTypeName(Integer questionType) {

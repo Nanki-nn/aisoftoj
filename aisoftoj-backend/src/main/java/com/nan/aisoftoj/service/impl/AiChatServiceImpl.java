@@ -6,14 +6,18 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nan.aisoftoj.dto.AiChatMessageDTO;
 import com.nan.aisoftoj.dto.AiChatSendRequest;
 import com.nan.aisoftoj.dto.AiChatSessionDTO;
+import com.nan.aisoftoj.dto.recommendation.KnowledgePointRecommendationDTO;
+import com.nan.aisoftoj.dto.recommendation.WrongQuestionEvidenceDTO;
 import com.nan.aisoftoj.entity.AiChatMessage;
 import com.nan.aisoftoj.entity.AiChatSession;
 import com.nan.aisoftoj.entity.AiChatSessionKnowledgeBase;
 import com.nan.aisoftoj.mapper.AiChatSessionKnowledgeBaseMapper;
 import com.nan.aisoftoj.mapper.AiChatMessageMapper;
 import com.nan.aisoftoj.mapper.AiChatSessionMapper;
+import com.nan.aisoftoj.mapper.UserWrongQuestionStatMapper;
 import com.nan.aisoftoj.service.AiChatService;
 import com.nan.aisoftoj.service.KnowledgeDocumentService;
+import com.nan.aisoftoj.service.RecommendationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
@@ -47,7 +51,11 @@ public class AiChatServiceImpl implements AiChatService {
     @Autowired
     private AiChatSessionKnowledgeBaseMapper sessionKnowledgeBaseMapper;
     @Autowired
+    private UserWrongQuestionStatMapper wrongQuestionStatMapper;
+    @Autowired
     private KnowledgeDocumentService knowledgeDocumentService;
+    @Autowired
+    private RecommendationService recommendationService;
     @Autowired
     private ObjectMapper objectMapper;
 
@@ -106,10 +114,12 @@ public class AiChatServiceImpl implements AiChatService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public void deleteSession(Long sessionId, Long userId) {
-        AiChatSession session = requireOwnedSession(sessionId, userId);
-        session.setIsDeleted(1);
-        session.setUpdateTime(LocalDateTime.now());
-        sessionMapper.updateById(session);
+        requireOwnedSession(sessionId, userId);
+        sessionMapper.delete(new LambdaQueryWrapper<AiChatSession>()
+                .eq(AiChatSession::getId, sessionId)
+                .eq(AiChatSession::getUserId, userId));
+        messageMapper.delete(new LambdaQueryWrapper<AiChatMessage>()
+                .eq(AiChatMessage::getSessionId, sessionId));
         sessionKnowledgeBaseMapper.delete(new LambdaQueryWrapper<AiChatSessionKnowledgeBase>()
                 .eq(AiChatSessionKnowledgeBase::getSessionId, sessionId));
     }
@@ -199,6 +209,8 @@ public class AiChatServiceImpl implements AiChatService {
 
             Map<String, Object> body = new HashMap<>();
             body.put("question", request.getQuestion().trim());
+            body.put("user_id", String.valueOf(userId));
+            body.put("session_id", String.valueOf(assistantMessage.getSessionId()));
             body.put(
                     "knowledge_base_ids",
                     knowledgeDocumentService.readyVectorIds(
@@ -211,6 +223,7 @@ public class AiChatServiceImpl implements AiChatService {
             int rewriteCount = request.getRewriteCount() == null ? 3 : request.getRewriteCount();
             body.put("rewrite_count", Math.max(1, Math.min(rewriteCount, 5)));
             body.put("history", buildHistory(history));
+            body.put("page_context", buildPageContext(userId));
             byte[] payload = objectMapper.writeValueAsBytes(body);
             try (OutputStream output = connection.getOutputStream()) {
                 output.write(payload);
@@ -301,6 +314,24 @@ public class AiChatServiceImpl implements AiChatService {
             history.add(item);
         }
         return history;
+    }
+
+    private Map<String, Object> buildPageContext(Long userId) {
+        Map<String, Object> context = new HashMap<>();
+        try {
+            Integer resolvedUserId = userId.intValue();
+            List<WrongQuestionEvidenceDTO> evidences = wrongQuestionStatMapper
+                    .selectRecommendationEvidence(resolvedUserId);
+            List<KnowledgePointRecommendationDTO> recommendations = recommendationService
+                    .listKnowledgePointRecommendations(resolvedUserId);
+            context.put("wrong_question_evidences", evidences.size() > 30
+                    ? evidences.subList(0, 30)
+                    : evidences);
+            context.put("knowledge_recommendations", recommendations);
+        } catch (Exception exception) {
+            context.put("context_error", exception.getMessage());
+        }
+        return context;
     }
 
     private List<AiChatMessage> recentCompletedMessages(Long sessionId) {

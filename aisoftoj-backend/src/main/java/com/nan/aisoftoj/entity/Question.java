@@ -19,6 +19,21 @@ public class Question {
     private String name;
 
     /**
+     * 科目名称
+     */
+    private String subjectName;
+
+    /**
+     * 知识点/分类名称
+     */
+    private String categoryName;
+
+    /**
+     * 题目年份
+     */
+    private Integer paperYear;
+
+    /**
      * 题目内容（含题干、选项等，支持HTML）
      */
     private String intro;

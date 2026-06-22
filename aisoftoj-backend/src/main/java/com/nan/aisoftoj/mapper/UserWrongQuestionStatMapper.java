@@ -2,6 +2,7 @@ package com.nan.aisoftoj.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.nan.aisoftoj.dto.WrongQuestionDTO;
+import com.nan.aisoftoj.dto.recommendation.WrongQuestionEvidenceDTO;
 import com.nan.aisoftoj.entity.UserWrongQuestionStat;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -44,4 +45,26 @@ public interface UserWrongQuestionStatMapper extends BaseMapper<UserWrongQuestio
             "FROM user_wrong_question_stat " +
             "WHERE user_id = #{userId} AND is_deleted = 0")
     Long countByUserId(@Param("userId") Integer userId);
+
+    @Select("SELECT " +
+            "u.question_id AS questionId, " +
+            "COALESCE(q.name, u.question_name) AS questionName, " +
+            "COALESCE(q.category_name, u.question_name) AS knowledgePointName, " +
+            "COALESCE(p.subject_name, q.subject_name) AS subjectName, " +
+            "u.paper_name AS paperName, " +
+            "u.topic_type AS questionType, " +
+            "q.intro AS questionIntro, " +
+            "q.options AS options, " +
+            "q.analysis AS analysis, " +
+            "COALESCE(q.difficulty, 2) AS difficulty, " +
+            "COALESCE(p.paper_year, q.paper_year) AS paperYear, " +
+            "u.error_count AS errorCount, " +
+            "u.importance_level AS importanceLevel, " +
+            "u.last_wrong_time AS lastWrongTime " +
+            "FROM user_wrong_question_stat u " +
+            "LEFT JOIN question q ON q.id = u.question_id AND q.is_deleted = 0 " +
+            "LEFT JOIN paper p ON p.id = u.paper_id AND p.is_deleted = 0 " +
+            "WHERE u.user_id = #{userId} AND u.is_deleted = 0 " +
+            "ORDER BY u.last_wrong_time DESC, u.error_count DESC, u.id DESC")
+    List<WrongQuestionEvidenceDTO> selectRecommendationEvidence(@Param("userId") Integer userId);
 }

@@ -29,6 +29,9 @@ knowledge:
     path: ${KNOWLEDGE_UPLOAD_PATH:./uploads/knowledge/}
   max-file-size: ${KNOWLEDGE_MAX_FILE_SIZE:209715200}
   processing-timeout-minutes: ${KNOWLEDGE_PROCESSING_TIMEOUT_MINUTES:120}
+  graph:
+    extraction-timeout-millis: ${KNOWLEDGE_GRAPH_EXTRACTION_TIMEOUT_MILLIS:900000}
+    alignment-timeout-millis: ${KNOWLEDGE_GRAPH_ALIGNMENT_TIMEOUT_MILLIS:300000}
   callback:
     secret: ${KNOWLEDGE_CALLBACK_SECRET:}
 
@@ -44,6 +47,14 @@ auth:
 ai-service:
   url: ${AI_SERVICE_URL:http://localhost:8090}
   secret: ${AI_SERVICE_SECRET:}
+
+graph:
+  neo4j:
+    uri: ${NEO4J_URI:bolt://localhost:7687}
+    username: ${NEO4J_USERNAME:neo4j}
+    password: ${NEO4J_PASSWORD:neo4j123456}
+    database: ${NEO4J_DATABASE:database1}
+    sync-enabled: ${NEO4J_SYNC_ENABLED:true}
 
 logging:
   level:

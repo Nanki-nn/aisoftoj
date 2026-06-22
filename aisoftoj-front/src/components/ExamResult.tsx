@@ -144,7 +144,7 @@ export function ExamResult({ session, onRestartExam, onBackToHome, onContinuePra
   };
 
   return (
-    <main className="app-page">
+    <main className="app-page exam-result-page">
       <div className="app-page-content max-w-4xl">
         {/* 成绩概览 */}
         <Card className="app-card mb-6">

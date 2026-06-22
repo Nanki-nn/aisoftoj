@@ -82,7 +82,7 @@ class VllmChat:
         temperature: float = 0.1,
     ) -> str:
         """一次性获取完整回答。"""
-        async with httpx.AsyncClient(timeout=120) as client:
+        async with httpx.AsyncClient(timeout=120, trust_env=False) as client:
             response = await client.post(
                 self.url,
                 headers=self.headers,
@@ -125,7 +125,7 @@ class VllmChat:
             "chat_template_kwargs": {"enable_thinking": thinking_enabled},
         }
         parser = _ThinkingContentParser() if thinking_enabled else None
-        async with httpx.AsyncClient(timeout=120) as client:
+        async with httpx.AsyncClient(timeout=120, trust_env=False) as client:
             async with client.stream(
                 "POST",
                 self.url,
@@ -165,7 +165,7 @@ class VllmEmbedding:
 
     async def embed_texts(self, texts: list[str]) -> list[list[float]]:
         """批量生成文本向量。"""
-        async with httpx.AsyncClient(timeout=120) as client:
+        async with httpx.AsyncClient(timeout=120, trust_env=False) as client:
             response = await client.post(
                 self.url,
                 headers=self.headers,

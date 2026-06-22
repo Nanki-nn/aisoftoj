@@ -11,6 +11,7 @@ import {
   FileText,
   FolderPlus,
   LoaderCircle,
+  Network,
   RefreshCw,
   RotateCcw,
   Search,
@@ -45,7 +46,9 @@ import {
   createKnowledgeBase,
   deleteKnowledgeBase,
   deleteKnowledgeDocument,
+  deleteKnowledgeDocumentGraph,
   downloadKnowledgeOriginal,
+  extractKnowledgeDocumentGraph,
   getKnowledgeArtifact,
   getKnowledgeCapabilities,
   getKnowledgeDocument,
@@ -98,6 +101,19 @@ const statusMeta: Record<KnowledgeDocumentStatus, { label: string; color: string
   failed: { label: '失败', color: 'text-red-700 bg-red-50' },
   cancelled: { label: '已取消', color: 'text-slate-600 bg-slate-100' },
 };
+
+const graphStatusMeta: Record<string, { label: string; color: string }> = {
+  none: { label: '未抽取', color: 'text-slate-600 bg-slate-100' },
+  running: { label: '图谱抽取中', color: 'text-blue-700 bg-blue-50' },
+  completed: { label: '图谱已构建', color: 'text-emerald-700 bg-emerald-50' },
+  failed: { label: '图谱失败', color: 'text-red-700 bg-red-50' },
+  disabled: { label: '图谱未启用', color: 'text-slate-600 bg-slate-100' },
+  unavailable: { label: '图谱不可用', color: 'text-amber-700 bg-amber-50' },
+};
+
+function graphStatusInfo(status?: string | null) {
+  return graphStatusMeta[status || 'none'] || graphStatusMeta.none;
+}
 
 function formatSize(bytes: number) {
   if (bytes < 1024) return `${bytes} B`;
@@ -284,10 +300,18 @@ export default function KnowledgeBasePage() {
   }, [activeBaseId]);
 
   useEffect(() => {
-    if (!documents.some((document) => RUNNING_STATUSES.includes(document.status))) return;
+    if (!documents.some((document) => RUNNING_STATUSES.includes(document.status) || document.graphStatus === 'running')) return;
     const timer = window.setInterval(() => void loadAll(true), 3000);
     return () => window.clearInterval(timer);
   }, [documents, loadAll]);
+
+  useEffect(() => {
+    if (!detail || detail.graphStatus !== 'running') return;
+    const timer = window.setInterval(async () => {
+      setDetail(await getKnowledgeDocument(detail.id));
+    }, 3000);
+    return () => window.clearInterval(timer);
+  }, [detail]);
 
   const visibleDocuments = useMemo(() => {
     const query = keyword.trim().toLowerCase();
@@ -390,6 +414,37 @@ export default function KnowledgeBasePage() {
       setNotice('文档及其解析版本、向量索引已删除。');
     } catch (deleteError) {
       setError((deleteError as Error).message);
+    }
+  };
+
+  const extractGraph = async (document: KnowledgeDocument) => {
+    setBusy(true);
+    try {
+      const updated = await extractKnowledgeDocumentGraph(document.id);
+      setDetail(updated);
+      setDocuments((current) => current.map((item) => item.id === updated.id ? updated : item));
+      setNotice('知识点抽取任务已提交，后台会自动构建图谱并绑定错题。');
+      setError('');
+    } catch (extractError) {
+      setError((extractError as Error).message);
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  const removeGraph = async (document: KnowledgeDocument) => {
+    if (!window.confirm(`确定删除“${document.fileName}”已抽取的 PDF 知识点和错题挂接吗？文档和 RAG 索引不会删除。`)) return;
+    setBusy(true);
+    try {
+      const updated = await deleteKnowledgeDocumentGraph(document.id);
+      setDetail(updated);
+      setDocuments((current) => current.map((item) => item.id === updated.id ? updated : item));
+      setNotice('PDF 知识点已删除。重新点击“抽取知识点”后，会重新构建知识点并用 LLM 挂载错题。');
+      setError('');
+    } catch (deleteError) {
+      setError((deleteError as Error).message);
+    } finally {
+      setBusy(false);
     }
   };
 
@@ -685,9 +740,18 @@ export default function KnowledgeBasePage() {
                       <div><span>阶段</span><strong>{statusMeta[detail.status].label}</strong></div>
                       <div><span>进度</span><strong>{detail.progress || 0}%</strong></div>
                       <div><span>切块</span><strong>{detail.chunkCount || 0}</strong></div>
+                      <div><span>图谱</span><strong>{graphStatusInfo(detail.graphStatus).label}</strong></div>
+                      <div><span>知识点</span><strong>{detail.graphNodeCount || 0}</strong></div>
+                      <div><span>关系</span><strong>{detail.graphRelationCount || 0}</strong></div>
+                      <div><span>待确认</span><strong>{detail.graphPendingCount || 0}</strong></div>
                       <div><span>更新时间</span><strong>{formatDate(detail.updateTime)}</strong></div>
                     </div>
                     {detail.errorMessage && <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">{detail.errorMessage}</div>}
+                    {detail.graphErrorMessage && (
+                      <div className="rounded-xl border border-red-200 bg-red-50 p-4 text-sm text-red-700">
+                        图谱抽取失败：{detail.graphErrorMessage}
+                      </div>
+                    )}
                     <div className="knowledge-detail-section">
                       <h3>解析参数快照</h3>
                       <pre className="knowledge-detail-code">{JSON.stringify(detail.options || {}, null, 2)}</pre>
@@ -735,6 +799,24 @@ export default function KnowledgeBasePage() {
                   <Button variant="outline" onClick={() => void downloadKnowledgeOriginal(detail.id, detail.fileName)}><Download className="mr-2 h-4 w-4" />原文件</Button>
                   {RUNNING_STATUSES.includes(detail.status) && <Button variant="outline" onClick={async () => { await cancelKnowledgeDocument(detail.id); setDetail(await getKnowledgeDocument(detail.id)); }}><Ban className="mr-2 h-4 w-4" />取消</Button>}
                   <Button variant="outline" onClick={async () => { await retryKnowledgeDocument(detail.id, options); setDetail(await getKnowledgeDocument(detail.id)); await loadAll(true); }}><RotateCcw className="mr-2 h-4 w-4" />按当前参数重解析</Button>
+                  <Button
+                    variant="outline"
+                    onClick={() => void extractGraph(detail)}
+                    disabled={busy || detail.status !== 'ready' || detail.graphStatus === 'running'}
+                  >
+                    {detail.graphStatus === 'running'
+                      ? <LoaderCircle className="mr-2 h-4 w-4 animate-spin" />
+                      : <Network className="mr-2 h-4 w-4" />}
+                    抽取知识点
+                  </Button>
+                  <Button
+                    variant="outline"
+                    className="text-red-600 hover:bg-red-50 hover:text-red-700"
+                    onClick={() => void removeGraph(detail)}
+                    disabled={busy || detail.graphStatus === 'running' || !detail.graphStatus || detail.graphStatus === 'none'}
+                  >
+                    <Trash2 className="mr-2 h-4 w-4" />删除知识点
+                  </Button>
                   <select className="h-10 rounded-md border border-slate-200 bg-white px-3 text-sm" value={detail.knowledgeBaseId}
                     onChange={async (event) => { const moved = await moveKnowledgeDocument(detail.id, Number(event.target.value)); setDetail(moved); await loadAll(true); }}>
                     {bases.map((base) => <option key={base.id} value={base.id}>移动到：{base.name}</option>)}

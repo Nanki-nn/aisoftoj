@@ -32,6 +32,7 @@ import {
   SheetTrigger,
 } from './ui/sheet';
 import {
+  AiChatAgentEvent,
   AiChatCitation,
   AiChatMessage,
   AiChatSession,
@@ -92,7 +93,10 @@ function SessionList({
                 type="button"
                 className="ai-chat-delete-button"
                 aria-label={`删除对话 ${session.title}`}
-                onClick={() => onDelete(session.id)}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  onDelete(session.id);
+                }}
               >
                 <Trash2 className="h-4 w-4" />
               </button>
@@ -270,6 +274,16 @@ function AssistantContent({ message }: { message: AiChatMessage }) {
 
   return (
     <div>
+      {message.agentEvents?.length ? (
+        <div className="ai-chat-agent-events">
+          {message.agentEvents.map((event, index) => (
+            <div key={`${event.type}-${index}`} className={`ai-chat-agent-event is-${event.type}`}>
+              <span>{event.title}</span>
+              <p>{event.message}</p>
+            </div>
+          ))}
+        </div>
+      ) : null}
       <ReasoningBlock message={message} />
       <div className="ai-chat-markdown text-sm leading-7 app-body">
         <ReactMarkdown remarkPlugins={[remarkGfm]}>
@@ -364,6 +378,20 @@ export default function AiChatPage() {
   }, []);
 
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const prompt = params.get('prompt');
+    if (!prompt) return;
+    setInput(prompt);
+    params.delete('prompt');
+    const nextSearch = params.toString();
+    window.history.replaceState(
+      null,
+      '',
+      `${window.location.pathname}${nextSearch ? `?${nextSearch}` : ''}`,
+    );
+  }, []);
+
+  useEffect(() => {
     endRef.current?.scrollIntoView({ behavior: isStreaming ? 'smooth' : 'auto' });
   }, [messages, isStreaming, statusText]);
 
@@ -387,7 +415,8 @@ export default function AiChatPage() {
     if (!window.confirm('确定删除这条对话吗？')) return;
     try {
       await deleteAiChatSession(sessionId);
-      const remaining = sessions.filter((session) => session.id !== sessionId);
+      const latest = await refreshSessions();
+      const remaining = latest.filter((session) => session.id !== sessionId);
       setSessions(remaining);
       if (activeId === sessionId) {
         if (remaining.length > 0) {
@@ -404,6 +433,13 @@ export default function AiChatPage() {
 
   const updateAssistant = (id: string, updater: (message: AiChatMessage) => AiChatMessage) => {
     setMessages((current) => current.map((message) => (message.id === id ? updater(message) : message)));
+  };
+
+  const appendAgentEvent = (assistantId: string, event: AiChatAgentEvent) => {
+    updateAssistant(assistantId, (message) => ({
+      ...message,
+      agentEvents: [...(message.agentEvents || []), event],
+    }));
   };
 
   const sendMessage = async () => {
@@ -449,6 +485,7 @@ export default function AiChatPage() {
           reasoningContent: '',
           status: 'streaming',
           citations: [],
+          agentEvents: [],
           createTime: now,
         },
       ]);
@@ -463,6 +500,12 @@ export default function AiChatPage() {
         {
           onStatus: setStatusText,
           onWarning: setWarning,
+          onAgentAction: (event) => {
+            setStatusText(event.message || event.title);
+            appendAgentEvent(assistantId, event);
+          },
+          onToolResult: (event) => appendAgentEvent(assistantId, event),
+          onMemoryUpdate: (event) => appendAgentEvent(assistantId, event),
           onToken: (token) => updateAssistant(assistantId, (message) => ({
             ...message,
             content: message.content + token,
@@ -640,9 +683,9 @@ export default function AiChatPage() {
                   <div className="mt-6 grid w-full gap-2 sm:grid-cols-2">
                     {[
                       '用表格对比 CAP 和 BASE 理论',
+                      '分析我的错题并找出最薄弱知识点',
                       '解释软件架构中的质量属性',
-                      '给我一份系统架构设计师复习计划',
-                      '举例说明设计模式的适用场景',
+                      '找数据库优化相关错题并给我复盘建议',
                     ].map((prompt) => (
                       <button
                         key={prompt}

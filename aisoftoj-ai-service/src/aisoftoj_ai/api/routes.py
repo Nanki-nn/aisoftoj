@@ -9,18 +9,24 @@ from fastapi.responses import FileResponse, StreamingResponse
 
 from aisoftoj_ai.api.schemas import (
     ChatRequest,
+    DocumentGraphExtractionRequest,
     JobResponse,
+    KnowledgeGraphAgentRequest,
     ParseOptions,
     SearchRequest,
     SearchResponse,
+    StudyRoadmapAgentRequest,
     UrlIngestRequest,
+    WrongQuestionAlignmentRequest,
 )
-from aisoftoj_ai.rag.agent.graph import build_rag_graph
-from aisoftoj_ai.rag.agent.prompts import ANSWER_SYSTEM, CHAT_SYSTEM
-from aisoftoj_ai.rag.citations import build_citations
+from aisoftoj_ai.kg_pdf.workflow import run_kg_pdf_extraction
+from aisoftoj_ai.kg_pdf.wrong_question_aligner import align_wrong_questions_to_kg
 from aisoftoj_ai.rag.tasks import state_key
+from aisoftoj_ai.recommendation_agent.graph import build_recommendation_agent
+from aisoftoj_ai.recommendation_agent.knowledge_graph import build_knowledge_graph_relations
 from aisoftoj_ai.redis_compat import hset_fields
 from aisoftoj_ai.services import get_services
+from aisoftoj_ai.study_agent import stream_study_agent
 
 router = APIRouter(prefix="/api/v1")
 logger = logging.getLogger("aisoftoj.api")
@@ -234,7 +240,7 @@ async def move_document(document_id: str, body: dict) -> dict:
 @router.get("/index/documents/{document_id}/chunks")
 async def list_chunks(document_id: str, limit: int = 100) -> dict:
     """列出指定文档的切块数据。"""
-    chunks = await get_services().store.list_chunks(document_id, min(limit, 200))
+    chunks = await get_services().store.list_chunks(document_id, min(limit, 1200))
     return {"items": chunks}
 
 
@@ -250,8 +256,8 @@ async def search(body: SearchRequest) -> SearchResponse:
 
 
 @router.post("/chat/stream")
-async def chat_stream(body: ChatRequest) -> StreamingResponse:
-    """SSE 流式对话接口，支持普通聊天和 RAG 问答。"""
+async def chat_stream(body: ChatRequest, request: Request) -> StreamingResponse:
+    """SSE 流式对话接口，由统一备考 Agent 决定工具调用。"""
     services = get_services()
     trace_id = str(uuid.uuid4())
 
@@ -259,79 +265,105 @@ async def chat_stream(body: ChatRequest) -> StreamingResponse:
         """生成对话过程中的 SSE 事件流。"""
         yield _sse("status", {"message": "正在理解问题", "traceId": trace_id})
         try:
-            if not body.knowledge_base_ids:
-                async for event in _stream_conversation(body, services, trace_id):
-                    yield event
-                yield _sse("done", {"traceId": trace_id})
-                return
-
-            graph = build_rag_graph(
-                services.chat,
-                services.search,
-                services.searxng,
-                services.pipeline.storage,
-            )
-            async for part in graph.astream(
-                {
-                    "question": body.question,
-                    "knowledge_base_ids": body.knowledge_base_ids,
-                    "history": [item.model_dump() for item in body.history],
-                    "web_enabled": body.web_enabled,
-                    "thinking_enabled": body.thinking_enabled,
-                    "rewrite_count": body.rewrite_count,
-                },
-                stream_mode="custom",
-                version="v2",
-            ):
-                data = part["data"]
+            async for data in stream_study_agent(body, services, request.app.state.redis, trace_id):
                 yield _sse(data["type"], data)
             yield _sse("done", {"traceId": trace_id})
-        except Exception:
-            yield _sse("error", {"message": "问答服务暂时不可用", "traceId": trace_id})
+        except Exception as exc:
+            logger.exception("Study agent failed")
+            yield _sse("error", {"message": f"问答服务暂时不可用：{exc}", "traceId": trace_id})
 
     return StreamingResponse(events(), media_type="text/event-stream")
 
 
-async def _stream_conversation(body: ChatRequest, services, trace_id: str):
-    """在没有知识库时，使用聊天模型或联网搜索直接回答。"""
-    results = []
-    if body.web_enabled:
-        yield _sse("status", {"message": "正在联网检索公开资料", "traceId": trace_id})
-        try:
-            results = await services.searxng.search(body.question)
-        except Exception:
-            yield _sse(
-                "warning",
-                {"message": "联网检索暂时不可用，已切换为模型直接回答", "traceId": trace_id},
-            )
-
-    messages = [{"role": "system", "content": ANSWER_SYSTEM if results else CHAT_SYSTEM}]
-    messages.extend(item.model_dump() for item in body.history[-12:])
-    if results:
-        context = "\n\n".join(
-            f"[{index}] {item.title or '网页资料'}\n{item.content}"
-            for index, item in enumerate(results, start=1)
-        )
-        messages.append(
-            {
-                "role": "user",
-                "content": f"问题：{body.question}\n\n可用网页资料：\n{context}",
-            }
-        )
-    else:
-        messages.append({"role": "user", "content": body.question})
-
-    yield _sse("status", {"message": "正在组织回答", "traceId": trace_id})
-    async for event_type, token in services.chat.stream_with_reasoning(
-        messages,
-        thinking_enabled=body.thinking_enabled,
-    ):
-        yield _sse(event_type, {"type": event_type, "content": token})
-    citations = build_citations(results)
-    yield _sse(
-        "citation",
-        {"type": "citation", "citations": [item.model_dump() for item in citations]},
+@router.post("/recommendations/study-roadmap")
+async def recommendation_study_roadmap(body: StudyRoadmapAgentRequest) -> dict:
+    """独立推荐 Deepagent：观察错题证据，思考图谱路径，输出学习行动。"""
+    agent = build_recommendation_agent()
+    result = await agent.ainvoke(
+        {
+            "days": 14 if body.days == 14 else 7,
+            "daily_minutes": body.daily_minutes,
+            "recommendations": body.recommendations,
+            "observations": [],
+            "strategy": {},
+            "roadmap": {},
+        }
     )
+    return result["roadmap"]
+
+
+@router.post("/recommendations/knowledge-graph")
+async def recommendation_knowledge_graph(body: KnowledgeGraphAgentRequest) -> dict:
+    """Generate structured knowledge-point relations for the wrong-question graph."""
+    services = get_services()
+    return await build_knowledge_graph_relations(
+        services.chat,
+        services.search,
+        body.recommendations,
+        body.evidences,
+        body.knowledge_base_ids,
+        body.max_nodes,
+        body.max_edges,
+    )
+
+
+@router.post("/knowledge-graph/documents/extract")
+async def extract_document_knowledge_graph(body: DocumentGraphExtractionRequest) -> dict:
+    """Extract a structure-aware KG from raw document parse artifacts.
+
+    This endpoint intentionally does not read RAG chunks, embeddings, retriever
+    output, or Qdrant payloads. It rebuilds KG extraction chunks from MinerU
+    content-list/markdown artifacts.
+    """
+    services = get_services()
+    artifact_prefix = f"documents/{body.document_id}/{body.version}"
+    content_list_path = services.pipeline.storage.path(f"{artifact_prefix}/content-list.json")
+    markdown_path = services.pipeline.storage.path(f"{artifact_prefix}/document.md")
+    if not content_list_path.exists() and not markdown_path.exists():
+        raise HTTPException(status_code=404, detail="Document parse artifacts not found")
+
+    content_list = []
+    markdown = ""
+    if content_list_path.exists():
+        try:
+            content_list = json.loads(content_list_path.read_text("utf-8"))
+        except json.JSONDecodeError as exc:
+            raise HTTPException(status_code=500, detail="Invalid content-list artifact") from exc
+    if markdown_path.exists():
+        markdown = markdown_path.read_text("utf-8", errors="replace")
+
+    result = await run_kg_pdf_extraction(
+        services.chat,
+        body.document_id,
+        content_list=content_list,
+        markdown=markdown,
+        document_title=body.document_title,
+        max_chunks=body.max_chunks,
+    )
+    payload = result.model_dump()
+    payload["knowledgeBaseId"] = body.knowledge_base_id
+    payload["version"] = body.version
+    payload["artifactTypes"] = {
+        "rag_chunks": "documents/{document_id}/{version}/chunks.json",
+        "kg_extraction_chunks": "rebuilt from content-list.json/document.md",
+    }
+    return payload
+
+
+@router.post("/knowledge-graph/wrong-question-alignments")
+async def align_wrong_questions_to_document_kg(body: WrongQuestionAlignmentRequest) -> dict:
+    """Use LLM judgement to map wrong questions to extracted KG entities."""
+    services = get_services()
+    result = await align_wrong_questions_to_kg(
+        services.chat,
+        body.wrong_questions,
+        body.entity_nodes,
+        body.kg_extraction_chunks,
+        body.max_alignments,
+    )
+    result["document_id"] = body.document_id
+    result["user_id"] = body.user_id
+    return result
 
 
 def _sse(event: str, data: dict) -> str:

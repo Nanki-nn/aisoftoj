@@ -67,6 +67,30 @@ public class KnowledgeDocumentController {
         return ResultDTO.success();
     }
 
+    @PostMapping("/{id}/extract-graph")
+    public ResultDTO<KnowledgeDocumentDTO> extractGraph(
+            @PathVariable Long id,
+            HttpServletRequest request) {
+        return ResultDTO.success(
+                "知识图谱抽取已提交",
+                documentService.extractKnowledgeGraph(userId(request), id)
+        );
+    }
+
+    @DeleteMapping("/{id}/graph")
+    public ResultDTO<KnowledgeDocumentDTO> deleteGraph(
+            @PathVariable Long id,
+            HttpServletRequest request) {
+        return ResultDTO.success(documentService.deleteKnowledgeGraph(userId(request), id));
+    }
+
+    @PostMapping("/{id}/delete-graph")
+    public ResultDTO<KnowledgeDocumentDTO> deleteGraphCompat(
+            @PathVariable Long id,
+            HttpServletRequest request) {
+        return ResultDTO.success(documentService.deleteKnowledgeGraph(userId(request), id));
+    }
+
     @PatchMapping("/{id}/move")
     public ResultDTO<KnowledgeDocumentDTO> move(
             @PathVariable Long id,

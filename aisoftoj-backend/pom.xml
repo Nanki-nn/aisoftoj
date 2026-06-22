@@ -74,6 +74,13 @@
             <version>5.8.25</version>
         </dependency>
 
+        <!-- Neo4j graph projection for recommendations -->
+        <dependency>
+            <groupId>org.neo4j.driver</groupId>
+            <artifactId>neo4j-java-driver</artifactId>
+            <version>4.4.14</version>
+        </dependency>
+
         <!-- 阿里云 OSS -->
         <dependency>
             <groupId>com.aliyun.oss</groupId>

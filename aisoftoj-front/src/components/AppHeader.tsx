@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
-import { Bot, BookOpen, Database, FileText, History, LogIn, UserRound } from 'lucide-react';
+import { Bot, BookOpen, Database, FileText, GitBranch, History, LogIn, UserRound } from 'lucide-react';
 
 import { Button } from './ui/button';
 import { BrandLogo } from './BrandLogo';
@@ -16,7 +16,7 @@ export function AppHeader({ onShowAuth, onShowProfile }: AppHeaderProps) {
   const { user, isAuthenticated } = useAuth();
 
   return (
-    <header className="app-header sticky top-0 z-40">
+    <header className="app-header sticky top-0">
       <div className="app-header-inner mx-auto w-full px-4 py-3">
         <div className="shrink-0">
           <BrandLogo />
@@ -48,12 +48,20 @@ export function AppHeader({ onShowAuth, onShowProfile }: AppHeaderProps) {
             </Link>
           </Button>
           {isAuthenticated && (
-            <Button variant="ghost" size="sm" asChild>
-              <Link to="/practice-history">
-                <History className="mr-1.5 h-4 w-4" />
-                刷题记录
-              </Link>
-            </Button>
+            <>
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/practice-history">
+                  <History className="mr-1.5 h-4 w-4" />
+                  刷题记录
+                </Link>
+              </Button>
+              <Button variant="ghost" size="sm" asChild>
+                <Link to="/wrong-questions">
+                  <GitBranch className="mr-1.5 h-4 w-4" />
+                  错题图谱
+                </Link>
+              </Button>
+            </>
           )}
         </nav>
 

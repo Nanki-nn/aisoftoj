@@ -413,6 +413,105 @@ export async function fetchWrongQuestions(params: PageQuery = {}): Promise<PageR
   );
 }
 
+export type WrongQuestionEvidence = {
+  questionId?: number | null;
+  questionName: string;
+  knowledgePointName: string;
+  subjectName?: string | null;
+  paperName?: string | null;
+  questionType?: string | null;
+  difficulty?: number | null;
+  paperYear?: number | null;
+  errorCount: number;
+  importanceLevel?: string | null;
+  lastWrongTime?: string | null;
+};
+
+export type KnowledgePointRecommendation = {
+  id: string;
+  name: string;
+  subject: string;
+  category: string;
+  score: number;
+  mastery: number;
+  errorCount: number;
+  wrongQuestionCount: number;
+  level: 'low' | 'medium' | 'high' | 'must';
+  reason: string;
+  suggestion: string;
+  prerequisiteNames: string[];
+  relatedNames: string[];
+  evidences: WrongQuestionEvidence[];
+};
+
+export type KnowledgeGraphNode = {
+  id: string;
+  label: string;
+  type: 'knowledge' | 'related' | 'question' | string;
+  score: number;
+  mastery: number;
+  errorCount: number;
+  properties?: Record<string, unknown>;
+};
+
+export type KnowledgeGraphEdge = {
+  id: string;
+  source: string;
+  target: string;
+  type: string;
+  label: string;
+  weight: number;
+  evidence?: string;
+  sourceType?: string;
+  properties?: Record<string, unknown>;
+};
+
+export type KnowledgeGraph = {
+  nodes: KnowledgeGraphNode[];
+  edges: KnowledgeGraphEdge[];
+  graphAvailable: boolean;
+  source: string;
+};
+
+export async function fetchKnowledgePointRecommendations(signal?: AbortSignal): Promise<KnowledgePointRecommendation[]> {
+  return request<KnowledgePointRecommendation[]>('/recommendations/knowledge-points', { signal });
+}
+
+export type KnowledgeGraphScope = 'focus' | 'full';
+
+export async function fetchKnowledgeGraph(
+  scope: KnowledgeGraphScope = 'focus',
+  signal?: AbortSignal
+): Promise<KnowledgeGraph> {
+  return request<KnowledgeGraph>(`/recommendations/knowledge-graph?scope=${scope}`, { signal });
+}
+
+export async function updateKnowledgeGraphNode(
+  nodeId: string,
+  data: { label: string }
+): Promise<KnowledgeGraph> {
+  return request<KnowledgeGraph>(`/recommendations/knowledge-graph/nodes/${encodeURIComponent(nodeId)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function updateKnowledgeGraphEdge(
+  edgeId: string,
+  data: { type: string; label: string; weight: number }
+): Promise<KnowledgeGraph> {
+  return request<KnowledgeGraph>(`/recommendations/knowledge-graph/edges/${encodeURIComponent(edgeId)}`, {
+    method: 'PATCH',
+    body: JSON.stringify(data),
+  });
+}
+
+export async function deleteKnowledgeGraphEdge(edgeId: string): Promise<KnowledgeGraph> {
+  return request<KnowledgeGraph>(`/recommendations/knowledge-graph/edges/${encodeURIComponent(edgeId)}`, {
+    method: 'DELETE',
+  });
+}
+
 export async function continuePracticeSession(sessionId: string): Promise<ExamSession> {
   const data = await request<GetSessionRes>(`/session/${sessionId}`);
   const questions = data.questionList.map(q => mapQuestion(q, data.paper?.paperCateId ?? 1));
@@ -734,6 +833,12 @@ export type AiChatCitation = {
   asset_url?: string | null;
 };
 
+export type AiChatAgentEvent = {
+  type: 'agent_action' | 'tool_result' | 'memory_update';
+  title: string;
+  message: string;
+};
+
 export async function loadKnowledgeCitationAsset(
   documentId: string,
   version: number,
@@ -760,6 +865,7 @@ export type AiChatMessage = {
   reasoningContent?: string | null;
   status: 'streaming' | 'completed' | 'failed';
   citations: AiChatCitation[];
+  agentEvents?: AiChatAgentEvent[];
   errorMessage?: string | null;
   createTime: string;
 };
@@ -866,6 +972,12 @@ export type KnowledgeDocument = {
   version: number;
   progress: number;
   queuedAhead?: number | null;
+  graphStatus?: 'none' | 'running' | 'completed' | 'failed' | 'disabled' | 'unavailable' | string | null;
+  graphNodeCount?: number | null;
+  graphRelationCount?: number | null;
+  graphPendingCount?: number | null;
+  graphErrorMessage?: string | null;
+  graphUpdatedAt?: string | null;
   options?: Partial<KnowledgeParseOptions> | null;
   versions?: KnowledgeDocumentVersion[];
   createTime: string;
@@ -917,6 +1029,18 @@ export async function retryKnowledgeDocument(
   return request<KnowledgeDocument>(`/knowledge/documents/${id}/retry`, {
     method: 'POST',
     body: JSON.stringify(options || {}),
+  });
+}
+
+export async function extractKnowledgeDocumentGraph(id: number): Promise<KnowledgeDocument> {
+  return request<KnowledgeDocument>(`/knowledge/documents/${id}/extract-graph`, {
+    method: 'POST',
+  });
+}
+
+export async function deleteKnowledgeDocumentGraph(id: number): Promise<KnowledgeDocument> {
+  return request<KnowledgeDocument>(`/knowledge/documents/${id}/delete-graph`, {
+    method: 'POST',
   });
 }
 
@@ -1021,6 +1145,9 @@ export async function updateAiChatKnowledgeBases(
 type AiChatStreamHandlers = {
   onStatus?: (message: string) => void;
   onWarning?: (message: string) => void;
+  onAgentAction?: (event: AiChatAgentEvent) => void;
+  onToolResult?: (event: AiChatAgentEvent) => void;
+  onMemoryUpdate?: (event: AiChatAgentEvent) => void;
   onToken?: (token: string) => void;
   onReasoning?: (token: string) => void;
   onCitation?: (citations: AiChatCitation[]) => void;
@@ -1060,6 +1187,21 @@ export async function streamAiChatMessage(
     const data = JSON.parse(dataText);
     if (eventName === 'status') handlers.onStatus?.(data.message || '');
     if (eventName === 'warning') handlers.onWarning?.(data.message || '');
+    if (eventName === 'agent_action') handlers.onAgentAction?.({
+      type: 'agent_action',
+      title: data.title || 'Agent 动作',
+      message: data.message || '',
+    });
+    if (eventName === 'tool_result') handlers.onToolResult?.({
+      type: 'tool_result',
+      title: data.title || '工具结果',
+      message: data.message || '',
+    });
+    if (eventName === 'memory_update') handlers.onMemoryUpdate?.({
+      type: 'memory_update',
+      title: data.title || '记忆更新',
+      message: data.message || '',
+    });
     if (eventName === 'reasoning') handlers.onReasoning?.(data.content || '');
     if (eventName === 'token') handlers.onToken?.(data.content || '');
     if (eventName === 'citation') handlers.onCitation?.(data.citations || []);

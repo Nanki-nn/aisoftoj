@@ -165,6 +165,10 @@ class QdrantStore:
                     models.FieldCondition(
                         key="document_id",
                         match=models.MatchValue(value=document_id),
+                    ),
+                    models.FieldCondition(
+                        key="active",
+                        match=models.MatchValue(value=True),
                     )
                 ]
             ),
@@ -172,24 +176,38 @@ class QdrantStore:
         )
 
     async def list_chunks(self, document_id: str, limit: int = 100) -> list[dict]:
-        """列出指定文档的所有 payload。"""
+        """List active chunk payloads for a document."""
         if not await self.client.collection_exists(self.collection):
             return []
-        points, _ = await self.client.scroll(
-            collection_name=self.collection,
-            scroll_filter=models.Filter(
-                must=[
-                    models.FieldCondition(
-                        key="document_id",
-                        match=models.MatchValue(value=document_id),
-                    )
-                ]
-            ),
-            limit=limit,
-            with_payload=True,
-            with_vectors=False,
+        collected: list[dict] = []
+        offset = None
+        target = max(1, limit)
+        chunk_filter = models.Filter(
+            must=[
+                models.FieldCondition(
+                    key="document_id",
+                    match=models.MatchValue(value=document_id),
+                ),
+                models.FieldCondition(
+                    key="active",
+                    match=models.MatchValue(value=True),
+                ),
+            ]
         )
-        return [point.payload or {} for point in points]
+        while len(collected) < target:
+            batch_limit = min(256, target - len(collected))
+            points, offset = await self.client.scroll(
+                collection_name=self.collection,
+                scroll_filter=chunk_filter,
+                limit=batch_limit,
+                offset=offset,
+                with_payload=True,
+                with_vectors=False,
+            )
+            collected.extend(point.payload or {} for point in points)
+            if offset is None or not points:
+                break
+        return collected
 
     async def search(
         self,

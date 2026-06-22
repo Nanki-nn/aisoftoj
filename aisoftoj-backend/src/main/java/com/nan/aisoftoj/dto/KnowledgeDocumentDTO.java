@@ -21,6 +21,12 @@ public class KnowledgeDocumentDTO {
     private Integer version;
     private Integer progress;
     private Integer queuedAhead;
+    private String graphStatus;
+    private Integer graphNodeCount;
+    private Integer graphRelationCount;
+    private Integer graphPendingCount;
+    private String graphErrorMessage;
+    private String graphUpdatedAt;
     private Map<String, Object> options;
     private List<KnowledgeDocumentVersionDTO> versions;
     private LocalDateTime createTime;

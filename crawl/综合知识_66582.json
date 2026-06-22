@@ -1,0 +1,5353 @@
+{
+  "paper": {
+    "id": 2585,
+    "paperCateId": 3,
+    "cateGroupCode": null,
+    "paperCateName": "综合知识",
+    "doingRecordId": null,
+    "name": "25年11月 架构师 选择题",
+    "orderNum": 500,
+    "questionTotal": 75,
+    "readCt": 2511,
+    "status": 1,
+    "updateTime": "2026-06-19 22:48:30",
+    "questionList": null
+  },
+  "questions": [
+    {
+      "id": 13776,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "1",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 6135,
+      "grade": 2,
+      "gradeStr": "建议掌握",
+      "doCt": 1810,
+      "doRightCt": 1198,
+      "tags": "专业英语",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "<font color='red'>本题作答（_问题1_）：</font>Multi-agent systems can operate under various <font color='blue'>（<u> 问题1</u>）</font>. In centralized networks, a central unit contains the global knowledge base, connects the agents and oversees their information. A strength of this structure is the ease of communication between agents and uniform knowledge. A weakness of the centrality is the dependence on the central unit; if it fails, the entire system of agents fails.",
+      "answer": "此题考察多智能体系统的核心运行模式分类，属于软件架构设计与计算机基础的交叉知识点。\n\n选项A（services，服务）：服务是系统提供的功能模块，题干讨论的是多智能体系统的整体运行结构，而非功能模块，故错误。\n选项B（architectures，架构）：架构指系统的整体结构模式，题干明确区分“中心化”和“去中心化”两种网络结构，与“架构”的定义完全匹配，故正确。\n选项C（layer，层级）：层级是架构的一种组织形式（如分层架构），但题干未限定“层级”类结构，而是泛指所有结构类型，范围过窄，故错误。\n选项D（databases，数据库）：数据库是存储数据的组件，题干中“全局知识库”是数据载体，并非系统运行结构，故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-20 00:24:44",
+          "updateTime": "2025-11-20 00:24:44",
+          "id": 25881,
+          "questionId": 13776,
+          "keyStr": "A",
+          "valueStr": "services",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-20 00:24:44",
+          "updateTime": "2025-11-20 00:24:44",
+          "id": 25882,
+          "questionId": 13776,
+          "keyStr": "B",
+          "valueStr": "architectures",
+          "correct": true,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-20 00:24:44",
+          "updateTime": "2025-11-20 00:24:44",
+          "id": 25883,
+          "questionId": 13776,
+          "keyStr": "C",
+          "valueStr": "layer",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-20 00:24:44",
+          "updateTime": "2025-11-20 00:24:44",
+          "id": 25884,
+          "questionId": 13776,
+          "keyStr": "D",
+          "valueStr": "databases",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "B"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13776,
+        "nameAlias": "1",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 1
+    },
+    {
+      "id": 13777,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "2",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 4777,
+      "grade": 2,
+      "gradeStr": "建议掌握",
+      "doCt": 1912,
+      "doRightCt": 870,
+      "tags": "专业英语",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "<font color='red'>本题作答（_问题2_）：</font>Multi-agent systems can operate under various architectures. In centralized networks, a central unit contains the global knowledge base, connects the agents and oversees their information. A strength of this structure is the ease of communication between agents and <font color='blue'>（<u> 问题2</u>）</font> knowledge. A weakness of the centrality is the dependence on the central unit; if it fails, the entire system of agents fails.",
+      "answer": "此题考察中心化多智能体系统的核心优势，属于软件架构设计知识点。\n\n选项A（uniform，统一的）：中心化架构的核心特征是“全局知识库”，可实现知识的统一管理与同步，避免分布式架构的知识不一致问题，与“易于通信”共同构成中心化的优势，故正确。\n选项B（unformalized，非形式化的）：非形式化知识指无规范结构的知识，中心化架构通过全局知识库更易实现知识的形式化管理，此选项与中心化优势相悖，故错误。\n选项C（interacted，交互的）：“交互”描述的是智能体间的行为，而非知识本身的属性，题干强调的是知识的特性，而非行为，故错误。\n选项D（无明确回忆）：因其他选项中A已明确符合逻辑，故排除。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-12 15:10:53",
+          "updateTime": "2025-11-12 15:10:53",
+          "id": 25885,
+          "questionId": 13777,
+          "keyStr": "A",
+          "valueStr": "uniform",
+          "correct": true,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-12 15:10:53",
+          "updateTime": "2025-11-12 15:10:53",
+          "id": 25886,
+          "questionId": 13777,
+          "keyStr": "B",
+          "valueStr": "unformalized",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-12 15:10:53",
+          "updateTime": "2025-11-12 15:10:53",
+          "id": 25887,
+          "questionId": 13777,
+          "keyStr": "C",
+          "valueStr": "interacted",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-12 15:10:53",
+          "updateTime": "2025-11-12 15:10:53",
+          "id": 25888,
+          "questionId": 13777,
+          "keyStr": "D",
+          "valueStr": "partial",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "A"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13777,
+        "nameAlias": "2",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 2
+    },
+    {
+      "id": 13778,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "3",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 4104,
+      "grade": 2,
+      "gradeStr": "建议掌握",
+      "doCt": 1777,
+      "doRightCt": 1135,
+      "tags": "专业英语",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "<font color='red'>本题作答（_问题3_）：</font>Multi-agent systems can operate under various architectures. In centralized networks, a central unit contains the global knowledge base, connects the agents and oversees their information. A strength of this structure is the ease of communication between agents and uniform knowledge. A weakness of the centrality is the dependence on the central unit; if it fails, the <font color='blue'>（<u> 问题3</u>）</font> system of agents fails.",
+      "answer": "此题考察中心化架构的核心缺陷（单点依赖），属于软件架构设计知识点。\n\n选项A（partial，部分的）：中心化架构中，中心单元是所有智能体的连接核心与控制中枢，若中心故障，所有智能体失去协调与通信能力，而非仅部分系统故障，故错误。\n选项B（entire，整个的）：中心单元是系统的“单点瓶颈”，其故障会导致整个多智能体系统瘫痪，完全符合中心化架构的单点依赖特性，故正确。\n选项C（top，顶层的）、D（bottom，底层的）：“顶层/底层”描述的是系统的层级位置，题干未涉及层级划分，仅强调系统整体故障，故均错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:54:15",
+          "updateTime": "2025-11-11 12:54:15",
+          "id": 25889,
+          "questionId": 13778,
+          "keyStr": "A",
+          "valueStr": "partial",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:54:15",
+          "updateTime": "2025-11-11 12:54:15",
+          "id": 25890,
+          "questionId": 13778,
+          "keyStr": "B",
+          "valueStr": "entire",
+          "correct": true,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:54:15",
+          "updateTime": "2025-11-11 12:54:15",
+          "id": 25891,
+          "questionId": 13778,
+          "keyStr": "C",
+          "valueStr": "top",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:54:15",
+          "updateTime": "2025-11-11 12:54:15",
+          "id": 25892,
+          "questionId": 13778,
+          "keyStr": "D",
+          "valueStr": "bottom",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "B"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13778,
+        "nameAlias": "3",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 3
+    },
+    {
+      "id": 13779,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "4",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 3977,
+      "grade": 2,
+      "gradeStr": "建议掌握",
+      "doCt": 1822,
+      "doRightCt": 1110,
+      "tags": "专业英语",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "<font color='red'>本题作答（_问题4_）：</font>Decentralized networks: Agents in decentralized networks <font color='blue'>（<u> 问题4</u>）</font> information with their neighboring agents instead of a global knowledge base. Some benefits of decentralized networks are robustness and modularity. The failure of one agent does not cause the overall system to fail since there is no central unit.",
+      "answer": "此题考察去中心化多智能体系统的信息交互方式，属于软件架构设计知识点。\n\n选项A（share，共享）：去中心化架构无全局知识库，智能体需通过与相邻智能体“共享信息”实现协作与数据同步，这是去中心化系统实现群体智能的核心机制，故正确。\n选项B（collect，收集）：“收集”强调单向获取信息，而去中心化系统中智能体需双向交互以确保信息流通，仅“收集”无法满足协作需求，故错误。\n选项C（compare，比较）：“比较”是信息处理的一种方式，题干强调的是信息交互的核心行为（而非处理方式），与去中心化系统的信息同步需求不符，故错误。\n选项D（learn，学习）：“学习”是智能体的个体能力，题干描述的是智能体间的信息交互关系，而非个体学习行为，故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:54:16",
+          "updateTime": "2025-11-11 12:54:16",
+          "id": 25893,
+          "questionId": 13779,
+          "keyStr": "A",
+          "valueStr": "share",
+          "correct": true,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:54:16",
+          "updateTime": "2025-11-11 12:54:16",
+          "id": 25894,
+          "questionId": 13779,
+          "keyStr": "B",
+          "valueStr": "collect",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:54:16",
+          "updateTime": "2025-11-11 12:54:16",
+          "id": 25895,
+          "questionId": 13779,
+          "keyStr": "C",
+          "valueStr": "compare",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:54:16",
+          "updateTime": "2025-11-11 12:54:16",
+          "id": 25896,
+          "questionId": 13779,
+          "keyStr": "D",
+          "valueStr": "learn",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "A"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13779,
+        "nameAlias": "4",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 4
+    },
+    {
+      "id": 13780,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "5",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 3973,
+      "grade": 2,
+      "gradeStr": "建议掌握",
+      "doCt": 1793,
+      "doRightCt": 906,
+      "tags": "专业英语",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "<font color='red'>本题作答（_问题5_）：</font>Decentralized networks: One challenge of decentralized agents is <font color='blue'>（<u> 问题5</u>）</font> their behavior to benefit other cooperating agents.",
+      "answer": "此题考察去中心化多智能体系统的核心挑战，属于软件架构设计知识点。\n\n选项A（coordinating，协调）：去中心化系统无中心控制单元，智能体需自主协调行为以达成共同目标（如避免冲突、优化群体效率），这是去中心化架构的核心挑战，故正确。\n选项B（sharing，共享）：“共享”是去中心化系统的信息交互方式，属于已实现的机制，而非需要解决的挑战，故错误。\n选项C（learning，学习）：“学习”是智能体提升个体能力的过程，与“群体行为协作”的挑战无关，故错误。\n选项D（rewarding，奖励）：“奖励”是激励智能体协作的手段，而非“行为协调”本身的挑战，题干强调的是“行为调整”的核心需求，故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:54:17",
+          "updateTime": "2025-11-11 12:54:17",
+          "id": 25897,
+          "questionId": 13780,
+          "keyStr": "A",
+          "valueStr": "coordinating",
+          "correct": true,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:54:17",
+          "updateTime": "2025-11-11 12:54:17",
+          "id": 25898,
+          "questionId": 13780,
+          "keyStr": "B",
+          "valueStr": "sharing",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:54:17",
+          "updateTime": "2025-11-11 12:54:17",
+          "id": 25899,
+          "questionId": 13780,
+          "keyStr": "C",
+          "valueStr": "learning",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:54:17",
+          "updateTime": "2025-11-11 12:54:17",
+          "id": 25900,
+          "questionId": 13780,
+          "keyStr": "D",
+          "valueStr": "rewarding",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "A"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13780,
+        "nameAlias": "5",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 5
+    },
+    {
+      "id": 13781,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "6",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 3320,
+      "grade": 3,
+      "gradeStr": "了解即可",
+      "doCt": 1684,
+      "doRightCt": 1194,
+      "tags": "计算机基础,数学工程",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "x在U（a，b）内均匀分布，a=0，b=1的情况下，P(x)<0.5的概率是<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察均匀分布的概率计算，属于计算机基础中的数理统计知识点。\n\n均匀分布U（a，b）的核心特性是“区间内概率密度均匀”，其概率计算公式为：对于区间[a,b]内的任意值k，P(x<k)=(k-a)/(b-a)。本题中a=0、b=1、k=0.5，代入公式得：P(x<0.5)=(0.5-0)/(1-0)=1/2。\n\n选项A（0）：均匀分布在区间[a,b]内任意子区间均有正概率，x<0.5是[0,1]的子区间，概率不可能为0，故错误。\n选项B（1）：仅当k≥b（即k≥1）时，P(x<k)=1，0.5<1，故错误。\n选项D（1/4）：未正确应用均匀分布概率公式，若误将区间长度按0.25计算才会得出此结果，故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:54:17",
+          "updateTime": "2025-11-11 12:54:17",
+          "id": 25901,
+          "questionId": 13781,
+          "keyStr": "A",
+          "valueStr": "0",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:54:17",
+          "updateTime": "2025-11-11 12:54:17",
+          "id": 25902,
+          "questionId": 13781,
+          "keyStr": "B",
+          "valueStr": "1",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:54:17",
+          "updateTime": "2025-11-11 12:54:17",
+          "id": 25903,
+          "questionId": 13781,
+          "keyStr": "C",
+          "valueStr": "1/2",
+          "correct": true,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:54:17",
+          "updateTime": "2025-11-11 12:54:17",
+          "id": 25904,
+          "questionId": 13781,
+          "keyStr": "D",
+          "valueStr": "1/4",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "C"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13781,
+        "nameAlias": "6",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 6
+    },
+    {
+      "id": 13782,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "7",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 3366,
+      "grade": 1,
+      "gradeStr": "必须掌握",
+      "doCt": 1844,
+      "doRightCt": 1556,
+      "tags": "数据库",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "数据库R-(R-S)与下列哪项等价<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察数据库集合运算的等价转换，属于基础数据库核心知识点，必须掌握。\n\n集合运算的逻辑推导如下：\n\n1. 定义解析：R-S表示“属于R但不属于S的元组集合”，记为集合A；\n2. 推导R-(R-S)：即“属于R且不属于A（A=R-S）的元组集合”，等价于“属于R且不属于（R-S）的元组”；\n3. 结果简化：“属于R且不属于（R-S）”→ 排除“属于R但不属于S”的元组，剩余“属于R且属于S”的元组，即R∩S（R与S的交集）。\n\n选项B（R∪S）：表示“属于R或属于S的所有元组”，与推导结果的“交集”概念完全不同，故错误。\n选项C（R-S）：是原式的减数，显然与R-(R-S)不等价，故错误。\n选项D（R×S）：表示R与S的笛卡尔积（所有可能的元组组合），与集合差运算无关，故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:54:18",
+          "updateTime": "2025-11-11 12:54:18",
+          "id": 25905,
+          "questionId": 13782,
+          "keyStr": "A",
+          "valueStr": "R∩S",
+          "correct": true,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:54:18",
+          "updateTime": "2025-11-11 12:54:18",
+          "id": 25906,
+          "questionId": 13782,
+          "keyStr": "B",
+          "valueStr": "R∪S",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:54:18",
+          "updateTime": "2025-11-11 12:54:18",
+          "id": 25907,
+          "questionId": 13782,
+          "keyStr": "C",
+          "valueStr": "R-S",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:54:18",
+          "updateTime": "2025-11-11 12:54:18",
+          "id": 25908,
+          "questionId": 13782,
+          "keyStr": "D",
+          "valueStr": "R×S",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "A"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13782,
+        "nameAlias": "7",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 7
+    },
+    {
+      "id": 13783,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "8",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 3391,
+      "grade": 1,
+      "gradeStr": "必须掌握",
+      "doCt": 1956,
+      "doRightCt": 1404,
+      "tags": "数据库",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "select查询结果的本质是<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察SQL查询结果的核心特性，属于基础数据库核心知识点，必须掌握。\n\n在数据库理论中，关系（表）的严格定义是“元组的有限集合”，而select查询的结果是一个“派生关系”（即临时表），因此其本质是“元组的集合”，具有无序性（元组无固定顺序）、唯一性（无重复元组）的集合特性。\n\n选项A（元组）：元组是集合中的“元素”（如一行数据），而非查询结果的“整体本质”，题干问的是结果的整体属性，故错误。\n选项C（属性值）：属性值是元组中的“单个数据项”（如某一行的某一列值），并非整体结果，故错误。\n选项D（序偶）：序偶是“两个元素的有序组合”（如（a,b）），而查询结果是元组的集合（元组可含多个属性），且具有无序性，与序偶的定义不符，故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:54:19",
+          "updateTime": "2025-11-11 12:54:19",
+          "id": 25909,
+          "questionId": 13783,
+          "keyStr": "A",
+          "valueStr": "元组",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:54:19",
+          "updateTime": "2025-11-11 12:54:19",
+          "id": 25910,
+          "questionId": 13783,
+          "keyStr": "B",
+          "valueStr": "集合",
+          "correct": true,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:54:19",
+          "updateTime": "2025-11-11 12:54:19",
+          "id": 25911,
+          "questionId": 13783,
+          "keyStr": "C",
+          "valueStr": "属性值",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:54:19",
+          "updateTime": "2025-11-11 12:54:19",
+          "id": 25912,
+          "questionId": 13783,
+          "keyStr": "D",
+          "valueStr": "序偶",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "B"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13783,
+        "nameAlias": "8",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 8
+    },
+    {
+      "id": 13784,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "9",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 3271,
+      "grade": 1,
+      "gradeStr": "必须掌握",
+      "doCt": 1869,
+      "doRightCt": 1494,
+      "tags": "软件架构设计",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "<font color='red'>本题作答（_问题1_）：</font>系统增加加密算法的使用，会影响系统的安全性和<font color='blue'>（<u> 问题1</u>）</font>，此处体现的是架构的<font color='blue'>（<u> 问题2</u>）</font>。",
+      "answer": "此题考察系统质量属性的权衡关系，属于软件架构设计与信息安全的交叉知识点。\n\n加密算法的调整逻辑为：更复杂的加密算法（如从AES-128升级到AES-256）可提升安全性，但会增加CPU计算开销，导致系统响应延迟增加、吞吐量下降，即直接影响“性能”；反之，简化加密算法可提升性能，但会降低安全性，二者存在典型的“权衡关系”。\n\n选项A（可用性）：可用性侧重“系统可访问、可使用的程度”（如故障恢复时间），加密算法调整不直接影响系统的可访问性，故错误。\n选项B（安全性）：安全性是加密算法调整的“目标之一”（如提升安全性），而非“被影响的其他属性”，题干强调“除安全性外的另一属性”，故错误。\n选项C（可靠性）：可靠性侧重“系统无故障运行的能力”，加密算法调整不直接导致系统故障，故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:54:20",
+          "updateTime": "2025-11-11 12:54:20",
+          "id": 25913,
+          "questionId": 13784,
+          "keyStr": "A",
+          "valueStr": "可用性",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:54:20",
+          "updateTime": "2025-11-11 12:54:20",
+          "id": 25914,
+          "questionId": 13784,
+          "keyStr": "B",
+          "valueStr": "安全性",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:54:20",
+          "updateTime": "2025-11-11 12:54:20",
+          "id": 25915,
+          "questionId": 13784,
+          "keyStr": "C",
+          "valueStr": "可靠性",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:54:20",
+          "updateTime": "2025-11-11 12:54:20",
+          "id": 25916,
+          "questionId": 13784,
+          "keyStr": "D",
+          "valueStr": "性能",
+          "correct": true,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "D"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13784,
+        "nameAlias": "9",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 9
+    },
+    {
+      "id": 13785,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "10",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 3054,
+      "grade": 1,
+      "gradeStr": "必须掌握",
+      "doCt": 1766,
+      "doRightCt": 1659,
+      "tags": "软件架构设计",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "<font color='red'>本题作答（_问题2_）：</font>系统增加加密算法的使用，会影响系统的安全性和性能，此处体现的是架构的<font color='blue'>（<u> 问题2</u>）</font>。",
+      "answer": "此题考察软件架构的核心概念（权衡点），属于软件架构设计知识点，必须掌握。\n\n架构概念解析：\n\n- 权衡点：指一个架构决策会同时影响多个“相互冲突”的质量属性，需在不同属性间做出平衡（如本题中“加密调整”同时影响安全性和性能，二者此消彼长）；\n- 敏感点：指一个架构决策仅显著影响“单个”质量属性，不涉及多属性冲突。\n\n选项A（敏感点）：敏感点不涉及多属性冲突，而题干中安全性与性能存在冲突，故错误。\n选项B（权衡点）：完全符合“一个决策影响多个冲突属性”的定义，故正确。\n选项C（风险点）：风险点指架构决策可能导致的潜在故障或损失，题干强调的是“属性间的平衡关系”，而非“风险”，故错误。\n选项D（非风险点）：题干未涉及风险评估，且此选项与架构核心概念无关，故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:54:21",
+          "updateTime": "2025-11-11 12:54:21",
+          "id": 25917,
+          "questionId": 13785,
+          "keyStr": "A",
+          "valueStr": "敏感点",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:54:21",
+          "updateTime": "2025-11-11 12:54:21",
+          "id": 25918,
+          "questionId": 13785,
+          "keyStr": "B",
+          "valueStr": "权衡点",
+          "correct": true,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:54:21",
+          "updateTime": "2025-11-11 12:54:21",
+          "id": 25919,
+          "questionId": 13785,
+          "keyStr": "C",
+          "valueStr": "风险点",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:54:21",
+          "updateTime": "2025-11-11 12:54:21",
+          "id": 25920,
+          "questionId": 13785,
+          "keyStr": "D",
+          "valueStr": "非风险点",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "B"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13785,
+        "nameAlias": "10",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 10
+    },
+    {
+      "id": 13786,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "11",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 3247,
+      "grade": 2,
+      "gradeStr": "建议掌握",
+      "doCt": 1927,
+      "doRightCt": 1364,
+      "tags": "软件工程",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "更换系统加密算法属于什么类型的变化<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察软件系统变化的类型划分，属于软件工程知识点。\n\n系统变化类型解析：\n\n- 行为变化：指系统“功能逻辑或操作流程”的改变，核心是“系统做什么”或“怎么做”的改变；\n- 风格变化：指系统整体架构风格的改变（如从单体架构改为微服务架构）；\n- 架构变化：指系统组件结构、组件间交互关系的改变；\n- 属性改名：仅指系统属性（如变量名、函数名）的名称变更，不改变逻辑。\n\n加密算法的核心作用是“实现数据加密/解密的功能逻辑”，更换算法直接改变了系统处理数据的“操作逻辑”，属于行为变化。\n\n选项B（风格变化）：加密算法是具体功能的实现细节，与架构风格无关，故错误。\n选项C（属性改名）：未涉及任何名称变更，故错误。\n选项D（架构变化）：未改变系统组件结构或交互关系，故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:54:22",
+          "updateTime": "2025-11-11 12:54:22",
+          "id": 25921,
+          "questionId": 13786,
+          "keyStr": "A",
+          "valueStr": "行为变化",
+          "correct": true,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:54:22",
+          "updateTime": "2025-11-11 12:54:22",
+          "id": 25922,
+          "questionId": 13786,
+          "keyStr": "B",
+          "valueStr": "风格变化",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:54:22",
+          "updateTime": "2025-11-11 12:54:22",
+          "id": 25923,
+          "questionId": 13786,
+          "keyStr": "C",
+          "valueStr": "属性改名",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:54:22",
+          "updateTime": "2025-11-11 12:54:22",
+          "id": 25924,
+          "questionId": 13786,
+          "keyStr": "D",
+          "valueStr": "架构变化",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "A"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13786,
+        "nameAlias": "11",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 11
+    },
+    {
+      "id": 13787,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "12",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 3391,
+      "grade": 3,
+      "gradeStr": "了解即可",
+      "doCt": 1934,
+      "doRightCt": 1180,
+      "tags": "软件架构设计",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "下列哪项不属于XML的特点<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察XML的核心特性，属于计算机基础知识点。\n\nXML（可扩展标记语言）的核心特点的辨析：\n\n- 选项A：XML通过标记（节点）定义数据结构，数据内容与结构完全分离（如<name>张三</name>中，<name>是结构，张三是内容），这是XML的核心优势，故正确（非答案）。\n- 选项B：XML Schema是XML的官方约束规范，用于定义XML文档的结构、数据类型等，属于XML的重要实现组件，故正确（非答案）。\n- 选项C：当XML文档中出现同名属性/元素时（如<book:title>与<magazine:title>），可通过命名空间区分，避免冲突，故正确（非答案）。\n- 选项D：XML仅负责“描述数据结构与内容”，不具备“显示文档格式”的功能；文档显示需依赖XSLT（可扩展样式表语言转换）等独立技术，故错误（答案）。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:54:23",
+          "updateTime": "2025-11-11 12:54:23",
+          "id": 25925,
+          "questionId": 13787,
+          "keyStr": "A",
+          "valueStr": "XML的优点是节点（结构）和内容分离",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:54:23",
+          "updateTime": "2025-11-11 12:54:23",
+          "id": 25926,
+          "questionId": 13787,
+          "keyStr": "B",
+          "valueStr": "XML Schema是XML的一种实现",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:54:23",
+          "updateTime": "2025-11-11 12:54:23",
+          "id": 25927,
+          "questionId": 13787,
+          "keyStr": "C",
+          "valueStr": "XML使用命名空间来区分重复的属性名称",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:54:23",
+          "updateTime": "2025-11-11 12:54:23",
+          "id": 25928,
+          "questionId": 13787,
+          "keyStr": "D",
+          "valueStr": "XML支持显示多种文档格式",
+          "correct": true,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "D"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13787,
+        "nameAlias": "12",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 12
+    },
+    {
+      "id": 13788,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "13",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2980,
+      "grade": 1,
+      "gradeStr": "必须掌握",
+      "doCt": 1757,
+      "doRightCt": 1590,
+      "tags": "软件架构设计",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "领域架构中，领域分析的核心产出是<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察领域工程的核心流程与产出，属于软件架构设计知识点，必须掌握。\n\n领域工程三阶段（领域分析、领域设计、领域实现）的核心产出：\n\n- 领域分析：核心目标是“梳理特定领域的核心概念、实体、关系及约束”，将抽象的领域知识转化为“领域模型”（如类图、实体关系图、用例图等具象化描述），这是领域分析的最终产出；\n- 领域设计：基于领域模型设计领域架构；\n- 领域实现：开发可复用的领域组件。\n\n选项B（领域知识）：是领域分析的“输入”（如行业规则、业务流程），而非“输出”，故错误。\n选项C（特定领域）：是领域分析的“范围”（如金融领域、医疗领域），而非“产出”，故错误。\n选项D（领域样本）：是领域知识的“载体”（如行业案例、业务数据），而非核心产出，故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-12 15:12:09",
+          "updateTime": "2025-11-12 15:12:09",
+          "id": 25929,
+          "questionId": 13788,
+          "keyStr": "A",
+          "valueStr": "领域模型",
+          "correct": true,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-12 15:12:09",
+          "updateTime": "2025-11-12 15:12:09",
+          "id": 25930,
+          "questionId": 13788,
+          "keyStr": "B",
+          "valueStr": "领域知识",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-12 15:12:09",
+          "updateTime": "2025-11-12 15:12:09",
+          "id": 25931,
+          "questionId": 13788,
+          "keyStr": "C",
+          "valueStr": "特定领域",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-12 15:12:09",
+          "updateTime": "2025-11-12 15:12:09",
+          "id": 25932,
+          "questionId": 13788,
+          "keyStr": "D",
+          "valueStr": "领域对象",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "A"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13788,
+        "nameAlias": "13",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 13
+    },
+    {
+      "id": 13789,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "14",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 3506,
+      "grade": 1,
+      "gradeStr": "必须掌握",
+      "doCt": 1830,
+      "doRightCt": 817,
+      "tags": "项目管理",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "某项目进度计划中，工程节点、前置节点及工时如下表。项目从第1天早上开始，关键路径工期为15天，E工序最晚第<font color='blue'>（<u> 问题1</u>）</font>天早上开工。\n\n| 活动     | A    | B    | C    | D    | E    | F    | G    |\n| :------- | ---- | ---- | ---- | ---- | ---- | ---- | ---- |\n| 前置活动 | -    | -    | B    | A    | C    | D, E | F    |\n| 工期(天) | 3    | 4    | 3    | 4    | 4    | 2    | 1    |",
+      "answer": "此题考察项目进度计划中“最晚开工时间”的计算，属于项目管理核心知识点，必须掌握。\n\n最晚开工时间的核心计算公式：最晚开工时间 = 总工期（关键路径工期） - 本工序后续关键路径工期 - 本工序工时 + 1（因项目从“第1天早上”开始，需补加1天以匹配“早上开工”的时间节点）。\n\n具体计算步骤：\n\n1. 确定E工序的后续工序：根据前置节点，F的前置是E，G的前置是F，因此E的后续工序为F（工时2天）和G（工时1天），后续关键路径工期=2+1=3天；\n2. 代入公式：最晚开工时间=15（总工期）-3（后续工期）-4（E工序工时）+1=9天（早上）。\n\n选项A（8）：未加1，忽略了“第1天早上”的起始规则，导致结果少1天，故错误。\n选项C（5）、D（3）：未基于“后续关键路径工期”计算，仅随意取值，故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:54:25",
+          "updateTime": "2025-11-11 12:54:25",
+          "id": 25933,
+          "questionId": 13789,
+          "keyStr": "A",
+          "valueStr": "8",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:54:25",
+          "updateTime": "2025-11-11 12:54:25",
+          "id": 25934,
+          "questionId": 13789,
+          "keyStr": "B",
+          "valueStr": "9",
+          "correct": true,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:54:25",
+          "updateTime": "2025-11-11 12:54:25",
+          "id": 25935,
+          "questionId": 13789,
+          "keyStr": "C",
+          "valueStr": "5",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:54:25",
+          "updateTime": "2025-11-11 12:54:25",
+          "id": 25936,
+          "questionId": 13789,
+          "keyStr": "D",
+          "valueStr": "3",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "B"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13789,
+        "nameAlias": "14",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 14
+    },
+    {
+      "id": 13790,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "15",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2963,
+      "grade": 3,
+      "gradeStr": "了解即可",
+      "doCt": 1553,
+      "doRightCt": 1128,
+      "tags": "计算机基础,数学工程",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "75个小朋友去游乐场玩3种项目，20个小朋友3个都玩了，55个至少玩了两项。每个项目收费5元，总费用700元。请问有多少个小朋友啥都没玩<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察集合容斥原理的实际应用，属于计算机基础中的数理统计知识点。\n\n解题核心逻辑：通过“总游玩人次”推导“游玩的小朋友总数”，再用“总人数-游玩人数”得到“啥都没玩的人数”。\n\n具体步骤：\n\n1. 计算总游玩人次：总费用700元，每个项目5元，总人次=700÷5=140次；\n2. 定义变量：设“只玩1项”的人数为x，“只玩2项”的人数为y，“玩3项”的人数为20（已知）；\n3. 由“至少玩两项”推导y：“至少玩两项”包括“只玩2项”和“玩3项”，即y+20=55 → y=35；\n4. 由“总人次”推导x：总人次=（只玩1项×1）+（只玩2项×2）+（玩3项×3），即x×1 + 35×2 + 20×3 = 140 → x=140-70-60=10；\n5. 计算游玩总人数：x+y+20=10+35+20=65；\n6. 计算啥都没玩的人数：75-65=10。\n\n选项A（20）：是“玩3项”的人数，非“啥都没玩”，故错误。\n选项C（5）、D（15）：均为计算过程中的错误中间值，故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-12-17 19:09:40",
+          "updateTime": "2025-12-17 19:09:40",
+          "id": 25937,
+          "questionId": 13790,
+          "keyStr": "A",
+          "valueStr": "20",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-12-17 19:09:40",
+          "updateTime": "2025-12-17 19:09:40",
+          "id": 25938,
+          "questionId": 13790,
+          "keyStr": "B",
+          "valueStr": "10",
+          "correct": true,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-12-17 19:09:40",
+          "updateTime": "2025-12-17 19:09:40",
+          "id": 25939,
+          "questionId": 13790,
+          "keyStr": "C",
+          "valueStr": "5",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-12-17 19:09:40",
+          "updateTime": "2025-12-17 19:09:40",
+          "id": 25940,
+          "questionId": 13790,
+          "keyStr": "D",
+          "valueStr": "15",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "B"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13790,
+        "nameAlias": "15",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 15
+    },
+    {
+      "id": 13791,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "16",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 3099,
+      "grade": 2,
+      "gradeStr": "建议掌握",
+      "doCt": 1710,
+      "doRightCt": 1330,
+      "tags": "项目管理",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "工作量计算：本来计划15天完成，如果要提前3天完成，每天工作量增加<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察工作量与时间的比例关系，属于项目管理中的成本/进度管理知识点。\n\n解题核心逻辑：设总工作量为W，通过“原每天工作量”与“新每天工作量”的差值计算增长率。\n\n具体步骤：\n\n1. 原每天工作量=总工作量÷原工期=W/15；\n2. 新工期=15-3=12天，新每天工作量=W/12；\n3. 工作量增加比例=（新每天工作量-原每天工作量）÷原每天工作量×100% = （W/12 - W/15）/(W/15)×100%；\n4. 化简计算：（(5W-4W)/60）/(W/15)×100% = （W/60）/(W/15)×100% = 25%。\n\n选项A（10%）、B（20%）、D（30%）：均为比例计算错误（如误将新工期按14天计算、误算差值比例），故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:54:27",
+          "updateTime": "2025-11-11 12:54:27",
+          "id": 25941,
+          "questionId": 13791,
+          "keyStr": "A",
+          "valueStr": "10%",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:54:27",
+          "updateTime": "2025-11-11 12:54:27",
+          "id": 25942,
+          "questionId": 13791,
+          "keyStr": "B",
+          "valueStr": "20%",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:54:27",
+          "updateTime": "2025-11-11 12:54:27",
+          "id": 25943,
+          "questionId": 13791,
+          "keyStr": "C",
+          "valueStr": "25%",
+          "correct": true,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:54:27",
+          "updateTime": "2025-11-11 12:54:27",
+          "id": 25944,
+          "questionId": 13791,
+          "keyStr": "D",
+          "valueStr": "30%",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "C"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13791,
+        "nameAlias": "16",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 16
+    },
+    {
+      "id": 13792,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "17",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 3115,
+      "grade": 3,
+      "gradeStr": "了解即可",
+      "doCt": 1714,
+      "doRightCt": 610,
+      "tags": "计算机基础",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "一个磁盘有10个柱面，10个磁道（盘面），每个盘面有16个扇区，系统字长16位，问位图存储需要<font color='blue'>（<u> 问题1</u>）</font>字节。",
+      "answer": "一、核心原理：位图（Bitmap）的工作机制\n位图通过1 个二进制位（bit） 表示 1 个磁盘块（本题中 1 个扇区即为 1 个磁盘块）的状态：\n例如：1 表示块已占用，0 表示块空闲（或反之，不影响总位数计算）。\n因此，计算位图所需字节数的关键步骤是：\n总字节数 = 磁盘总块数（总扇区数） ÷ 8（1 字节 = 8 位）\n二、步骤 1：计算磁盘总扇区数（总块数）\n磁盘存储单元的计算公式为：总扇区数 = 柱面数 × 磁道数（等效于 “盘面数”） × 每个盘面的扇区数\n题目给出参数：\n柱面数 = 10\n磁道数 = 10（每个柱面对应的磁道数等于磁盘的盘面数，即 10 个盘面）\n每个盘面扇区数 = 16\n代入计算：总扇区数 = 10（柱面） × 10（磁道 / 盘面） × 16（扇区 / 盘面） = 1600 个\n三、步骤 2：计算位图所需总字节数\n总位数：每个扇区用 1 位表示，因此总位数 = 总扇区数 = 1600 bit。\n转字节数：由于 1 字节（Byte）= 8 位（bit），因此：\n总字节数 = 1600 bit ÷ 8 = 200 Byte\n四、答案\n选项 B. 200\n\n\nps：如果题目问需要多个字，则为：\n总字数 = 总位数 ÷ 字长（bit / 字）= 1600 bit ÷ 16 bit / 字 = 100 字此时 “16 位字长” 是关键条件，但若目标是 “字节数”，则无需此条件。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 15:53:04",
+          "updateTime": "2025-11-11 15:53:04",
+          "id": 25945,
+          "questionId": 13792,
+          "keyStr": "A",
+          "valueStr": "100",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 15:53:04",
+          "updateTime": "2025-11-11 15:53:04",
+          "id": 25946,
+          "questionId": 13792,
+          "keyStr": "B",
+          "valueStr": "200",
+          "correct": true,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 15:53:04",
+          "updateTime": "2025-11-11 15:53:04",
+          "id": 25947,
+          "questionId": 13792,
+          "keyStr": "C",
+          "valueStr": "128",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 15:53:04",
+          "updateTime": "2025-11-11 15:53:04",
+          "id": 25948,
+          "questionId": 13792,
+          "keyStr": "D",
+          "valueStr": "256",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "B"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13792,
+        "nameAlias": "17",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 17
+    },
+    {
+      "id": 13793,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "18",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2657,
+      "grade": 2,
+      "gradeStr": "建议掌握",
+      "doCt": 1576,
+      "doRightCt": 1535,
+      "tags": "计算机基础",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "文件的绝对路径是由<font color='blue'>（<u> 问题1</u>）</font>开头的字符串。",
+      "answer": "此题考察文件路径的基本概念，属于计算机基础中的文件系统知识点。\n\n文件路径的核心分类：\n\n- 绝对路径：从“根目录”开始，完整描述文件位置的路径（如Windows的C:\\Users\\file.txt、Linux的/home/user/file.txt），其本质是“不依赖当前目录，可直接定位文件”；\n- 相对路径：从“当前目录”开始，描述文件相对位置的路径（如./file.txt、../doc/file.txt），依赖当前目录才能定位文件。\n\n选项A（根目录）：完全符合绝对路径的定义，故正确。\n选项B（二级目录）：无“二级目录开头的路径”这一分类，故错误。\n选项C（当前目录）：是相对路径的起始，故错误。\n选项D（当前文件）：与路径定义无关，故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:54:29",
+          "updateTime": "2025-11-11 12:54:29",
+          "id": 25949,
+          "questionId": 13793,
+          "keyStr": "A",
+          "valueStr": "根目录",
+          "correct": true,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:54:29",
+          "updateTime": "2025-11-11 12:54:29",
+          "id": 25950,
+          "questionId": 13793,
+          "keyStr": "B",
+          "valueStr": "二级目录",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:54:29",
+          "updateTime": "2025-11-11 12:54:29",
+          "id": 25951,
+          "questionId": 13793,
+          "keyStr": "C",
+          "valueStr": "当前目录",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:54:29",
+          "updateTime": "2025-11-11 12:54:29",
+          "id": 25952,
+          "questionId": 13793,
+          "keyStr": "D",
+          "valueStr": "当前文件",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "A"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13793,
+        "nameAlias": "18",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 18
+    },
+    {
+      "id": 13794,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "19",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2779,
+      "grade": 1,
+      "gradeStr": "必须掌握",
+      "doCt": 1831,
+      "doRightCt": 1656,
+      "tags": "软件实现与测试",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "测试用例的核心内容包括<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察测试用例的定义与组成，属于软件实现与测试核心知识点，必须掌握。\n\n测试相关文档的核心区分：\n\n- 测试计划：描述测试的整体范围、资源、进度等（如测试时间安排、测试人员分工），是测试的“规划文档”；\n- 测试策略：描述测试的方法论（如黑盒测试、白盒测试的选择），是测试的“指导原则”；\n- 测试方法：具体的测试执行方式（如等价类划分、边界值分析），是测试的“操作手段”；\n- 测试用例：为验证某个功能点设计的“具体执行单元”，核心内容包括“输入参数、操作步骤、预期输出结果”，是测试执行的“直接依据”。\n\n选项A（测试计划）、B（测试策略）、C（测试方法）：均为测试的宏观规划或方法，非测试用例的内容，故错误。\n选项D（输入参数与预期的输出结果）：是测试用例的核心组成部分，故正确。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:54:30",
+          "updateTime": "2025-11-11 12:54:30",
+          "id": 25953,
+          "questionId": 13794,
+          "keyStr": "A",
+          "valueStr": "测试计划",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:54:30",
+          "updateTime": "2025-11-11 12:54:30",
+          "id": 25954,
+          "questionId": 13794,
+          "keyStr": "B",
+          "valueStr": "测试策略",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:54:30",
+          "updateTime": "2025-11-11 12:54:30",
+          "id": 25955,
+          "questionId": 13794,
+          "keyStr": "C",
+          "valueStr": "测试方法",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:54:30",
+          "updateTime": "2025-11-11 12:54:30",
+          "id": 25956,
+          "questionId": 13794,
+          "keyStr": "D",
+          "valueStr": "输入参数与预期的输出结果",
+          "correct": true,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "D"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13794,
+        "nameAlias": "19",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 19
+    },
+    {
+      "id": 13795,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "20",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2673,
+      "grade": 3,
+      "gradeStr": "了解即可",
+      "doCt": 1639,
+      "doRightCt": 1116,
+      "tags": "计算机基础",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "分时操作系统时间片固定，<font color='blue'>（<u> 问题1</u>）</font>会导致系统轮换时间长。",
+      "answer": "此题考察分时操作系统的调度机制，属于计算机基础知识点。\n\n分时操作系统的核心逻辑：将CPU时间划分为固定长度的“时间片”，轮流分配给每个用户/进程，确保每个用户都能感受到“独占CPU”。系统轮换时间（即CPU遍历所有用户/进程一次的总时间）= 时间片长度 × 用户/进程数量（固定时间片下，轮换时间与用户数量成正比）。\n\n选项A（用户数量多）：固定时间片下，用户数量越多，轮换一圈的总时间越长，完全符合调度逻辑，故正确。\n选项B（用户数量少）：会导致轮换时间短，与题干“轮换时间长”相悖，故错误。\n选项C（程序规模大）：影响单个程序的总执行时间（需多个时间片），但不影响“轮换时间”（轮换时间仅与用户数量和时间片长度相关），故错误。\n选项D（线程数量少）：与用户数量逻辑一致，会缩短轮换时间，故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:54:31",
+          "updateTime": "2025-11-11 12:54:31",
+          "id": 25957,
+          "questionId": 13795,
+          "keyStr": "A",
+          "valueStr": "用户数量多",
+          "correct": true,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:54:31",
+          "updateTime": "2025-11-11 12:54:31",
+          "id": 25958,
+          "questionId": 13795,
+          "keyStr": "B",
+          "valueStr": "用户数量少",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:54:31",
+          "updateTime": "2025-11-11 12:54:31",
+          "id": 25959,
+          "questionId": 13795,
+          "keyStr": "C",
+          "valueStr": "程序规模大",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:54:31",
+          "updateTime": "2025-11-11 12:54:31",
+          "id": 25960,
+          "questionId": 13795,
+          "keyStr": "D",
+          "valueStr": "线程数量少",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "A"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13795,
+        "nameAlias": "20",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 20
+    },
+    {
+      "id": 13796,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "21",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2939,
+      "grade": 3,
+      "gradeStr": "了解即可",
+      "doCt": 1878,
+      "doRightCt": 1363,
+      "tags": "软件实现与测试",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "测试精确度从高到低排列正确的是<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察测试基准的精确度分级，属于软件实现与测试知识点。\n\n测试基准的精确度核心取决于“与真实业务场景的贴合度”：\n\n1. 真实程序：直接使用实际业务场景的程序（如电商平台的订单处理程序），完全贴合真实需求，精确度最高；\n2. 核心程序：提取真实程序中的核心算法模块（如订单处理中的支付计算模块），贴合真实场景但范围缩小，精确度次之；\n3. 小型基准测试：简化的核心模块（如仅模拟支付计算的简单程序），与真实场景有一定差距，精确度低于核心程序；\n4. 合成基准测试：人工构造的测试用例（如随机生成数据的计算程序），与真实场景差异最大，精确度最低。\n\n选项B、C、D：均颠倒了“核心程序”与“小型基准测试”的顺序，故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:54:32",
+          "updateTime": "2025-11-11 12:54:32",
+          "id": 25961,
+          "questionId": 13796,
+          "keyStr": "A",
+          "valueStr": "真实程序、核心程序、小型基准测试、合成基准测试",
+          "correct": true,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:54:32",
+          "updateTime": "2025-11-11 12:54:32",
+          "id": 25962,
+          "questionId": 13796,
+          "keyStr": "B",
+          "valueStr": "真实程序、小型基准测试、合成基准测试、核心程序",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:54:32",
+          "updateTime": "2025-11-11 12:54:32",
+          "id": 25963,
+          "questionId": 13796,
+          "keyStr": "C",
+          "valueStr": "核心程序、小型基准测试、合成基准测试、真实程序",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:54:32",
+          "updateTime": "2025-11-11 12:54:32",
+          "id": 25964,
+          "questionId": 13796,
+          "keyStr": "D",
+          "valueStr": "真实程序、合成基准测试、小型基准测试、核心程序",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "A"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13796,
+        "nameAlias": "21",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 21
+    },
+    {
+      "id": 13797,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "22",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2931,
+      "grade": 1,
+      "gradeStr": "必须掌握",
+      "doCt": 1833,
+      "doRightCt": 1374,
+      "tags": "软件实现与测试",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "下列测试顺序中，符合软件测试标准流程的是<font color='blue'>（<u> 问题1</u>）</font>（注：组装测试即集成测试）。",
+      "answer": "此题考察软件测试的流程顺序，属于软件实现与测试核心知识点，必须掌握。\n\n软件测试的标准流程（从“局部”到“整体”，从“功能”到“需求”）：\n\n1. 单元测试：测试最小功能单元（如函数、类），验证单个单元的逻辑正确性；\n2. 组装测试（集成测试）：将已通过单元测试的模块组装，测试模块间的接口兼容性（如数据传递、函数调用）；\n3. 有效性测试（确认测试）：验证整个系统是否满足用户的需求规格说明书（如功能是否符合需求、性能是否达标）。\n\n选项B、C、D：均颠倒了“单元→组装→有效性”的逻辑顺序（如先测试整体再测试局部），不符合测试流程，故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:54:33",
+          "updateTime": "2025-11-11 12:54:33",
+          "id": 25965,
+          "questionId": 13797,
+          "keyStr": "A",
+          "valueStr": "单元测试、组装测试、有效性测试",
+          "correct": true,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:54:33",
+          "updateTime": "2025-11-11 12:54:33",
+          "id": 25966,
+          "questionId": 13797,
+          "keyStr": "B",
+          "valueStr": "组装测试、有效性测试、单元测试",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:54:33",
+          "updateTime": "2025-11-11 12:54:33",
+          "id": 25967,
+          "questionId": 13797,
+          "keyStr": "C",
+          "valueStr": "单元测试、有效性测试、组装测试",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:54:33",
+          "updateTime": "2025-11-11 12:54:33",
+          "id": 25968,
+          "questionId": 13797,
+          "keyStr": "D",
+          "valueStr": "有效性测试、单元测试、组装测试",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "A"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13797,
+        "nameAlias": "22",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 22
+    },
+    {
+      "id": 13798,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "23",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2907,
+      "grade": 3,
+      "gradeStr": "了解即可",
+      "doCt": 1777,
+      "doRightCt": 1214,
+      "tags": "软件工程",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "逆向工程中，能导出功能级和领域级信息的方法是<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察逆向工程的方法分类，属于软件工程知识点。\n\n逆向工程方法的核心功能辨析：\n\n- 选项A（用户指导的搜索与变换方法）：依赖用户手动指导，仅能提取代码级信息（如变量名、函数结构），无法推导功能级或领域级信息，故错误。\n- 选项B（基于领域的方法）：结合特定领域知识（如行业业务规则、领域模型），可从代码中反向推导“功能逻辑”（功能级）和“领域概念”（领域级），符合题干需求，故正确。\n- 选项C（铅版法）：通过预设模板提取代码的结构信息（如类继承关系），仅支持结构级信息，故错误。\n- 选项D（看板方法）：是项目管理工具（用于可视化任务进度），与逆向工程无关，故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:54:34",
+          "updateTime": "2025-11-11 12:54:34",
+          "id": 25969,
+          "questionId": 13798,
+          "keyStr": "A",
+          "valueStr": "用户指导的搜索与变换方法",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:54:34",
+          "updateTime": "2025-11-11 12:54:34",
+          "id": 25970,
+          "questionId": 13798,
+          "keyStr": "B",
+          "valueStr": "基于领域的方法",
+          "correct": true,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:54:34",
+          "updateTime": "2025-11-11 12:54:34",
+          "id": 25971,
+          "questionId": 13798,
+          "keyStr": "C",
+          "valueStr": "铅版法",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:54:34",
+          "updateTime": "2025-11-11 12:54:34",
+          "id": 25972,
+          "questionId": 13798,
+          "keyStr": "D",
+          "valueStr": "看板方法",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "B"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13798,
+        "nameAlias": "23",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 23
+    },
+    {
+      "id": 13799,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "24",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2772,
+      "grade": 2,
+      "gradeStr": "建议掌握",
+      "doCt": 1744,
+      "doRightCt": 1244,
+      "tags": "系统运行与维护",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "系统失效率用f(x)表示，下列说法错误的是<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察系统失效率的特性（浴盆曲线），属于系统运行与维护知识点。\n\n系统失效率的核心特性（浴盆曲线三阶段）：\n\n1. 初期（磨合期）：失效率f(x)单调递减（故障多为设计缺陷、安装错误，随调试逐渐减少）；\n2. 中期（稳定期）：失效率f(x)基本恒定（故障多为随机事件，概率稳定）；\n3. 后期（老化期）：失效率f(x)单调递增（硬件老化、软件退化，故障概率上升）。\n\n选项A（f(0)=0）：系统刚启动时无运行损耗，故障概率为0，符合实际，故正确（非答案）。\n选项B（所有系统都会出现故障）：无永无故障的系统，失效率最终会上升至导致故障，故正确（非答案）。\n选项C（f(x)在(0，+∞)上单调递减）：忽略了“老化期失效率递增”的阶段，描述错误（答案）。\n选项D（f(x)在0到1的范围内）：失效率是概率密度，取值范围为[0,1]，故正确（非答案）。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:54:35",
+          "updateTime": "2025-11-11 12:54:35",
+          "id": 25973,
+          "questionId": 13799,
+          "keyStr": "A",
+          "valueStr": "f(0)=0，系统刚运行时不会发生故障",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:54:35",
+          "updateTime": "2025-11-11 12:54:35",
+          "id": 25974,
+          "questionId": 13799,
+          "keyStr": "B",
+          "valueStr": "所有系统都会出现故障",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:54:35",
+          "updateTime": "2025-11-11 12:54:35",
+          "id": 25975,
+          "questionId": 13799,
+          "keyStr": "C",
+          "valueStr": "f(x)在(0，+∞)上单调递减",
+          "correct": true,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:54:35",
+          "updateTime": "2025-11-11 12:54:35",
+          "id": 25976,
+          "questionId": 13799,
+          "keyStr": "D",
+          "valueStr": "f(x)在0到1的范围内",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "C"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13799,
+        "nameAlias": "24",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 24
+    },
+    {
+      "id": 13800,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "25",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2886,
+      "grade": 2,
+      "gradeStr": "建议掌握",
+      "doCt": 1689,
+      "doRightCt": 955,
+      "tags": "软件实现与测试",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "下列关于可靠性测试的说法错误的是<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察可靠性测试的分类与目标，属于系统运行与维护知识点。\n\n可靠性测试的核心分类（狭义vs广义）：\n\n- 狭义可靠性测试：仅关注“系统无故障运行能力”，通过测试获取MTBF（平均无故障时间）、MTTR（平均修复时间）等指标（选项D正确，非答案）；\n- 广义可靠性测试：涵盖“可靠性、可用性、可维护性”（即RAS特性），需定义“系统剖面”（用户使用场景）以模拟真实运行环境（选项A正确，非答案），不仅关注无故障时间，还关注系统的可恢复性、可维护性等。\n\n选项B（发现系统薄弱点）：可靠性测试通过模拟高负载、故障注入等场景，可定位系统的薄弱环节（如某模块在高并发下易故障），故正确（非答案）。\n选项C（广义仅关注无故障运行时间）：混淆了狭义与广义的范围，广义可靠性测试关注多维度特性，故错误（答案）。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:54:36",
+          "updateTime": "2025-11-11 12:54:36",
+          "id": 25977,
+          "questionId": 13800,
+          "keyStr": "A",
+          "valueStr": "定义系统剖面是广义可靠性测试的重要手段",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:54:36",
+          "updateTime": "2025-11-11 12:54:36",
+          "id": 25978,
+          "questionId": 13800,
+          "keyStr": "B",
+          "valueStr": "可以通过可靠性测试发现系统薄弱点",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:54:36",
+          "updateTime": "2025-11-11 12:54:36",
+          "id": 25979,
+          "questionId": 13800,
+          "keyStr": "C",
+          "valueStr": "广义可靠性测试仅关注系统无故障运行时间",
+          "correct": true,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:54:36",
+          "updateTime": "2025-11-11 12:54:36",
+          "id": 25980,
+          "questionId": 13800,
+          "keyStr": "D",
+          "valueStr": "狭义可靠性测试通过获取数据评估系统可靠性指标",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "C"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13800,
+        "nameAlias": "25",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 25
+    },
+    {
+      "id": 13801,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "26",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2897,
+      "grade": 3,
+      "gradeStr": "了解即可",
+      "doCt": 1695,
+      "doRightCt": 1061,
+      "tags": "法律法规",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "下列关于商业秘密权的说法正确的是<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察商业秘密权的法律属性，属于信息安全知识点。\n\n核心法律概念辨析：\n\n- 知识产权的“主体”：享有知识产权的人/组织（如发明人、企业）（选项B错误）；\n- 知识产权的“客体”：知识产权指向的对象（如专利、商标、商业秘密），商业秘密是客体，而非“商业秘密权”（选项C错误）；\n- 商业秘密权的特性：不具有“对世权”属性，无法抵抗第三人“善意获取”（如第三人通过独立研发获得相同信息）（选项A错误）；\n- 商业秘密的定义：法人或个人通过保密手段（如签订保密协议、限制访问）保护的技术信息（如配方、算法）或商业信息（如客户名单、报价策略）（选项D正确）。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:54:37",
+          "updateTime": "2025-11-11 12:54:37",
+          "id": 25981,
+          "questionId": 13801,
+          "keyStr": "A",
+          "valueStr": "具有抵抗第三人善意获取的作用",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:54:37",
+          "updateTime": "2025-11-11 12:54:37",
+          "id": 25982,
+          "questionId": 13801,
+          "keyStr": "B",
+          "valueStr": "商业秘密权是知识产权的主体",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:54:37",
+          "updateTime": "2025-11-11 12:54:37",
+          "id": 25983,
+          "questionId": 13801,
+          "keyStr": "C",
+          "valueStr": "商业秘密权是知识产权的客体",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:54:37",
+          "updateTime": "2025-11-11 12:54:37",
+          "id": 25984,
+          "questionId": 13801,
+          "keyStr": "D",
+          "valueStr": "商业秘密是法人经过一定手段保密的技术和商业信息",
+          "correct": true,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "D"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13801,
+        "nameAlias": "26",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 26
+    },
+    {
+      "id": 13802,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "27",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2745,
+      "grade": 3,
+      "gradeStr": "了解即可",
+      "doCt": 1701,
+      "doRightCt": 711,
+      "tags": "计算机基础",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "下列不属于嵌入式系统（单片机）核心性能指标的是<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察嵌入式系统的核心特性，属于计算机基础知识点。\n\n嵌入式系统的核心特点是“资源受限”（如功耗、存储空间、CPU性能）和“实时响应”，核心指标需匹配这些特点：\n\n- 选项A（MTBF）：嵌入式系统多用于关键场景（如工业控制、汽车电子），可靠性（无故障运行能力）是核心需求，故正确（非答案）；\n- 选项B（功耗）：嵌入式系统多为移动设备（如智能手表、传感器），依赖电池供电，功耗是关键指标，故正确（非答案）；\n- 选项C（响应时间）：嵌入式系统多需实时处理（如汽车ABS系统），响应时间直接影响功能安全性，故正确（非答案）；\n- 选项D（吞吐量）：衡量单位时间处理的数据量，多见于服务器系统（如Web服务器），嵌入式系统侧重“实时响应”而非“数据处理量”，故错误（答案）。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:54:38",
+          "updateTime": "2025-11-11 12:54:38",
+          "id": 25985,
+          "questionId": 13802,
+          "keyStr": "A",
+          "valueStr": "MTBF（平均无故障时间）",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:54:38",
+          "updateTime": "2025-11-11 12:54:38",
+          "id": 25986,
+          "questionId": 13802,
+          "keyStr": "B",
+          "valueStr": "功耗",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:54:38",
+          "updateTime": "2025-11-11 12:54:38",
+          "id": 25987,
+          "questionId": 13802,
+          "keyStr": "C",
+          "valueStr": "响应时间",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:54:38",
+          "updateTime": "2025-11-11 12:54:38",
+          "id": 25988,
+          "questionId": 13802,
+          "keyStr": "D",
+          "valueStr": "吞吐量",
+          "correct": true,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "D"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13802,
+        "nameAlias": "27",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 27
+    },
+    {
+      "id": 13803,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "28",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2764,
+      "grade": 3,
+      "gradeStr": "了解即可",
+      "doCt": 1700,
+      "doRightCt": 819,
+      "tags": "数据库",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "下列属于文本聚类分析方法的是<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察机器学习算法的分类（聚类vs分类），属于计算机基础知识点。\n\n算法核心分类辨析：\n\n- 聚类算法（无监督学习）：无需人工标注数据，自动将相似数据归为一类（如文本聚类中，将主题相似的文章分组），K-means是经典的聚类算法；\n- 分类算法（监督学习）：需依赖人工标注的训练数据，学习后预测新数据的类别（如文本分类中，判断文章属于“科技”或“娱乐”），SVM、KNN、朴素贝叶斯均为分类算法。\n\n选项A（SVM）、C（KNN）、D（朴素贝叶斯）：均为分类算法，故错误。\n选项B（K-means）：为聚类算法，可用于文本聚类，故正确。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:54:39",
+          "updateTime": "2025-11-11 12:54:39",
+          "id": 25989,
+          "questionId": 13803,
+          "keyStr": "A",
+          "valueStr": "SVM（支持向量机）",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:54:39",
+          "updateTime": "2025-11-11 12:54:39",
+          "id": 25990,
+          "questionId": 13803,
+          "keyStr": "B",
+          "valueStr": "K-means",
+          "correct": true,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:54:39",
+          "updateTime": "2025-11-11 12:54:39",
+          "id": 25991,
+          "questionId": 13803,
+          "keyStr": "C",
+          "valueStr": "KNN（K近邻）",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:54:39",
+          "updateTime": "2025-11-11 12:54:39",
+          "id": 25992,
+          "questionId": 13803,
+          "keyStr": "D",
+          "valueStr": "朴素贝叶斯",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "B"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13803,
+        "nameAlias": "28",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 28
+    },
+    {
+      "id": 13804,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "29",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2504,
+      "grade": 2,
+      "gradeStr": "建议掌握",
+      "doCt": 1560,
+      "doRightCt": 1148,
+      "tags": "计算机基础",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "下列编码方式中，自带时钟同步功能的是<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察数据编码的特性，属于计算机基础中的通信知识点。\n\n编码方式的核心特性辨析：\n\n- 选项A（定比码）：通过固定“1”的数量比例实现检错（如5中取2码），无时钟同步功能，故错误；\n- 选项B（曼彻斯特编码）：每个比特的中间都有一个跳变，跳变既表示数据（如上升沿为0，下降沿为1），又提供时钟同步信号（接收方通过跳变同步时钟），自带同步功能，故正确；\n- 选项C（不归零编码）：无跳变时无法同步时钟（如连续传输0时无电平变化），需额外时钟信号，故错误；\n- 选项D（归零编码）：“1”信号传输后归零，但“0”信号无跳变，仍需额外同步信号，故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:54:40",
+          "updateTime": "2025-11-11 12:54:40",
+          "id": 25993,
+          "questionId": 13804,
+          "keyStr": "A",
+          "valueStr": "定比码",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:54:40",
+          "updateTime": "2025-11-11 12:54:40",
+          "id": 25994,
+          "questionId": 13804,
+          "keyStr": "B",
+          "valueStr": "曼彻斯特编码",
+          "correct": true,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:54:40",
+          "updateTime": "2025-11-11 12:54:40",
+          "id": 25995,
+          "questionId": 13804,
+          "keyStr": "C",
+          "valueStr": "不归零编码",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:54:40",
+          "updateTime": "2025-11-11 12:54:40",
+          "id": 25996,
+          "questionId": 13804,
+          "keyStr": "D",
+          "valueStr": "归零编码",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "B"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13804,
+        "nameAlias": "29",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 29
+    },
+    {
+      "id": 13805,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "30",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2741,
+      "grade": 1,
+      "gradeStr": "必须掌握",
+      "doCt": 1745,
+      "doRightCt": 1169,
+      "tags": "系统设计",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "一个模块直接调用下层模块的数量用<font color='blue'>（<u> 问题1</u>）</font>表示。",
+      "answer": "此题考察模块设计的核心术语，属于系统设计知识点，必须掌握。\n\n模块设计术语的严格定义：\n\n- 选项A（扇入）：调用当前模块的“上层模块数量”（即当前模块的被调用次数），与题干“调用下层模块”不符，故错误；\n- 选项B（扇出）：当前模块直接调用的“下层模块数量”，完全匹配题干描述，故正确；\n- 选项C（宽度）：同一层次的模块总数（如某一层有5个模块，宽度为5），与“调用数量”无关，故错误；\n- 选项D（宽度）：重复选项，且无实际意义，故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:54:41",
+          "updateTime": "2025-11-11 12:54:41",
+          "id": 25997,
+          "questionId": 13805,
+          "keyStr": "A",
+          "valueStr": "扇入",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:54:41",
+          "updateTime": "2025-11-11 12:54:41",
+          "id": 25998,
+          "questionId": 13805,
+          "keyStr": "B",
+          "valueStr": "扇出",
+          "correct": true,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:54:41",
+          "updateTime": "2025-11-11 12:54:41",
+          "id": 25999,
+          "questionId": 13805,
+          "keyStr": "C",
+          "valueStr": "宽度",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:54:41",
+          "updateTime": "2025-11-11 12:54:41",
+          "id": 26000,
+          "questionId": 13805,
+          "keyStr": "D",
+          "valueStr": "宽度（重复选项，应为深度等其他术语）",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "B"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13805,
+        "nameAlias": "30",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 30
+    },
+    {
+      "id": 13806,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "31",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2495,
+      "grade": 3,
+      "gradeStr": "了解即可",
+      "doCt": 1571,
+      "doRightCt": 1076,
+      "tags": "计算机基础",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "嵌入式系统中，使用动态库和重定位的主要目的是<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察嵌入式系统的库设计目的，属于计算机基础知识点。\n\n动态库与重定位的核心作用：\n\n- 动态库：运行时按需加载，而非编译时静态链接，可根据嵌入式系统的资源需求（如是否需要某功能）选择加载的库模块；\n- 重定位：调整代码的内存地址，支持模块的灵活加载/卸载（如不需要某功能时，卸载对应的动态库）；\n- 核心目的：实现“可裁剪”（根据嵌入式系统的资源限制，按需选择功能模块，减少内存占用和功耗）。\n\n选项B（安全性）：动态库与重定位不直接提升安全性（如无法防止恶意攻击），故错误。\n选项C（可靠性）：不直接影响系统的无故障运行能力，故错误。\n选项D（实时性）：动态库加载会增加一定的延迟，可能降低实时性，故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:54:42",
+          "updateTime": "2025-11-11 12:54:42",
+          "id": 26001,
+          "questionId": 13806,
+          "keyStr": "A",
+          "valueStr": "可裁剪",
+          "correct": true,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:54:42",
+          "updateTime": "2025-11-11 12:54:42",
+          "id": 26002,
+          "questionId": 13806,
+          "keyStr": "B",
+          "valueStr": "安全性",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:54:42",
+          "updateTime": "2025-11-11 12:54:42",
+          "id": 26003,
+          "questionId": 13806,
+          "keyStr": "C",
+          "valueStr": "可靠性",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:54:42",
+          "updateTime": "2025-11-11 12:54:42",
+          "id": 26004,
+          "questionId": 13806,
+          "keyStr": "D",
+          "valueStr": "实时性",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "A"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13806,
+        "nameAlias": "31",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 31
+    },
+    {
+      "id": 13807,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "32",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2575,
+      "grade": 2,
+      "gradeStr": "建议掌握",
+      "doCt": 1593,
+      "doRightCt": 821,
+      "tags": "计算机基础",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "子网掩码为255.255.255.248，该子网可用的主机地址数量是<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察子网掩码的计算，属于计算机基础中的网络知识点，建议掌握。\n\n子网主机地址计算的核心逻辑：需先计算“总地址数”，再扣除“网络地址”和“广播地址”（这两个地址不可用于主机）。\n\n具体步骤：\n\n1. 转换子网掩码为二进制：255.255.255.248 → 11111111.11111111.11111111.11111000，子网位为29位（前29位为网络位）；\n2. 计算总地址数：IP地址共32位，主机位=32-29=3位，总地址数=2^3=8个；\n3. 计算可用主机地址：总地址数-2（网络地址+广播地址）=8-2=6个。\n\n选项B（8）：未扣除网络地址和广播地址，故错误。\n选项C（16）、D（32）：误将主机位按4位或5位计算（如子网掩码按255.255.255.240计算），故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:54:43",
+          "updateTime": "2025-11-11 12:54:43",
+          "id": 26005,
+          "questionId": 13807,
+          "keyStr": "A",
+          "valueStr": "6",
+          "correct": true,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:54:43",
+          "updateTime": "2025-11-11 12:54:43",
+          "id": 26006,
+          "questionId": 13807,
+          "keyStr": "B",
+          "valueStr": "8",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:54:43",
+          "updateTime": "2025-11-11 12:54:43",
+          "id": 26007,
+          "questionId": 13807,
+          "keyStr": "C",
+          "valueStr": "16",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:54:43",
+          "updateTime": "2025-11-11 12:54:43",
+          "id": 26008,
+          "questionId": 13807,
+          "keyStr": "D",
+          "valueStr": "32",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "A"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13807,
+        "nameAlias": "32",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 32
+    },
+    {
+      "id": 13808,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "33",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2365,
+      "grade": 1,
+      "gradeStr": "必须掌握",
+      "doCt": 1527,
+      "doRightCt": 1362,
+      "tags": "信息安全",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "下列服务中，可在需要审计回放、解决纠纷时使用的是<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察信息安全服务的核心功能，属于信息安全知识点，必须掌握。\n\n信息安全服务的功能辨析：\n\n- 选项A（不可抵赖服务）：通过数字签名、日志记录等手段，证明用户已执行某操作（如发送消息、完成交易），可用于审计回放（追溯操作记录）和纠纷解决（证明操作真实性），故正确；\n- 选项B（鉴别服务）：验证用户的身份（如用户名密码登录），仅解决“身份确认”问题，无审计或纠纷解决能力，故错误；\n- 选项C（认证服务）：与鉴别服务功能一致，侧重身份验证，故错误；\n- 选项D（机密性服务）：确保数据不被未授权访问（如加密传输），仅解决“数据保密”问题，故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:54:44",
+          "updateTime": "2025-11-11 12:54:44",
+          "id": 26009,
+          "questionId": 13808,
+          "keyStr": "A",
+          "valueStr": "不可抵赖服务（抗抵赖性）",
+          "correct": true,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:54:44",
+          "updateTime": "2025-11-11 12:54:44",
+          "id": 26010,
+          "questionId": 13808,
+          "keyStr": "B",
+          "valueStr": "鉴别服务",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:54:44",
+          "updateTime": "2025-11-11 12:54:44",
+          "id": 26011,
+          "questionId": 13808,
+          "keyStr": "C",
+          "valueStr": "认证服务",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:54:44",
+          "updateTime": "2025-11-11 12:54:44",
+          "id": 26012,
+          "questionId": 13808,
+          "keyStr": "D",
+          "valueStr": "机密性服务",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "A"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13808,
+        "nameAlias": "33",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 33
+    },
+    {
+      "id": 13809,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "34",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2738,
+      "grade": 3,
+      "gradeStr": "了解即可",
+      "doCt": 1738,
+      "doRightCt": 549,
+      "tags": "信息安全",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "PKI体系中的对象不包括<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察PKI（公钥基础设施）的核心组成，属于信息安全知识点。\n\nPKI体系的核心对象：\n\n- 端对象：使用PKI的终端实体（如用户、服务器、设备）；\n- 管理对象：负责PKI运维的实体（如CA证书授权中心、RA注册中心）；\n- 证书库：存储数字证书的数据库（用于查询和验证证书）；\n- 实体对象：是通用概念（指所有具有独立功能的单元），并非PKI体系的专用对象，PKI中明确区分“端对象”和“管理对象”，而非泛称“实体对象”。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-12-17 19:35:36",
+          "updateTime": "2025-12-17 19:35:36",
+          "id": 26013,
+          "questionId": 13809,
+          "keyStr": "A",
+          "valueStr": "管理对象",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-12-17 19:35:36",
+          "updateTime": "2025-12-17 19:35:36",
+          "id": 26014,
+          "questionId": 13809,
+          "keyStr": "B",
+          "valueStr": "实体对象",
+          "correct": true,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-12-17 19:35:36",
+          "updateTime": "2025-12-17 19:35:36",
+          "id": 26015,
+          "questionId": 13809,
+          "keyStr": "C",
+          "valueStr": "端对象",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-12-17 19:35:36",
+          "updateTime": "2025-12-17 19:35:36",
+          "id": 26016,
+          "questionId": 13809,
+          "keyStr": "D",
+          "valueStr": "证书库",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "B"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13809,
+        "nameAlias": "34",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 34
+    },
+    {
+      "id": 13810,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "35",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2471,
+      "grade": 2,
+      "gradeStr": "建议掌握",
+      "doCt": 1585,
+      "doRightCt": 1227,
+      "tags": "计算机基础",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "物理层接口描述中，定义“每种功能的时间发生顺序”的是<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察OSI七层模型中物理层的特性，属于计算机基础中的网络知识点，建议掌握。\n\n物理层的四大特性定义：\n\n- 选项A（功能特性）：定义物理层的功能（如信号的发送/接收、控制信号的含义），不涉及时间顺序，故错误；\n- 选项B（机械特性）：定义物理接口的硬件规范（如插头类型、引脚数量、线缆材质），故错误；\n- 选项C（过程特性）：定义功能的执行顺序（时间顺序），如“先发送控制信号，再发送数据信号”，完全匹配题干描述，故正确；\n- 选项D（电气特性）：定义信号的电气参数（如电压范围、电流大小、传输速率），故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:54:47",
+          "updateTime": "2025-11-11 12:54:47",
+          "id": 26017,
+          "questionId": 13810,
+          "keyStr": "A",
+          "valueStr": "功能特性",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:54:47",
+          "updateTime": "2025-11-11 12:54:47",
+          "id": 26018,
+          "questionId": 13810,
+          "keyStr": "B",
+          "valueStr": "机械特性",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:54:47",
+          "updateTime": "2025-11-11 12:54:47",
+          "id": 26019,
+          "questionId": 13810,
+          "keyStr": "C",
+          "valueStr": "过程特性",
+          "correct": true,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:54:47",
+          "updateTime": "2025-11-11 12:54:47",
+          "id": 26020,
+          "questionId": 13810,
+          "keyStr": "D",
+          "valueStr": "电气特性",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "C"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13810,
+        "nameAlias": "35",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 35
+    },
+    {
+      "id": 13811,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "36",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2186,
+      "grade": 3,
+      "gradeStr": "了解即可",
+      "doCt": 1410,
+      "doRightCt": 1221,
+      "tags": "软件架构设计",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "云原生“不可变基础设施（Immutable Infrastructure）”的核心特性是<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察云原生基础设施的核心概念，属于企业信息化知识点。\n\n不可变基础设施的核心定义：“基础设施实例（如虚拟机、容器）一旦部署，其配置和状态不再更改；如需更新（如打补丁、升级软件），需创建新实例并替换旧实例”，核心是“不可修改，只能替换”，以确保环境一致性和可追溯性。\n\n选项B（物理安全）、C（灾难防护）：均属于“物理环境安全”，与“不可变”的核心逻辑（配置不修改）无关，故错误。\n选项D（手动更新补丁）：与“不可修改”特性相悖（手动更新会改变实例状态），故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:54:48",
+          "updateTime": "2025-11-11 12:54:48",
+          "id": 26021,
+          "questionId": 13811,
+          "keyStr": "A",
+          "valueStr": "一旦部署不会更改，只能通过新实例替换",
+          "correct": true,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:54:48",
+          "updateTime": "2025-11-11 12:54:48",
+          "id": 26022,
+          "questionId": 13811,
+          "keyStr": "B",
+          "valueStr": "机器放在所有人接触不到的安全地点，防止篡改",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:54:48",
+          "updateTime": "2025-11-11 12:54:48",
+          "id": 26023,
+          "questionId": 13811,
+          "keyStr": "C",
+          "valueStr": "机器放在安全的地方，防止火灾水灾等灾难破坏",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:54:48",
+          "updateTime": "2025-11-11 12:54:48",
+          "id": 26024,
+          "questionId": 13811,
+          "keyStr": "D",
+          "valueStr": "运维人员手动实时更新系统补丁，确保系统安全",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "A"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13811,
+        "nameAlias": "36",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 36
+    },
+    {
+      "id": 13812,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "37",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2205,
+      "grade": 2,
+      "gradeStr": "建议掌握",
+      "doCt": 1464,
+      "doRightCt": 1109,
+      "tags": "系统设计",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "下列关于MVP（Model-View-Presenter）模式的说法错误的是<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察MVP设计模式的核心原则，属于系统设计知识点，建议掌握。\n\nMVP模式的核心原则（解耦）：View（视图）与Model（模型）完全解耦，View不能直接访问Model，需通过Presenter（中介）实现数据交互，目的是降低耦合度、便于测试和维护。\n\n选项A（View可以直接访问Model）：违反MVP的解耦原则，描述错误（答案）；\n选项B（常用在移动端）：MVP是移动端开发的主流模式（如Android、iOS），描述正确（非答案）；\n选项C（角色定义）：完全符合MVP的角色分工（M存储数据、V展示界面、P处理业务逻辑），描述正确（非答案）；\n选项D（一个Presenter对应多个View）：Presenter封装的业务逻辑可复用，如“用户登录逻辑”可对应“登录页面”和“注册页面”，描述正确（非答案）。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:54:49",
+          "updateTime": "2025-11-11 12:54:49",
+          "id": 26025,
+          "questionId": 13812,
+          "keyStr": "A",
+          "valueStr": "View可以直接访问Model",
+          "correct": true,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:54:49",
+          "updateTime": "2025-11-11 12:54:49",
+          "id": 26026,
+          "questionId": 13812,
+          "keyStr": "B",
+          "valueStr": "MVP常用在移动端开发",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:54:49",
+          "updateTime": "2025-11-11 12:54:49",
+          "id": 26027,
+          "questionId": 13812,
+          "keyStr": "C",
+          "valueStr": "M表示Model（数据实体），V表示View（展示数据），P表示Presenter（处理数据）",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:54:49",
+          "updateTime": "2025-11-11 12:54:49",
+          "id": 26028,
+          "questionId": 13812,
+          "keyStr": "D",
+          "valueStr": "一个Presenter可以对应多个页面（View）",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "A"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13812,
+        "nameAlias": "37",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 37
+    },
+    {
+      "id": 13813,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "38",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2472,
+      "grade": 3,
+      "gradeStr": "了解即可",
+      "doCt": 1481,
+      "doRightCt": 578,
+      "tags": "企业信息化",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "电子数据交换（EDI）的核心模块不包括下列哪项<font color='blue'>（<u> 问题1</u>）</font>",
+      "answer": "此题考察EDI系统的组成，属于企业信息化知识点。\n\nEDI（电子数据交换）的核心功能是“实现企业间标准化的数据交换”，核心模块需匹配这一功能：\n\n- 选项A（通信模块）：负责与合作伙伴的系统建立通信连接（如通过FTP、AS2协议），是数据交换的基础，故正确（非答案）；\n- 选项B（格式转换模块）：将企业内部数据（如Excel）转换为EDI标准格式（如EDIFACT、ANSI X12），是标准化交换的核心，故正确（非答案）；\n- 选项C（联系模块）：管理合作伙伴的信息（如通信地址、协议类型），确保数据发送到正确对象，故正确（非答案）；\n- 选项D（数据存储模块）：是通用系统模块（用于存储数据），并非EDI实现“标准化数据交换”的核心模块，故错误（答案）。\n\n（注：正确核心模块为通信、格式转换、联系、消息生成与处理）。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 15:18:10",
+          "updateTime": "2025-11-11 15:18:10",
+          "id": 26029,
+          "questionId": 13813,
+          "keyStr": "A",
+          "valueStr": "通信模块",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 15:18:10",
+          "updateTime": "2025-11-11 15:18:10",
+          "id": 26030,
+          "questionId": 13813,
+          "keyStr": "B",
+          "valueStr": "格式转换模块",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 15:18:10",
+          "updateTime": "2025-11-11 15:18:10",
+          "id": 26031,
+          "questionId": 13813,
+          "keyStr": "C",
+          "valueStr": "联系模块",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 15:18:10",
+          "updateTime": "2025-11-11 15:18:10",
+          "id": 26032,
+          "questionId": 13813,
+          "keyStr": "D",
+          "valueStr": "数据存储模块",
+          "correct": true,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "D"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13813,
+        "nameAlias": "38",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 38
+    },
+    {
+      "id": 13814,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "39",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2476,
+      "grade": 1,
+      "gradeStr": "必须掌握",
+      "doCt": 1654,
+      "doRightCt": 1089,
+      "tags": "软件架构设计",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "CBAM（成本效益分析方法）选择架构的核心依据是<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察CBAM方法的核心逻辑，属于软件架构设计知识点，必须掌握。\n\nCBAM（Cost-Benefit Analysis Method）的核心目标：“通过分析不同架构方案的成本与收益，选择性价比最高的方案”，核心依据是“投资回报（ROI）= 收益÷成本”，ROI越高的架构方案越优。\n\n选项A（需求优先级）：是ATAM（架构权衡分析方法）的考虑因素，用于评估架构对需求的满足度，故错误；\n选项B（投资回报）：完全符合CBAM“成本-收益权衡”的核心逻辑，故正确；\n选项C（实现成本）：仅考虑成本，忽略收益，不符合“成本效益分析”的完整逻辑，故错误；\n选项D（实现难度）：是架构师的主观评估，CBAM基于量化的成本与收益，而非主观难度，故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:54:51",
+          "updateTime": "2025-11-11 12:54:51",
+          "id": 26033,
+          "questionId": 13814,
+          "keyStr": "A",
+          "valueStr": "项目干系人需求优先级",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:54:51",
+          "updateTime": "2025-11-11 12:54:51",
+          "id": 26034,
+          "questionId": 13814,
+          "keyStr": "B",
+          "valueStr": "投资回报（ROI）",
+          "correct": true,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:54:51",
+          "updateTime": "2025-11-11 12:54:51",
+          "id": 26035,
+          "questionId": 13814,
+          "keyStr": "C",
+          "valueStr": "项目干系人角度的实现成本",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:54:51",
+          "updateTime": "2025-11-11 12:54:51",
+          "id": 26036,
+          "questionId": 13814,
+          "keyStr": "D",
+          "valueStr": "系统架构师角度的实现难度",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "B"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13814,
+        "nameAlias": "39",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 39
+    },
+    {
+      "id": 13815,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "40",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2474,
+      "grade": 2,
+      "gradeStr": "建议掌握",
+      "doCt": 1599,
+      "doRightCt": 1134,
+      "tags": "软件架构设计",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "ABSD（基于架构的软件设计）的三个核心不包括<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察ABSD方法的核心要素，属于软件架构设计知识点，建议掌握。\n\nABSD（基于架构的软件设计）的三个核心要素：\n\n1. 功能分解：将系统的整体功能拆解为独立的功能模块，为架构设计奠定基础（选项D正确，非答案）；\n2. 架构风格选择：根据质量属性（如高可用、高性能）和商业需求（如成本、时间），选择合适的架构风格（如微服务、分层架构）（选项B正确，非答案）；\n3. 软件模板：使用标准化的模板设计软件结构，提高架构的一致性和可复用性（选项C正确，非答案）。\n\n选项A（项目管理）：是项目层面的活动（如进度管理、资源管理），并非ABSD这一“架构设计方法”的技术核心，故错误（答案）。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:54:51",
+          "updateTime": "2025-11-11 12:54:51",
+          "id": 26037,
+          "questionId": 13815,
+          "keyStr": "A",
+          "valueStr": "项目管理",
+          "correct": true,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:54:51",
+          "updateTime": "2025-11-11 12:54:51",
+          "id": 26038,
+          "questionId": 13815,
+          "keyStr": "B",
+          "valueStr": "采用架构风格实现质量属性和商业需求",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:54:51",
+          "updateTime": "2025-11-11 12:54:51",
+          "id": 26039,
+          "questionId": 13815,
+          "keyStr": "C",
+          "valueStr": "采用软件模板设计软件结构",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:54:51",
+          "updateTime": "2025-11-11 12:54:51",
+          "id": 26040,
+          "questionId": 13815,
+          "keyStr": "D",
+          "valueStr": "功能分解",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "A"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13815,
+        "nameAlias": "40",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 40
+    },
+    {
+      "id": 13816,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "41",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2547,
+      "grade": 3,
+      "gradeStr": "了解即可",
+      "doCt": 1635,
+      "doRightCt": 850,
+      "tags": "信息安全",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "下列关于电子签名的说法错误的是<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察电子签名的法律定义，属于信息安全知识点。\n\n电子签名的核心定义：“通过电子技术实现的、具有唯一性和不可抵赖性的身份验证手段”（如数字签名通过非对称加密生成电子代码），其本质是“技术验证”，而非“签名的数字化图像”（图像可轻易篡改，无法律效力）。\n\n选项A（是签名的数字化图像）：混淆了“电子签名”与“数字图像”的本质区别，描述错误（答案）；\n选项B（是电子认证的通用说法）：电子签名是电子认证的核心手段，可作为电子认证的通用表述，描述正确（非答案）；\n选项C（是电子印章）：电子印章是电子签名的一种具体形式（如带有企业标识的电子签名），描述正确（非答案）；\n选项D（是电子代码）：数字签名等电子签名形式本质是加密后的电子代码，描述正确（非答案）。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:54:53",
+          "updateTime": "2025-11-11 12:54:53",
+          "id": 26041,
+          "questionId": 13816,
+          "keyStr": "A",
+          "valueStr": "是签名的数字化图像",
+          "correct": true,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:54:53",
+          "updateTime": "2025-11-11 12:54:53",
+          "id": 26042,
+          "questionId": 13816,
+          "keyStr": "B",
+          "valueStr": "是电子认证的通用说法",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:54:53",
+          "updateTime": "2025-11-11 12:54:53",
+          "id": 26043,
+          "questionId": 13816,
+          "keyStr": "C",
+          "valueStr": "是电子印章",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:54:53",
+          "updateTime": "2025-11-11 12:54:53",
+          "id": 26044,
+          "questionId": 13816,
+          "keyStr": "D",
+          "valueStr": "是电子代码",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "A"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13816,
+        "nameAlias": "41",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 41
+    },
+    {
+      "id": 13817,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "42",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2734,
+      "grade": 3,
+      "gradeStr": "了解即可",
+      "doCt": 1722,
+      "doRightCt": 864,
+      "tags": "系统设计",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "嵌入式系统中，用于描述数据流模型的是<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察嵌入式系统的建模方法，属于系统设计知识点。\n\n建模方法的核心适用场景：\n\n- 选项A（Petri网）：擅长描述“并发、异步的数据流”（如数据的产生、传递、处理、存储过程），可直观展示数据在嵌入式系统中的流动路径，适合数据流建模，故正确；\n- 选项B（CSP）、C（CCS）：均为进程通信建模语言，侧重描述进程间的交互逻辑（如进程A向进程B发送消息），而非数据流，故错误；\n- 选项D（FSM）：擅长描述“状态转换”（如设备的“待机→运行→停止”状态），适合状态建模，而非数据流，故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:54:54",
+          "updateTime": "2025-11-11 12:54:54",
+          "id": 26045,
+          "questionId": 13817,
+          "keyStr": "A",
+          "valueStr": "Petri网",
+          "correct": true,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:54:54",
+          "updateTime": "2025-11-11 12:54:54",
+          "id": 26046,
+          "questionId": 13817,
+          "keyStr": "B",
+          "valueStr": "CSP（通信顺序进程）",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:54:54",
+          "updateTime": "2025-11-11 12:54:54",
+          "id": 26047,
+          "questionId": 13817,
+          "keyStr": "C",
+          "valueStr": "CCS（通信系统演算）",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:54:54",
+          "updateTime": "2025-11-11 12:54:54",
+          "id": 26048,
+          "questionId": 13817,
+          "keyStr": "D",
+          "valueStr": "FSM（有限状态机）",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "A"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13817,
+        "nameAlias": "42",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 42
+    },
+    {
+      "id": 13818,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "43",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2362,
+      "grade": 1,
+      "gradeStr": "必须掌握",
+      "doCt": 1553,
+      "doRightCt": 1121,
+      "tags": "计算机基础",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "数据链路层的功能不包括<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察OSI七层模型中数据链路层的功能，属于计算机基础中的网络知识点，必须掌握。\n\n数据链路层的核心功能：\n\n1. 封装成帧：将物理层的比特流封装为帧（添加帧头和帧尾），明确帧的边界（选项A正确，非答案）；\n2. 错误检测：通过校验和、CRC等手段检测帧在传输过程中的错误（选项C正确，非答案）；\n3. 直接传输：在相邻节点间直接传输帧（如从路由器A传输到路由器B），实现点到点通信（选项D正确，非答案）；\n4. 流量控制：控制帧的发送速率，避免接收方过载。\n\n选项B（路由选择）：是“网络层”的核心功能（如IP协议选择数据从源到目的的路径），不属于数据链路层，故错误（答案）。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:54:55",
+          "updateTime": "2025-11-11 12:54:55",
+          "id": 26049,
+          "questionId": 13818,
+          "keyStr": "A",
+          "valueStr": "封装成帧",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:54:55",
+          "updateTime": "2025-11-11 12:54:55",
+          "id": 26050,
+          "questionId": 13818,
+          "keyStr": "B",
+          "valueStr": "路由选择",
+          "correct": true,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:54:55",
+          "updateTime": "2025-11-11 12:54:55",
+          "id": 26051,
+          "questionId": 13818,
+          "keyStr": "C",
+          "valueStr": "错误检测",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:54:55",
+          "updateTime": "2025-11-11 12:54:55",
+          "id": 26052,
+          "questionId": 13818,
+          "keyStr": "D",
+          "valueStr": "直接传输（透传）",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "B"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13818,
+        "nameAlias": "43",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 43
+    },
+    {
+      "id": 13820,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "45",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2545,
+      "grade": 2,
+      "gradeStr": "建议掌握",
+      "doCt": 1596,
+      "doRightCt": 1139,
+      "tags": "软件工程",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "CMMI方法论基于的四个知识体系是<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察CMMI的核心知识体系，属于软件工程知识点，建议掌握。\n\nCMMI（能力成熟度模型集成）的四个核心知识体系（称为“学科”）：\n\n1. 系统工程（SE）：关注系统整体的设计、集成与验证；\n2. 软件工程（SW）：关注软件开发的全流程（需求、设计、编码、测试）；\n3. 集成产品与过程开发（IPPD）：关注产品与开发过程的集成，提升跨团队协作效率；\n4. 供应商采购（SS）：关注供应商的选择、管理与协作，确保外部资源符合质量要求。\n\n选项B、C、D：均缺少某一个知识体系（如B缺少软件工程），故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-12 15:11:39",
+          "updateTime": "2025-11-12 15:11:39",
+          "id": 26057,
+          "questionId": 13820,
+          "keyStr": "A",
+          "valueStr": "系统工程、软件工程、集成产品与过程开发、供应商采购",
+          "correct": true,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-12 15:11:39",
+          "updateTime": "2025-11-12 15:11:39",
+          "id": 26058,
+          "questionId": 13820,
+          "keyStr": "B",
+          "valueStr": "系统工程、集成产品与过程开发、供应商采购",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-12 15:11:39",
+          "updateTime": "2025-11-12 15:11:39",
+          "id": 26059,
+          "questionId": 13820,
+          "keyStr": "C",
+          "valueStr": "软件工程、集成产品与过程开发、供应商采购",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-12 15:11:39",
+          "updateTime": "2025-11-12 15:11:39",
+          "id": 26060,
+          "questionId": 13820,
+          "keyStr": "D",
+          "valueStr": "系统工程、软件工程",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "A"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13820,
+        "nameAlias": "44",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 44
+    },
+    {
+      "id": 13821,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "46",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2559,
+      "grade": 1,
+      "gradeStr": "必须掌握",
+      "doCt": 1661,
+      "doRightCt": 1000,
+      "tags": "数据库",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "数据库设计中，产出关系模型（表结构）的阶段是<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察数据库设计的阶段划分，属于基础数据库核心知识点，必须掌握。\n\n数据库设计四阶段的核心产出：\n\n1. 需求分析阶段：收集并分析用户需求，产出“需求规格说明书”（选项D错误）；\n2. 概念设计阶段：将需求转化为“E-R模型（实体关系图）”，描述实体、属性及关系（选项A错误）；\n3. 逻辑设计阶段：将E-R模型转换为“关系模型”（即数据库表结构，包括表名、字段、主键、外键等）（选项C正确）；\n4. 物理设计阶段：确定数据库的物理存储结构（如索引设计、分区策略、存储引擎选择）（选项B错误）。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:54:58",
+          "updateTime": "2025-11-11 12:54:58",
+          "id": 26061,
+          "questionId": 13821,
+          "keyStr": "A",
+          "valueStr": "概念设计",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:54:58",
+          "updateTime": "2025-11-11 12:54:58",
+          "id": 26062,
+          "questionId": 13821,
+          "keyStr": "B",
+          "valueStr": "物理设计",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:54:58",
+          "updateTime": "2025-11-11 12:54:58",
+          "id": 26063,
+          "questionId": 13821,
+          "keyStr": "C",
+          "valueStr": "逻辑设计",
+          "correct": true,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:54:58",
+          "updateTime": "2025-11-11 12:54:58",
+          "id": 26064,
+          "questionId": 13821,
+          "keyStr": "D",
+          "valueStr": "需求分析",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "C"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13821,
+        "nameAlias": "45",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 45
+    },
+    {
+      "id": 13822,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "47",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2496,
+      "grade": 3,
+      "gradeStr": "了解即可",
+      "doCt": 1564,
+      "doRightCt": 1060,
+      "tags": "软件架构设计",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "头脑风暴质量属性时，下列哪项属于“增长场景的极端增长形式”<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察架构场景的分类与特性，属于软件架构设计知识点。\n\n选项A（探索性场景）：增长场景描述系统规模“常规增长”（如用户量逐年增加10%），而探索性场景是增长场景的“极端形式”（如用户量单日突增10倍），用于测试系统的极限承载能力，符合题干定义，故正确。\n选项B（增长场景）：是常规增长形式，并非“极端形式”，题干问的是极端情况，故错误。\n选项C（用例场景）：基于用户实际操作的常规业务场景（如用户登录、下单），与“增长”无关，故错误。\n选项D（用户场景）：从用户视角描述的单一操作流程，不涉及系统规模增长，故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:54:59",
+          "updateTime": "2025-11-11 12:54:59",
+          "id": 26065,
+          "questionId": 13822,
+          "keyStr": "A",
+          "valueStr": "探索性场景",
+          "correct": true,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:54:59",
+          "updateTime": "2025-11-11 12:54:59",
+          "id": 26066,
+          "questionId": 13822,
+          "keyStr": "B",
+          "valueStr": "增长场景",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:54:59",
+          "updateTime": "2025-11-11 12:54:59",
+          "id": 26067,
+          "questionId": 13822,
+          "keyStr": "C",
+          "valueStr": "用例场景",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:54:59",
+          "updateTime": "2025-11-11 12:54:59",
+          "id": 26068,
+          "questionId": 13822,
+          "keyStr": "D",
+          "valueStr": "用户场景",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "A"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13822,
+        "nameAlias": "46",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 46
+    },
+    {
+      "id": 13823,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "48",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2662,
+      "grade": 1,
+      "gradeStr": "必须掌握",
+      "doCt": 1630,
+      "doRightCt": 1050,
+      "tags": "软件架构设计",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "客户端-服务器（C/S）架构属于下列哪类架构风格<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "在架构的教程中，C/S 是属于 调用/返回风格 的，但因为题目给定的选项并没有这个，所以只能从4个中选择相对更加合适的答案。\n\n官方教材体系中，架构风格的分类通常是这样定义的：\n\n层次架构（Layered Architecture）：\n\n定义：将系统的功能按水平方式切分成多个层次，每一层使用下一层提供的服务，并为上一层提供服务。\n\nC/S 的定位：C/S（客户端 - 服务器）架构是最典型的两层层次架构。\n\n第一层（用户界面层）：客户端（负责请求、展示）。\n第二层（数据服务 / 业务逻辑层）：服务器（负责响应、处理）。\n\n结论：既然它是严格的 “请求 - 响应” 层级关系，且客户端直接依赖服务器服务，它在软考中100% 属于层次架构风格。\n\n为什么选项 B（独立构件架构）是干扰项？\n   \n在软考的严格分类中，“独立构件架构” 通常指的是基于构件的软件开发（CBSD）或微服务架构，它强调的是可复用、独立部署、无共享地址空间的松散耦合构件。\n\n虽然 C/S 中的客户端和服务器是 “独立进程”，但在软考的概念里，它被视为层次架构中的两个 “层”，而不是泛化的 “独立构件”。如果题目问 “微服务架构属于哪类”，答案才会是 “独立构件架构”。",
+      "analysis": "暂无解析内容，方才正在努力更新中....",
+      "options": [
+        {
+          "createTime": "2026-05-24 19:39:09",
+          "updateTime": "2026-05-24 19:39:09",
+          "id": 26069,
+          "questionId": 13823,
+          "keyStr": "A",
+          "valueStr": "层次架构",
+          "correct": true,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2026-05-24 19:39:09",
+          "updateTime": "2026-05-24 19:39:09",
+          "id": 26070,
+          "questionId": 13823,
+          "keyStr": "B",
+          "valueStr": "独立构件架构",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2026-05-24 19:39:09",
+          "updateTime": "2026-05-24 19:39:09",
+          "id": 26071,
+          "questionId": 13823,
+          "keyStr": "C",
+          "valueStr": "黑板架构",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2026-05-24 19:39:09",
+          "updateTime": "2026-05-24 19:39:09",
+          "id": 26072,
+          "questionId": 13823,
+          "keyStr": "D",
+          "valueStr": "数据流架构",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "A"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13823,
+        "nameAlias": "47",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 47
+    },
+    {
+      "id": 13824,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "49",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2551,
+      "grade": 3,
+      "gradeStr": "了解即可",
+      "doCt": 1669,
+      "doRightCt": 770,
+      "tags": "法律法规",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "工业产权的核心组成包括<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察知识产权的分类，属于信息安全知识点。\n\n知识产权的核心分类：\n\n- 工业产权：围绕“工业生产与商业活动”的权利，包括专利（技术发明）、商标（品牌标识）、工业品外观设计等，核心是“工业与商业属性”；\n- 著作权（版权）：围绕“智力作品创作”的权利，包括文字作品、软件作品、艺术作品等，核心是“创作属性”。\n\n选项A（专利和商标）：均属于工业产权，故正确。\n选项B、C、D：均包含“著作权”，而著作权不属于工业产权，故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:58:04",
+          "updateTime": "2025-11-11 12:58:04",
+          "id": 26073,
+          "questionId": 13824,
+          "keyStr": "A",
+          "valueStr": "专利和商标",
+          "correct": true,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:58:04",
+          "updateTime": "2025-11-11 12:58:04",
+          "id": 26074,
+          "questionId": 13824,
+          "keyStr": "B",
+          "valueStr": "著作权和专利",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:58:04",
+          "updateTime": "2025-11-11 12:58:04",
+          "id": 26075,
+          "questionId": 13824,
+          "keyStr": "C",
+          "valueStr": "著作权和商标",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:58:04",
+          "updateTime": "2025-11-11 12:58:04",
+          "id": 26076,
+          "questionId": 13824,
+          "keyStr": "D",
+          "valueStr": "著作权和软件专利",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "A"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13824,
+        "nameAlias": "48",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 48
+    },
+    {
+      "id": 13825,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "50",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2459,
+      "grade": 1,
+      "gradeStr": "必须掌握",
+      "doCt": 1637,
+      "doRightCt": 1097,
+      "tags": "软件工程",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "敏捷开发中，“具有固定周期、三个核心角色、每日站会”的方法是<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察敏捷开发方法的特性，属于软件工程核心知识点，必须掌握。\n\n各敏捷方法的核心特性：\n\n- 选项A（看板）：通过看板可视化任务进度，无固定周期和明确的三个角色，核心是“持续交付”，故错误。\n- 选项B（极限编程）：强调结对编程、持续集成、客户现场，无固定周期和三个核心角色，故错误。\n- 选项C（精益）：核心是“消除浪费”，无固定周期和三个角色，故错误。\n- 选项D（Scrum）：具有固定周期（Sprint，通常1-4周）、三个核心角色（产品负责人、Scrum Master、开发团队）、每日站会（15分钟同步进度），完全匹配题干描述，故正确。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:55:02",
+          "updateTime": "2025-11-11 12:55:02",
+          "id": 26077,
+          "questionId": 13825,
+          "keyStr": "A",
+          "valueStr": "看板（Kanban）",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:55:02",
+          "updateTime": "2025-11-11 12:55:02",
+          "id": 26078,
+          "questionId": 13825,
+          "keyStr": "B",
+          "valueStr": "极限编程（XP）",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:55:02",
+          "updateTime": "2025-11-11 12:55:02",
+          "id": 26079,
+          "questionId": 13825,
+          "keyStr": "C",
+          "valueStr": "精益（Lean）",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:55:02",
+          "updateTime": "2025-11-11 12:55:02",
+          "id": 26080,
+          "questionId": 13825,
+          "keyStr": "D",
+          "valueStr": "Scrum",
+          "correct": true,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "D"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13825,
+        "nameAlias": "49",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 49
+    },
+    {
+      "id": 13826,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "51",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2265,
+      "grade": 1,
+      "gradeStr": "必须掌握",
+      "doCt": 1511,
+      "doRightCt": 1411,
+      "tags": "系统设计",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "下列哪项属于创建型设计模式<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察设计模式的分类，属于系统设计核心知识点，必须掌握。\n\n设计模式的核心分类：\n\n- 创建型模式：关注“对象创建机制”，包括抽象工厂、单例、工厂方法、建造者、原型模式；\n- 结构型模式：关注“对象组合与结构”，包括桥接、装饰器、适配器、组合、外观、享元、代理模式；\n- 行为型模式：关注“对象交互与职责分配”，包括观察者、策略、命令、迭代器、模板方法等模式。\n\n选项A（抽象工厂模式）：属于创建型模式，故正确。\n选项B（观察者模式）：属于行为型模式，故错误。\n选项C（桥接模式）、D（装饰器模式）：均属于结构型模式，故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:55:03",
+          "updateTime": "2025-11-11 12:55:03",
+          "id": 26081,
+          "questionId": 13826,
+          "keyStr": "A",
+          "valueStr": "抽象工厂模式",
+          "correct": true,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:55:03",
+          "updateTime": "2025-11-11 12:55:03",
+          "id": 26082,
+          "questionId": 13826,
+          "keyStr": "B",
+          "valueStr": "观察者模式",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:55:03",
+          "updateTime": "2025-11-11 12:55:03",
+          "id": 26083,
+          "questionId": 13826,
+          "keyStr": "C",
+          "valueStr": "桥接模式",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:55:03",
+          "updateTime": "2025-11-11 12:55:03",
+          "id": 26084,
+          "questionId": 13826,
+          "keyStr": "D",
+          "valueStr": "装饰器模式",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "A"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13826,
+        "nameAlias": "50",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 50
+    },
+    {
+      "id": 13827,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "52",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2573,
+      "grade": 2,
+      "gradeStr": "建议掌握",
+      "doCt": 1703,
+      "doRightCt": 953,
+      "tags": "系统设计",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "判定树和判定表主要用于分析数据流图中的<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察数据流图的组成与分析工具，属于软件工程知识点，建议掌握。\n\n数据流图（DFD）的核心组成部分：\n\n- 选项A（数据流）：表示数据的流动方向（如“订单信息”从外部项流向加工），仅描述数据路径，无需判定树/表分析，故错误。\n- 选项B（加工）：表示数据的处理逻辑（如“计算订单金额”），判定树和判定表是梳理复杂逻辑（多条件分支）的工具，可清晰描述加工的输入输出规则，故正确。\n- 选项C（数据存储）：表示数据的存储位置（如“订单表”），仅描述数据存储，无需逻辑分析，故错误。\n- 选项D（外部项）：表示系统的外部交互对象（如“用户”“支付平台”），仅描述交互主体，故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:55:04",
+          "updateTime": "2025-11-11 12:55:04",
+          "id": 26085,
+          "questionId": 13827,
+          "keyStr": "A",
+          "valueStr": "数据流",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:55:04",
+          "updateTime": "2025-11-11 12:55:04",
+          "id": 26086,
+          "questionId": 13827,
+          "keyStr": "B",
+          "valueStr": "加工",
+          "correct": true,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:55:04",
+          "updateTime": "2025-11-11 12:55:04",
+          "id": 26087,
+          "questionId": 13827,
+          "keyStr": "C",
+          "valueStr": "数据存储",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:55:04",
+          "updateTime": "2025-11-11 12:55:04",
+          "id": 26088,
+          "questionId": 13827,
+          "keyStr": "D",
+          "valueStr": "外部项",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "B"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13827,
+        "nameAlias": "51",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 51
+    },
+    {
+      "id": 13828,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "53",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2311,
+      "grade": 2,
+      "gradeStr": "建议掌握",
+      "doCt": 1497,
+      "doRightCt": 985,
+      "tags": "计算机基础",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "两个线程共享一个临界资源，现互斥信号量的值为-1，则当前线程的状态是<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察互斥信号量的原理，属于计算机基础知识点，建议掌握。\n\n互斥信号量的核心定义：\n\n- 信号量值S的含义：S=可用资源数-等待线程数；\n- 临界资源的可用资源数为1（仅允许一个线程访问），因此：\n  - 当S=1时：无线程进入临界区，无等待线程；\n  - 当S=0时：一个线程进入临界区，无等待线程；\n  - 当S=-1时：一个线程进入临界区，一个线程等待（可用资源数1已被占用，等待线程数1，故S=1-2=-1）。\n\n选项A（都进入）：临界资源仅允许一个线程进入，故错误。\n选项B（都没进入）：S=-1说明有线程占用资源，故错误。\n选项C（一个进入、一个等待）：完全匹配S=-1的状态，故正确。\n选项D（都等待）：需S=-2才符合，故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:55:06",
+          "updateTime": "2025-11-11 12:55:06",
+          "id": 26089,
+          "questionId": 13828,
+          "keyStr": "A",
+          "valueStr": "两个线程都进入了临界区",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:55:06",
+          "updateTime": "2025-11-11 12:55:06",
+          "id": 26090,
+          "questionId": 13828,
+          "keyStr": "B",
+          "valueStr": "两个线程都没进入临界区",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:55:06",
+          "updateTime": "2025-11-11 12:55:06",
+          "id": 26091,
+          "questionId": 13828,
+          "keyStr": "C",
+          "valueStr": "一个线程进入临界区，一个线程等待",
+          "correct": true,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:55:06",
+          "updateTime": "2025-11-11 12:55:06",
+          "id": 26092,
+          "questionId": 13828,
+          "keyStr": "D",
+          "valueStr": "两个线程都在等待",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "C"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13828,
+        "nameAlias": "52",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 52
+    },
+    {
+      "id": 13829,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "54",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2288,
+      "grade": 2,
+      "gradeStr": "建议掌握",
+      "doCt": 1509,
+      "doRightCt": 1320,
+      "tags": "数据库",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "两阶段提交协议中，事务获取共享锁（S锁）后，对数据的操作权限是<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察数据库锁机制，属于基础数据库知识点，建议掌握。\n\n数据库锁的核心类型：\n\n- 共享锁（S锁）：又称读锁，多个事务可同时获取S锁，允许事务“读取”数据，但“禁止写入”（避免多个事务同时修改导致数据不一致）；\n- 排他锁（X锁）：又称写锁，仅允许一个事务获取X锁，允许事务“读取和写入”数据，禁止其他事务获取任何锁。\n\n选项A（只能读不能写）：完全匹配S锁的权限，故正确。\n选项B（不能读不能写）：无此类锁权限，故错误。\n选项C（能读能写）：是X锁的权限，故错误。\n选项D（不能读能写）：逻辑矛盾，写操作需先读取数据，故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:55:06",
+          "updateTime": "2025-11-11 12:55:06",
+          "id": 26093,
+          "questionId": 13829,
+          "keyStr": "A",
+          "valueStr": "只能读不能写",
+          "correct": true,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:55:06",
+          "updateTime": "2025-11-11 12:55:06",
+          "id": 26094,
+          "questionId": 13829,
+          "keyStr": "B",
+          "valueStr": "不能读不能写",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:55:06",
+          "updateTime": "2025-11-11 12:55:06",
+          "id": 26095,
+          "questionId": 13829,
+          "keyStr": "C",
+          "valueStr": "能读能写",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:55:06",
+          "updateTime": "2025-11-11 12:55:06",
+          "id": 26096,
+          "questionId": 13829,
+          "keyStr": "D",
+          "valueStr": "不能读能写",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "A"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13829,
+        "nameAlias": "53",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 53
+    },
+    {
+      "id": 13830,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "55",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2036,
+      "grade": 3,
+      "gradeStr": "了解即可",
+      "doCt": 1370,
+      "doRightCt": 1169,
+      "tags": "计算机基础",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "专家系统中，通过反复推理获取知识库中隐含信息的组件是<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察专家系统的组成，属于计算机基础知识点，了解即可。\n\n专家系统的核心组件：\n\n- 选项A（推理机）：根据知识库中的规则和已知事实，通过正向推理、反向推理等方式获取隐含信息，是专家系统的“逻辑核心”，故正确。\n- 选项B（解释器）：用于解释推理过程和结果（如向用户说明“为什么得出该结论”），不负责推理获取信息，故错误。\n- 选项C（编译器）：是将源代码转换为目标代码的工具，与专家系统无关，故错误。\n- 选项D（统一知识库）：用于存储规则和事实，是推理的“数据来源”，而非推理执行组件，故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:55:07",
+          "updateTime": "2025-11-11 12:55:07",
+          "id": 26097,
+          "questionId": 13830,
+          "keyStr": "A",
+          "valueStr": "推理机",
+          "correct": true,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:55:07",
+          "updateTime": "2025-11-11 12:55:07",
+          "id": 26098,
+          "questionId": 13830,
+          "keyStr": "B",
+          "valueStr": "解释器",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:55:07",
+          "updateTime": "2025-11-11 12:55:07",
+          "id": 26099,
+          "questionId": 13830,
+          "keyStr": "C",
+          "valueStr": "编译器",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:55:07",
+          "updateTime": "2025-11-11 12:55:07",
+          "id": 26100,
+          "questionId": 13830,
+          "keyStr": "D",
+          "valueStr": "统一知识库",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "A"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13830,
+        "nameAlias": "54",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 54
+    },
+    {
+      "id": 13831,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "56",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2209,
+      "grade": 2,
+      "gradeStr": "建议掌握",
+      "doCt": 1448,
+      "doRightCt": 1325,
+      "tags": "计算机基础",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "某类操作系统要求任务必须在规定时间内完成相应操作，该操作系统的核心特性是<font color='blue'>（<u> 问题1</u>）</font>",
+      "answer": "此题考察操作系统的特性，属于计算机基础知识点，建议掌握。\n\n各操作系统特性的定义：\n\n- 选项A（强实时性）：实时操作系统（RTOS）的核心特性，要求任务在“严格规定的时间窗口内”完成，否则可能导致严重后果（如嵌入式系统中的工业控制、汽车电子），完全匹配题干描述，故正确。\n- 选项B（安全性）：侧重防止未授权访问和数据泄露（如Windows的权限管理），与“时间约束”无关，故错误。\n- 选项C（确定性）：指系统行为可预测，但不强调“时间限制”，范围过宽，故错误。\n- 选项D（可靠性）：侧重系统无故障运行能力，与“按时完成任务”无直接关联，故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-12-17 19:38:56",
+          "updateTime": "2025-12-17 19:38:56",
+          "id": 26101,
+          "questionId": 13831,
+          "keyStr": "A",
+          "valueStr": "强实时性",
+          "correct": true,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-12-17 19:38:56",
+          "updateTime": "2025-12-17 19:38:56",
+          "id": 26102,
+          "questionId": 13831,
+          "keyStr": "B",
+          "valueStr": "安全性",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-12-17 19:38:56",
+          "updateTime": "2025-12-17 19:38:56",
+          "id": 26103,
+          "questionId": 13831,
+          "keyStr": "C",
+          "valueStr": "确定性",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-12-17 19:38:56",
+          "updateTime": "2025-12-17 19:38:56",
+          "id": 26104,
+          "questionId": 13831,
+          "keyStr": "D",
+          "valueStr": "可靠性",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "A"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13831,
+        "nameAlias": "55",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 55
+    },
+    {
+      "id": 13832,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "57",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2471,
+      "grade": 1,
+      "gradeStr": "必须掌握",
+      "doCt": 1632,
+      "doRightCt": 1230,
+      "tags": "软件架构设计",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "一个解释器通常包括完成解释工作的解释引擎、被解释的代码存储区、<font color='blue'>（<u> 问题1</u>）</font>和记录源代码解释执行进度的数据结构。",
+      "answer": "此题考察解释器的组成，属于计算机基础知识点，了解即可。\n\n解释器的核心组成部分：\n\n- 解释引擎：执行解释逻辑；\n- 代码存储区：存放待解释的源代码；\n- 内部状态存储：记录解释引擎的运行状态（如当前寄存器值、变量上下文），确保解释过程连续；\n- 进度记录结构：跟踪代码执行到的位置（如行号、指令指针）。\n\n选项A（解释器引擎的内部状态存储）：是解释器的必要组件，故正确。\n选项B（工作日志存储）：用于记录运行日志，非解释器核心组成，故错误。\n选项C（保存代码的存储区状态）：代码存储区已存放代码，无需额外存储状态，故错误。\n选项D（规则引擎）：是专家系统的组件，与解释器无关，故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-12-17 19:39:20",
+          "updateTime": "2025-12-17 19:39:20",
+          "id": 26105,
+          "questionId": 13832,
+          "keyStr": "A",
+          "valueStr": "解释器引擎的内部状态存储",
+          "correct": true,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-12-17 19:39:20",
+          "updateTime": "2025-12-17 19:39:20",
+          "id": 26106,
+          "questionId": 13832,
+          "keyStr": "B",
+          "valueStr": "工作日志存储",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-12-17 19:39:20",
+          "updateTime": "2025-12-17 19:39:20",
+          "id": 26107,
+          "questionId": 13832,
+          "keyStr": "C",
+          "valueStr": "保存代码的存储区状态",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-12-17 19:39:20",
+          "updateTime": "2025-12-17 19:39:20",
+          "id": 26108,
+          "questionId": 13832,
+          "keyStr": "D",
+          "valueStr": "规则引擎",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "A"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13832,
+        "nameAlias": "56",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 56
+    },
+    {
+      "id": 13833,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "58",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2104,
+      "grade": 3,
+      "gradeStr": "了解即可",
+      "doCt": 1378,
+      "doRightCt": 1105,
+      "tags": "计算机基础",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "下列关于监督学习、半监督学习、自监督学习的描述，正确的是<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察机器学习的学习范式，属于计算机基础知识点，了解即可。\n\n三种学习范式的核心区别（基于标注数据依赖）：\n\n- 选项A（自监督学习）：完全不依赖人工标注数据，通过数据自身的结构生成监督信号（如用图片的一半预测另一半），故错误。\n- 选项B（半监督学习）：核心是“少量标注数据+大量未标注数据”，用标注数据指导模型，用未标注数据提升泛化能力，描述正确，故正确。\n- 选项C（监督学习）：完全依赖人工标注数据（如用标注“猫/狗”的图片训练分类模型），故错误。\n- 选项D（监督学习）：仅能预测训练过的类别，对未知类别（未在训练集中出现的类别）无预测能力，故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:55:11",
+          "updateTime": "2025-11-11 12:55:11",
+          "id": 26109,
+          "questionId": 13833,
+          "keyStr": "A",
+          "valueStr": "自监督学习完全依赖于标注数据",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:55:11",
+          "updateTime": "2025-11-11 12:55:11",
+          "id": 26110,
+          "questionId": 13833,
+          "keyStr": "B",
+          "valueStr": "半监督学习依靠少量标注数据和大量未标注数据",
+          "correct": true,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:55:11",
+          "updateTime": "2025-11-11 12:55:11",
+          "id": 26111,
+          "questionId": 13833,
+          "keyStr": "C",
+          "valueStr": "监督学习不依赖标注的数据",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:55:11",
+          "updateTime": "2025-11-11 12:55:11",
+          "id": 26112,
+          "questionId": 13833,
+          "keyStr": "D",
+          "valueStr": "监督学习可对未知类别数据有较好预测性",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "B"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13833,
+        "nameAlias": "57",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 57
+    },
+    {
+      "id": 13834,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "59",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2362,
+      "grade": 3,
+      "gradeStr": "了解即可",
+      "doCt": 1585,
+      "doRightCt": 1123,
+      "tags": "软件架构设计",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "Lambda架构中，负责处理增量数据（近实时数据）的是<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察Lambda架构的组成，属于企业信息化知识点，了解即可。\n\nLambda架构的三层核心功能：\n\n- 选项A（批处理层）：处理海量历史数据，生成批处理视图，特点是“高吞吐量、低延迟不敏感”，故错误。\n- 选项B（加速层）：处理增量数据（近实时产生的数据），弥补批处理层延迟高的问题，生成实时视图，故正确。\n- 选项C（服务层）：合并批处理视图和实时视图，为查询提供统一接口，不负责数据处理，故错误。\n- 选项D（数据源层）：是数据的输入来源（如日志、数据库），非处理层，故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-12-17 19:43:47",
+          "updateTime": "2025-12-17 19:43:47",
+          "id": 26113,
+          "questionId": 13834,
+          "keyStr": "A",
+          "valueStr": "批处理层",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-12-17 19:43:47",
+          "updateTime": "2025-12-17 19:43:47",
+          "id": 26114,
+          "questionId": 13834,
+          "keyStr": "B",
+          "valueStr": "加速层（速度层）",
+          "correct": true,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-12-17 19:43:47",
+          "updateTime": "2025-12-17 19:43:47",
+          "id": 26115,
+          "questionId": 13834,
+          "keyStr": "C",
+          "valueStr": "服务层",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-12-17 19:43:47",
+          "updateTime": "2025-12-17 19:43:47",
+          "id": 26116,
+          "questionId": 13834,
+          "keyStr": "D",
+          "valueStr": "数据源层",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "B"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13834,
+        "nameAlias": "58",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 58
+    },
+    {
+      "id": 13835,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "60",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2750,
+      "grade": 1,
+      "gradeStr": "必须掌握",
+      "doCt": 1797,
+      "doRightCt": 881,
+      "tags": "系统设计",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "某模块接收生产线上的工作量清单，通过文件系统计算出“工作量排前三的工人名单”和“日均工作量”，该模块的内聚类型是<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "答案：**B. 通信内聚**\n\n\n要精准判断内聚类型，需紧扣**模块功能与数据的关联逻辑**，本题各选项的核心区别与判定如下：\n\n| 内聚类型 | 核心定义 | 本题匹配度 | 判定逻辑 |\n| :--- | :--- | :--- | :--- |\n| **A. 功能内聚** | 模块仅完成**单一、明确、不可拆分**的功能，所有元素协同实现该功能（最高内聚） | ❌ 不匹配 | 模块需同时完成“排名统计”和“日均计算”两件事，并非单一功能，排除。 |\n| **B. 通信内聚** | 模块使用**同一组输入/输出数据**完成多个独立功能，功能间仅以数据为纽带，无逻辑顺序依赖 | ✅ 完全匹配 | 模块核心围绕“工作量清单文件”这一同一数据源，独立完成两个统计功能，仅共享数据资源，符合通信内聚定义。 |\n| **C. 偶然内聚** | 模块内元素**无任何逻辑关联**，仅因语法或结构要求凑在一起（最低内聚） | ❌ 不匹配 | 两个功能均围绕工作量统计展开，关联紧密，绝非偶然组合，排除。 |\n| **D. 逻辑内聚** | 模块内功能为**逻辑相关的一组操作**，需通过参数选择执行不同逻辑（如“根据类型处理不同文件”） | ❌ 不匹配 | 题目未提及“参数选择执行不同逻辑”，两个功能需同时触发，而非按需切换，排除。 |\n| **E. 顺序内聚** | 模块内操作**按顺序执行**，前一操作的输出是后一操作的输入（如“读取数据→处理数据→输出结果”） | ❌ 不匹配 | 题目中“排名统计”和“日均计算”为两个独立统计，无“前因后果”的顺序依赖，排除。 |\n\n### 软考高频内聚类型速记\n1. **功能内聚**：单一目标，最强内聚（例：仅计算日均工作量）。\n2. **通信内聚**：共享数据，功能独立（例：同一文件的统计+查询）。\n3. **顺序内聚**：顺序依赖，前输出后输入（例：读文件→写报表）。\n4. **逻辑内聚**：逻辑分组，参数选执行（例：不同类型文件的打印模块）。\n5. **偶然内聚**：毫无关联，最弱内聚（例：随机凑的几个无关方法）。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2026-04-15 21:06:22",
+          "updateTime": "2026-04-15 21:06:22",
+          "id": 26117,
+          "questionId": 13835,
+          "keyStr": "A",
+          "valueStr": "功能内聚",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2026-04-15 21:06:22",
+          "updateTime": "2026-04-15 21:06:22",
+          "id": 26118,
+          "questionId": 13835,
+          "keyStr": "B",
+          "valueStr": "通信内聚",
+          "correct": true,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2026-04-15 21:06:22",
+          "updateTime": "2026-04-15 21:06:22",
+          "id": 26119,
+          "questionId": 13835,
+          "keyStr": "C",
+          "valueStr": "偶然内聚",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2026-04-15 21:06:22",
+          "updateTime": "2026-04-15 21:06:22",
+          "id": 26120,
+          "questionId": 13835,
+          "keyStr": "D",
+          "valueStr": "逻辑内聚",
+          "correct": false,
+          "orderNum": 4
+        },
+        {
+          "createTime": "2026-04-15 21:06:22",
+          "updateTime": "2026-04-15 21:06:22",
+          "id": 26121,
+          "questionId": 13835,
+          "keyStr": "E",
+          "valueStr": "顺序内聚",
+          "correct": false,
+          "orderNum": 5
+        }
+      ],
+      "correctOptions": [
+        "B"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13835,
+        "nameAlias": "59",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 59
+    },
+    {
+      "id": 13836,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "61",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2352,
+      "grade": 2,
+      "gradeStr": "建议掌握",
+      "doCt": 1556,
+      "doRightCt": 1463,
+      "tags": "软件工程",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "下列哪项属于软件的最佳复用方式<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察软件复用的原则，属于软件工程知识点，建议掌握。\n\n各复用方式的优劣：\n\n- 选项A（复制粘贴代码）：易引入隐藏bug，且无法同步更新（原代码修复后，复制的代码仍有问题），复用质量低，故错误。\n- 选项B（重新编写代码）：无复用可言，效率低，且重复开发易出错，故错误。\n- 选项C（已验证的开源软件和工具）：开源软件经过社区验证，稳定性和安全性有保障，且支持更新维护，是高效且高质量的复用方式，故正确。\n- 选项D（复用项目文档）：文档复用仅辅助开发，不直接提升代码或功能的复用效率，非核心复用方式，故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:55:14",
+          "updateTime": "2025-11-11 12:55:14",
+          "id": 26122,
+          "questionId": 13836,
+          "keyStr": "A",
+          "valueStr": "从其他工程复制粘贴代码",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:55:14",
+          "updateTime": "2025-11-11 12:55:14",
+          "id": 26123,
+          "questionId": 13836,
+          "keyStr": "B",
+          "valueStr": "每次重新编写项目代码",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:55:14",
+          "updateTime": "2025-11-11 12:55:14",
+          "id": 26124,
+          "questionId": 13836,
+          "keyStr": "C",
+          "valueStr": "使用已验证过的开源软件和工具",
+          "correct": true,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:55:14",
+          "updateTime": "2025-11-11 12:55:14",
+          "id": 26125,
+          "questionId": 13836,
+          "keyStr": "D",
+          "valueStr": "复用项目文档",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "C"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13836,
+        "nameAlias": "60",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 60
+    },
+    {
+      "id": 13837,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "62",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2501,
+      "grade": 3,
+      "gradeStr": "了解即可",
+      "doCt": 1651,
+      "doRightCt": 744,
+      "tags": "软件架构设计",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "效用树（Utility Tree）进行优先级排序时，沿用的两个维度是“每个场景对系统成功的重要性”以及<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察效用树的排序维度，属于软件架构设计知识点，了解即可。\n\n效用树的核心作用是“量化场景的优先级”，其排序依赖两个关键维度：\n\n1. 场景重要性：该场景对系统业务目标或质量属性的影响程度（如核心业务场景重要性高）；\n2. 实现难度：从架构师视角评估该场景在架构设计中的实现复杂度（如依赖未成熟技术的场景难度高）。\n\n选项A（架构师视角的实现难度）：是效用树的核心维度之一，故正确。\n选项B（架构师视角的效益）：效益已包含在“重要性”维度中，无需重复，故错误。\n选项C（干系人视角的成本）：成本是项目管理维度，非效用树的排序维度，故错误。\n选项D（干系人视角的重要性）：与第一个维度“场景重要性”重复，故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:55:15",
+          "updateTime": "2025-11-11 12:55:15",
+          "id": 26126,
+          "questionId": 13837,
+          "keyStr": "A",
+          "valueStr": "从架构师视角来看的实现难度",
+          "correct": true,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:55:15",
+          "updateTime": "2025-11-11 12:55:15",
+          "id": 26127,
+          "questionId": 13837,
+          "keyStr": "B",
+          "valueStr": "从架构师视角来看的效益",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:55:15",
+          "updateTime": "2025-11-11 12:55:15",
+          "id": 26128,
+          "questionId": 13837,
+          "keyStr": "C",
+          "valueStr": "从项目干系人来看的成本",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:55:15",
+          "updateTime": "2025-11-11 12:55:15",
+          "id": 26129,
+          "questionId": 13837,
+          "keyStr": "D",
+          "valueStr": "从干系人来看的重要性",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "A"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13837,
+        "nameAlias": "61",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 61
+    },
+    {
+      "id": 13838,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "63",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2349,
+      "grade": 3,
+      "gradeStr": "了解即可",
+      "doCt": 1566,
+      "doRightCt": 1394,
+      "tags": "软件架构设计",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "下列关于进程通信体系结构中“消息传递方式”的描述，错误的是<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察进程通信的消息传递模式，属于计算机基础知识点，了解即可。\n\n消息传递方式的核心特性：\n\n- 选项A（支持异步传输）：消息传递可分为同步（发送方等待接收方响应）和异步（发送方发送后继续执行），支持异步是其重要特性，故正确（非答案）。\n- 选项B（支持点到点传递）：消息可在两个特定构件（进程）间直接传递（如TCP连接），支持点到点，故正确（非答案）。\n- 选项C（连接件是消息传递机制）：构件间通过连接件交互，消息传递是连接件的核心实现方式（如消息队列），故正确（非答案）。\n- 选项D（构件不是独立的）：消息传递的核心优势是“构件解耦与独立”，构件无需知道对方的内部实现，仅通过消息交互，故错误（答案）。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:55:16",
+          "updateTime": "2025-11-11 12:55:16",
+          "id": 26130,
+          "questionId": 13838,
+          "keyStr": "A",
+          "valueStr": "支持异步传输",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:55:16",
+          "updateTime": "2025-11-11 12:55:16",
+          "id": 26131,
+          "questionId": 13838,
+          "keyStr": "B",
+          "valueStr": "支持点到点的传递",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:55:16",
+          "updateTime": "2025-11-11 12:55:16",
+          "id": 26132,
+          "questionId": 13838,
+          "keyStr": "C",
+          "valueStr": "连接件是消息传递机制",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:55:16",
+          "updateTime": "2025-11-11 12:55:16",
+          "id": 26133,
+          "questionId": 13838,
+          "keyStr": "D",
+          "valueStr": "构件不是独立的",
+          "correct": true,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "D"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13838,
+        "nameAlias": "62",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 62
+    },
+    {
+      "id": 13839,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "64",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2363,
+      "grade": 3,
+      "gradeStr": "了解即可",
+      "doCt": 1614,
+      "doRightCt": 1355,
+      "tags": "软件架构设计",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "家用机器人可根据复杂规则调整行为（如根据环境光线调整清洁模式），实现该功能的核心技术是<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察人工智能与架构风格的应用，属于计算机基础知识点，了解即可。\n\n各选项的适用场景：\n\n- 选项A（规则系统）：通过“if-else”形式的规则库实现行为决策（如“若光线<100lux，则开启强清洁模式”），适合处理复杂且可明确描述的规则，完全匹配家用机器人的需求，故正确。\n- 选项B（解释器）：用于解释执行代码，与行为规则调整无关，故错误。\n- 选项C（黑板风格）：适合无明确求解步骤的问题（如语音识别），通过构件共享黑板数据协作，不适合规则化决策，故错误。\n- 选项D（管道-过滤器）：适合数据流式处理（如日志分析），与行为规则无关，故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:55:17",
+          "updateTime": "2025-11-11 12:55:17",
+          "id": 26134,
+          "questionId": 13839,
+          "keyStr": "A",
+          "valueStr": "规则系统",
+          "correct": true,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:55:17",
+          "updateTime": "2025-11-11 12:55:17",
+          "id": 26135,
+          "questionId": 13839,
+          "keyStr": "B",
+          "valueStr": "解释器",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:55:17",
+          "updateTime": "2025-11-11 12:55:17",
+          "id": 26136,
+          "questionId": 13839,
+          "keyStr": "C",
+          "valueStr": "黑板风格",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:55:17",
+          "updateTime": "2025-11-11 12:55:17",
+          "id": 26137,
+          "questionId": 13839,
+          "keyStr": "D",
+          "valueStr": "管道-过滤器",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "A"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13839,
+        "nameAlias": "63",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 63
+    },
+    {
+      "id": 13840,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "65",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2628,
+      "grade": 1,
+      "gradeStr": "必须掌握",
+      "doCt": 1740,
+      "doRightCt": 582,
+      "tags": "软件架构设计",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "Hofmeister的4视图模型，包含架构视图，模块视图，<font color='blue'>（<u> 问题1</u>）</font>，和程序视图。",
+      "answer": "教材P249 原文： Hofmesiter的4视图模型(概念视图、模块视图、执行视图和代码视图)\n\n完整的上下文：\n\n学术界已经提出若干多视图的方案，典型的包括4+1模型(逻辑视图、进程视图、开发视图、物理视图，加上统一的场景)、 Hofmesiter的4视图模型(概念视图、模块视图、执行视图和代码视图)、CMU-SEI 的Views and Beyond模型(模块视图、构件和连接子视图、分配视图)等。此外，工业界也提出了若干多视图描述S A模型的标准，如 IEEE标准1471-2000(软件密集型系统体系结构描述推荐实践)、开放分布式处理参考模型 (RM-ODP)、 统一建模语言 (UML) 以及IBM公司推出的Zachman框架等",
+      "analysis": "暂无解析内容，方才正在努力更新中....",
+      "options": [
+        {
+          "createTime": "2025-11-11 15:19:41",
+          "updateTime": "2025-11-11 15:19:41",
+          "id": 26138,
+          "questionId": 13840,
+          "keyStr": "A",
+          "valueStr": "部署视图",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 15:19:41",
+          "updateTime": "2025-11-11 15:19:41",
+          "id": 26139,
+          "questionId": 13840,
+          "keyStr": "B",
+          "valueStr": "用例视图",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 15:19:41",
+          "updateTime": "2025-11-11 15:19:41",
+          "id": 26140,
+          "questionId": 13840,
+          "keyStr": "C",
+          "valueStr": "逻辑视图",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 15:19:41",
+          "updateTime": "2025-11-11 15:19:41",
+          "id": 26141,
+          "questionId": 13840,
+          "keyStr": "D",
+          "valueStr": "执行视图",
+          "correct": true,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "D"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13840,
+        "nameAlias": "64",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 64
+    },
+    {
+      "id": 13841,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "66",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2821,
+      "grade": 2,
+      "gradeStr": "建议掌握",
+      "doCt": 1771,
+      "doRightCt": 737,
+      "tags": "软件工程",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "软件生命周期划分的基础原则是<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察软件生命周期的划分原则，属于软件工程知识点，建议掌握。\n\n软件生命周期划分的核心目标是“便于管理、评审和风险控制”，因此需遵循以下原则：\n\n- 时间独立性：各阶段有明确的时间边界（如需求分析阶段结束后进入设计阶段），便于里程碑评审和进度管控，是划分的基础原则；\n- 任务相关性：各阶段任务需前后衔接（如设计阶段基于需求分析结果），而非独立。\n\n选项A（时间连续）：连续不代表有明确边界，不利于评审，故错误。\n选项B（时间独立）：符合“明确时间边界”的基础原则，故正确。\n选项C（任务独立）：任务需相关衔接，独立会导致阶段脱节，故错误。\n选项D（任务相关）：任务相关是必要条件，但非“划分的基础原则”（基础原则是时间维度），故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:55:19",
+          "updateTime": "2025-11-11 12:55:19",
+          "id": 26142,
+          "questionId": 13841,
+          "keyStr": "A",
+          "valueStr": "各阶段时间应该尽可能连续",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:55:19",
+          "updateTime": "2025-11-11 12:55:19",
+          "id": 26143,
+          "questionId": 13841,
+          "keyStr": "B",
+          "valueStr": "各阶段时间应该尽可能独立",
+          "correct": true,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:55:19",
+          "updateTime": "2025-11-11 12:55:19",
+          "id": 26144,
+          "questionId": 13841,
+          "keyStr": "C",
+          "valueStr": "各阶段任务应尽量独立",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:55:19",
+          "updateTime": "2025-11-11 12:55:19",
+          "id": 26145,
+          "questionId": 13841,
+          "keyStr": "D",
+          "valueStr": "各阶段任务应尽量相关",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "B"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13841,
+        "nameAlias": "65",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 65
+    },
+    {
+      "id": 13842,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "67",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2097,
+      "grade": 2,
+      "gradeStr": "建议掌握",
+      "doCt": 1367,
+      "doRightCt": 1281,
+      "tags": "软件架构设计",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "下列关于微服务架构的描述，错误的是<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察微服务架构的特性，属于企业信息化知识点，建议掌握。\n\n微服务架构的核心特性：\n\n- 选项A（错误）：微服务支持“异构环境部署”（如部分服务部署在AWS，部分部署在阿里云），服务间通过网络API通信，无需统一环境，故错误（答案）。\n- 选项B（正确）：微服务间通过标准化API交互，降低耦合，故正确（非答案）。\n- 选项C（正确）：微服务遵循“单一职责原则”，每个服务仅实现一个业务功能（如用户服务、订单服务），故正确（非答案）。\n- 选项D（正确）：每个服务可独立部署（如仅更新订单服务，不影响用户服务）和扩展（如订单服务压力大时单独扩容），故正确（非答案）。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-12-17 19:43:54",
+          "updateTime": "2025-12-17 19:43:54",
+          "id": 26146,
+          "questionId": 13842,
+          "keyStr": "A",
+          "valueStr": "必须部署在统一环境，否则无法相互调用",
+          "correct": true,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-12-17 19:43:54",
+          "updateTime": "2025-12-17 19:43:54",
+          "id": 26147,
+          "questionId": 13842,
+          "keyStr": "B",
+          "valueStr": "服务间通过API（如REST、gRPC）通信",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-12-17 19:43:54",
+          "updateTime": "2025-12-17 19:43:54",
+          "id": 26148,
+          "questionId": 13842,
+          "keyStr": "C",
+          "valueStr": "每个服务聚焦单一业务功能",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-12-17 19:43:54",
+          "updateTime": "2025-12-17 19:43:54",
+          "id": 26149,
+          "questionId": 13842,
+          "keyStr": "D",
+          "valueStr": "支持独立部署和扩展",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "A"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13842,
+        "nameAlias": "66",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 66
+    },
+    {
+      "id": 13843,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "68",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2527,
+      "grade": 2,
+      "gradeStr": "建议掌握",
+      "doCt": 1736,
+      "doRightCt": 1170,
+      "tags": "软件实现与测试",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "Web服务器评测中，下列哪项操作应在压力测试之前进行<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察性能测试的流程，属于软件实现与测试知识点，建议掌握。\n\n性能测试的标准流程（从低负载到高负载）：\n\n1. 基准测试：在正常负载下（如日常用户量）测试系统的资源占用（CPU、内存）、响应时间等，建立“基准值”；\n2. 负载测试：逐步提高负载，测试系统性能随负载的变化；\n3. 压力测试：在超负载下测试系统的稳定性，甚至直到系统崩溃。\n\n选项A（高负载资源占用）、B（提高压力到崩溃）、D（并发上限）：均属于压力测试或负载测试的内容，故错误。\n选项C（正常情况资源占比，基准测试）：需在压力测试前进行，为压力测试提供对比基准，故正确。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:55:21",
+          "updateTime": "2025-11-11 12:55:21",
+          "id": 26150,
+          "questionId": 13843,
+          "keyStr": "A",
+          "valueStr": "测试系统高负载下的资源占用情况",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:55:21",
+          "updateTime": "2025-11-11 12:55:21",
+          "id": 26151,
+          "questionId": 13843,
+          "keyStr": "B",
+          "valueStr": "不断提高压力负荷，直到系统崩溃",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:55:21",
+          "updateTime": "2025-11-11 12:55:21",
+          "id": 26152,
+          "questionId": 13843,
+          "keyStr": "C",
+          "valueStr": "验证系统在正常情况下的资源占比（基准测试）",
+          "correct": true,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:55:21",
+          "updateTime": "2025-11-11 12:55:21",
+          "id": 26153,
+          "questionId": 13843,
+          "keyStr": "D",
+          "valueStr": "测试系统的并发用户承载上限",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "C"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13843,
+        "nameAlias": "67",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 67
+    },
+    {
+      "id": 13844,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "69",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2294,
+      "grade": 3,
+      "gradeStr": "了解即可",
+      "doCt": 1406,
+      "doRightCt": 477,
+      "tags": "计算机基础",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "下列哪项是以谓词形式表示动作的主体、客体，且属于叙述性知识表示方法<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察知识表示方法，属于计算机基础知识点，了解即可。\n\n各知识表示方法的核心特点：\n\n- 选项A（逻辑表示法）：通过谓词公式表示知识（如“Teach(老师, 学生, 数学)”，主体是老师，客体是学生和数学），是典型的叙述性知识表示（描述“是什么”），故正确。\n- 选项B（产生式表示法）：通过“条件→动作”规则表示知识（如“若温度>30℃，则开空调”），侧重过程性知识（描述“怎么做”），故错误。\n- 选项C（框架表示法）：通过“框架+槽值”表示知识（如“人”框架包含“姓名”“年龄”等槽），侧重结构化知识，非谓词形式，故错误。\n- 选项D（面向对象表示法）：通过类和对象表示知识（如“学生”类包含属性和方法），非谓词形式，故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:55:22",
+          "updateTime": "2025-11-11 12:55:22",
+          "id": 26154,
+          "questionId": 13844,
+          "keyStr": "A",
+          "valueStr": "逻辑表示法",
+          "correct": true,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:55:22",
+          "updateTime": "2025-11-11 12:55:22",
+          "id": 26155,
+          "questionId": 13844,
+          "keyStr": "B",
+          "valueStr": "产生式表示法",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:55:22",
+          "updateTime": "2025-11-11 12:55:22",
+          "id": 26156,
+          "questionId": 13844,
+          "keyStr": "C",
+          "valueStr": "框架表示法",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:55:22",
+          "updateTime": "2025-11-11 12:55:22",
+          "id": 26157,
+          "questionId": 13844,
+          "keyStr": "D",
+          "valueStr": "面向对象表示法",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "A"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13844,
+        "nameAlias": "68",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 68
+    },
+    {
+      "id": 13845,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "70",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2263,
+      "grade": 1,
+      "gradeStr": "必须掌握",
+      "doCt": 1516,
+      "doRightCt": 1380,
+      "tags": "系统设计",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "UML中，用于物理结构建模（如服务器、网络设备的部署关系）的图是<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察UML图的用途，属于系统设计核心知识点，必须掌握。\n\n各UML图的核心用途：\n\n- 选项A（部署图）：又称物理图，描述系统的物理部署结构（如“Web服务器部署在主机A，数据库服务器部署在主机B”），匹配题干“物理结构建模”，故正确。\n- 选项B（用例图）：描述用户与系统的交互需求（如“用户登录”用例），用于需求分析，故错误。\n- 选项C（类图）：描述系统的静态结构（如类、属性、方法、类间关系），用于设计阶段，故错误。\n- 选项D（活动图）：描述系统的动态流程（如“订单处理流程”），用于流程建模，故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:55:23",
+          "updateTime": "2025-11-11 12:55:23",
+          "id": 26158,
+          "questionId": 13845,
+          "keyStr": "A",
+          "valueStr": "部署图",
+          "correct": true,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:55:23",
+          "updateTime": "2025-11-11 12:55:23",
+          "id": 26159,
+          "questionId": 13845,
+          "keyStr": "B",
+          "valueStr": "用例图",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:55:23",
+          "updateTime": "2025-11-11 12:55:23",
+          "id": 26160,
+          "questionId": 13845,
+          "keyStr": "C",
+          "valueStr": "类图",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:55:23",
+          "updateTime": "2025-11-11 12:55:23",
+          "id": 26161,
+          "questionId": 13845,
+          "keyStr": "D",
+          "valueStr": "活动图",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "A"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13845,
+        "nameAlias": "69",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 69
+    },
+    {
+      "id": 13846,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "71",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2413,
+      "grade": 2,
+      "gradeStr": "建议掌握",
+      "doCt": 1595,
+      "doRightCt": 1021,
+      "tags": "系统设计",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "下列关于UML活动图的描述，错误的是<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察UML活动图的元素，属于系统设计知识点，建议掌握。\n\n活动图元素的正确定义：\n\n- 选项A（正确）：活动可嵌套，复杂活动可分解为子活动（如“订单处理”分解为“订单验证”“支付处理”），故正确（非答案）。\n- 选项B（正确）：泳道将活动图划分为不同区域，每个区域对应一个对象或角色（如“用户”泳道、“系统”泳道），明确活动的执行者，故正确（非答案）。\n- 选项C（正确）：活动是需要执行时间的操作（如“计算订单金额”需消耗CPU时间），与“动作（Action）”（瞬时操作）区分，故正确（非答案）。\n- 选项D（错误）：分叉（Fork）表示“多线程并发”（一个流程分裂为两个并行流程），分支（Decision）表示“条件判断”（根据条件选择一个流程），选项D颠倒了二者含义，故错误（答案）。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 17:12:57",
+          "updateTime": "2025-11-11 17:12:57",
+          "id": 26162,
+          "questionId": 13846,
+          "keyStr": "A",
+          "valueStr": "活动（Activity）可以是原子的，不可以被中断",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 17:12:57",
+          "updateTime": "2025-11-11 17:12:57",
+          "id": 26163,
+          "questionId": 13846,
+          "keyStr": "B",
+          "valueStr": "泳道（Swimlane）用于分配活动给不同对象或角色",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 17:12:57",
+          "updateTime": "2025-11-11 17:12:57",
+          "id": 26164,
+          "questionId": 13846,
+          "keyStr": "C",
+          "valueStr": "完成活动需要消耗一定时间",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 17:12:57",
+          "updateTime": "2025-11-11 17:12:57",
+          "id": 26165,
+          "questionId": 13846,
+          "keyStr": "D",
+          "valueStr": "分叉（Fork）是判断，分支（Decision）是多线程并发",
+          "correct": true,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "D"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13846,
+        "nameAlias": "70",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 70
+    },
+    {
+      "id": 13847,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "72",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2306,
+      "grade": 2,
+      "gradeStr": "建议掌握",
+      "doCt": 1508,
+      "doRightCt": 1381,
+      "tags": "软件架构设计",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "一个软件可在不同架构、操作系统、编译器环境下运行和编译，这体现了软件的哪项特性<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察软件的质量属性，属于软件工程知识点，建议掌握。\n\n各质量属性的定义：\n\n- 选项A（可变性）：指软件易于修改以适配不同需求（如增加新功能），侧重“内部功能调整”，而非“跨环境兼容”，故错误。\n- 选项B（可移植性）：核心是软件在不同环境（架构、OS、编译器）中，无需或少量修改即可运行/编译，完全匹配题干描述，故正确。\n- 选项C（互操作性）：指软件与其他系统交换数据并协同工作的能力（如微信与支付系统交互），与“跨环境运行”无关，故错误。\n- 选项D（可维护性）：指软件易于修复bug或修改的能力，与“跨环境兼容”无关，故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:55:25",
+          "updateTime": "2025-11-11 12:55:25",
+          "id": 26166,
+          "questionId": 13847,
+          "keyStr": "A",
+          "valueStr": "可变性",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:55:25",
+          "updateTime": "2025-11-11 12:55:25",
+          "id": 26167,
+          "questionId": 13847,
+          "keyStr": "B",
+          "valueStr": "可移植性",
+          "correct": true,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:55:25",
+          "updateTime": "2025-11-11 12:55:25",
+          "id": 26168,
+          "questionId": 13847,
+          "keyStr": "C",
+          "valueStr": "互操作性",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:55:25",
+          "updateTime": "2025-11-11 12:55:25",
+          "id": 26169,
+          "questionId": 13847,
+          "keyStr": "D",
+          "valueStr": "可维护性",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "B"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13847,
+        "nameAlias": "71",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 71
+    },
+    {
+      "id": 13848,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "73",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2109,
+      "grade": 3,
+      "gradeStr": "了解即可",
+      "doCt": 1382,
+      "doRightCt": 1047,
+      "tags": "企业信息化",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "某服务可处理关系型数据、文本数据等多种类型数据，且各数据源系统仍自行维护数据，该服务最可能是<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察数据服务的类型，属于企业信息化知识点，了解即可。\n\n各数据服务的核心功能：\n\n- 选项A（数据复制服务）：将数据从源系统复制到目标系统（如数据库同步），目标系统存储数据副本，与“各系统自行维护数据”不符，故错误。\n- 选项B（联邦服务）：通过统一接口访问多个数据源（关系型、文本等），数据仍存储在源系统中，不复制到统一存储，完全匹配题干描述，故正确。\n- 选项C（数据转换服务）：将数据从一种格式转换为另一种格式（如JSON转XML），不涉及多数据源访问，故错误。\n- 选项D（数据搜索服务）：提供数据检索功能（如 Elasticsearch），不强调“多类型数据且源系统维护数据”，故错误。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:55:26",
+          "updateTime": "2025-11-11 12:55:26",
+          "id": 26170,
+          "questionId": 13848,
+          "keyStr": "A",
+          "valueStr": "数据复制服务",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:55:26",
+          "updateTime": "2025-11-11 12:55:26",
+          "id": 26171,
+          "questionId": 13848,
+          "keyStr": "B",
+          "valueStr": "联邦服务（数据联邦）",
+          "correct": true,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:55:26",
+          "updateTime": "2025-11-11 12:55:26",
+          "id": 26172,
+          "questionId": 13848,
+          "keyStr": "C",
+          "valueStr": "数据转换服务",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:55:26",
+          "updateTime": "2025-11-11 12:55:26",
+          "id": 26173,
+          "questionId": 13848,
+          "keyStr": "D",
+          "valueStr": "数据搜索服务",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "B"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13848,
+        "nameAlias": "72",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 72
+    },
+    {
+      "id": 13849,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "74",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2688,
+      "grade": 2,
+      "gradeStr": "建议掌握",
+      "doCt": 1657,
+      "doRightCt": 711,
+      "tags": "软件架构设计",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "下列哪项不属于性能设计的合理流程步骤<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察性能设计的流程，属于软件架构设计知识点，建议掌握。\n\n性能设计的核心逻辑：性能是“非功能需求”，需基于“功能需求”和“非功能需求”（如响应时间、并发量）开展，流程应遵循“需求→设计→评估”的顺序。\n\n选项A、B、C：均先分析功能/非功能需求，再进行设计和评估，符合合理流程，故错误。\n选项D：直接从“性能计算”开始，未基于功能和非功能需求，跳过了需求分析这一基础环节，流程不合理，故正确。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:55:27",
+          "updateTime": "2025-11-11 12:55:27",
+          "id": 26174,
+          "questionId": 13849,
+          "keyStr": "A",
+          "valueStr": "功能需求分析 → 非功能需求分析 → 功能设计 → 非功能设计",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:55:27",
+          "updateTime": "2025-11-11 12:55:27",
+          "id": 26175,
+          "questionId": 13849,
+          "keyStr": "B",
+          "valueStr": "功能需求分析 → 非功能需求分析 → 性能设计 → 性能评估",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:55:27",
+          "updateTime": "2025-11-11 12:55:27",
+          "id": 26176,
+          "questionId": 13849,
+          "keyStr": "C",
+          "valueStr": "功能设计 → 非功能设计 → 性能设计 → 性能评估",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:55:27",
+          "updateTime": "2025-11-11 12:55:27",
+          "id": 26177,
+          "questionId": 13849,
+          "keyStr": "D",
+          "valueStr": "性能计算 → 性能规划 → 性能设计 → 性能评估",
+          "correct": true,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "D"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13849,
+        "nameAlias": "73",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 73
+    },
+    {
+      "id": 13850,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "75",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2721,
+      "grade": 3,
+      "gradeStr": "了解即可",
+      "doCt": 1755,
+      "doRightCt": 817,
+      "tags": "法律法规",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "下列关于专利法的描述，错误的是<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察专利法的基础概念，属于信息安全知识点，了解即可。\n\n专利的核心分类与规则：\n\n- 选项A（正确）：发明专利保护期限通常为20年，实用新型专利为10年，故正确（非答案）。\n- 选项B（正确）：外观设计专利保护产品的形状、图案、色彩等外观特征，故正确（非答案）。\n- 选项C（错误）：实用新型专利（保护产品的形状、构造）和外观设计专利是独立的专利类型，实用新型专利不包括外观设计专利，故错误（答案）。\n- 选项D（正确）：专利授权需满足“新颖性（未公开）、创造性（非显而易见）、实用性（可应用）”，故正确（非答案）。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:55:28",
+          "updateTime": "2025-11-11 12:55:28",
+          "id": 26178,
+          "questionId": 13850,
+          "keyStr": "A",
+          "valueStr": "发明专利保护期限通常长于实用新型专利",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:55:28",
+          "updateTime": "2025-11-11 12:55:28",
+          "id": 26179,
+          "questionId": 13850,
+          "keyStr": "B",
+          "valueStr": "外观设计专利保护产品的外形、图案等",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:55:28",
+          "updateTime": "2025-11-11 12:55:28",
+          "id": 26180,
+          "questionId": 13850,
+          "keyStr": "C",
+          "valueStr": "实用新型专利包括外观设计专利",
+          "correct": true,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:55:28",
+          "updateTime": "2025-11-11 12:55:28",
+          "id": 26181,
+          "questionId": 13850,
+          "keyStr": "D",
+          "valueStr": "专利法保护的主体需符合“新颖性、创造性、实用性”",
+          "correct": false,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "C"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13850,
+        "nameAlias": "74",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 74
+    },
+    {
+      "id": 13851,
+      "typeCode": 2,
+      "sourceStr": "25年11月-架构-选择题",
+      "name": "76",
+      "nameAlias": null,
+      "orderNum": null,
+      "readCt": 2569,
+      "grade": 1,
+      "gradeStr": "必须掌握",
+      "doCt": 1797,
+      "doRightCt": 1323,
+      "tags": "软件实现与测试",
+      "createTime": null,
+      "updateTime": null,
+      "intro": "软件测试的核心目的是<font color='blue'>（<u> 问题1</u>）</font>。",
+      "answer": "此题考察软件测试的目的，属于软件实现与测试核心知识点，必须掌握。\n\n软件测试的核心原则：\n\n- 测试无法证明软件“无缺陷”或“完全正确”（因测试无法覆盖所有场景），因此选项A（证明正确）、B（证明无缺陷）均错误。\n- 选项C（验证符合所有需求）：是测试的“部分目标”（确认测试的目标），但非“核心目的”。\n- 选项D（发现错误，降低风险）：测试的核心价值是通过发现潜在错误（如功能bug、性能瓶颈），避免错误在生产环境中导致严重后果（如数据丢失、系统崩溃），降低项目风险，故正确。",
+      "analysis": "",
+      "options": [
+        {
+          "createTime": "2025-11-11 12:55:29",
+          "updateTime": "2025-11-11 12:55:29",
+          "id": 26182,
+          "questionId": 13851,
+          "keyStr": "A",
+          "valueStr": "证明软件的正确性",
+          "correct": false,
+          "orderNum": 1
+        },
+        {
+          "createTime": "2025-11-11 12:55:29",
+          "updateTime": "2025-11-11 12:55:29",
+          "id": 26183,
+          "questionId": 13851,
+          "keyStr": "B",
+          "valueStr": "证明软件无缺陷",
+          "correct": false,
+          "orderNum": 2
+        },
+        {
+          "createTime": "2025-11-11 12:55:29",
+          "updateTime": "2025-11-11 12:55:29",
+          "id": 26184,
+          "questionId": 13851,
+          "keyStr": "C",
+          "valueStr": "验证软件是否符合所有需求",
+          "correct": false,
+          "orderNum": 3
+        },
+        {
+          "createTime": "2025-11-11 12:55:29",
+          "updateTime": "2025-11-11 12:55:29",
+          "id": 26185,
+          "questionId": 13851,
+          "keyStr": "D",
+          "valueStr": "发现程序错误，降低风险",
+          "correct": true,
+          "orderNum": 4
+        }
+      ],
+      "correctOptions": [
+        "D"
+      ],
+      "_paperQuestionMeta": {
+        "id": 13851,
+        "nameAlias": "75",
+        "answer": null,
+        "answerStatus": 0
+      },
+      "_indexInPaper": 75
+    }
+  ]
+}

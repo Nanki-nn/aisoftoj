@@ -18,6 +18,8 @@ public interface KnowledgeDocumentService {
     List<KnowledgeDocumentDTO> list(Long userId, Long knowledgeBaseId);
     KnowledgeDocumentDTO detail(Long userId, Long id);
     KnowledgeDocumentDTO retry(Long userId, Long id, String optionsJson);
+    KnowledgeDocumentDTO extractKnowledgeGraph(Long userId, Long id);
+    KnowledgeDocumentDTO deleteKnowledgeGraph(Long userId, Long id);
     KnowledgeDocumentDTO move(Long userId, Long id, Long knowledgeBaseId);
     void cancel(Long userId, Long id);
     void delete(Long userId, Long id);

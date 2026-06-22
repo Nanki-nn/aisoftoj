@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.nan.aisoftoj.dto.*;
+import com.nan.aisoftoj.dto.recommendation.WrongQuestionEvidenceDTO;
 import com.nan.aisoftoj.entity.KnowledgeBase;
 import com.nan.aisoftoj.entity.KnowledgeDocument;
 import com.nan.aisoftoj.entity.KnowledgeDocumentVersion;
@@ -11,6 +12,7 @@ import com.nan.aisoftoj.mapper.KnowledgeBaseMapper;
 import com.nan.aisoftoj.mapper.KnowledgeDocumentMapper;
 import com.nan.aisoftoj.mapper.KnowledgeDocumentVersionMapper;
 import com.nan.aisoftoj.mapper.AiChatSessionKnowledgeBaseMapper;
+import com.nan.aisoftoj.mapper.UserWrongQuestionStatMapper;
 import com.nan.aisoftoj.service.KnowledgeDocumentService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
@@ -26,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.*;
 import java.time.LocalDateTime;
 import java.util.*;
+import java.util.concurrent.CompletableFuture;
 
 @Service
 public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
@@ -35,16 +38,25 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
     private static final Set<String> ACTIVE_STATUSES = new HashSet<>(Arrays.asList(
             "uploaded", "queued", "parsing", "normalizing", "chunking", "embedding", "indexing"
     ));
+    private static final int GRAPH_CHUNK_LIMIT = 72;
+    private static final int KG_ALIGNMENT_WRONG_QUESTION_LIMIT = 60;
+    private static final int KG_ALIGNMENT_LIMIT = 120;
 
     @Autowired private KnowledgeBaseMapper baseMapper;
     @Autowired private KnowledgeDocumentMapper documentMapper;
     @Autowired private KnowledgeDocumentVersionMapper versionMapper;
     @Autowired private AiChatSessionKnowledgeBaseMapper chatBaseMapper;
+    @Autowired private UserWrongQuestionStatMapper wrongQuestionStatMapper;
+    @Autowired private Neo4jRecommendationGraphClient graphClient;
     @Autowired private ObjectMapper objectMapper;
     @Value("${ai-service.url:http://localhost:8090}") private String aiServiceUrl;
     @Value("${ai-service.secret:}") private String aiServiceSecret;
     @Value("${knowledge.upload.path:./uploads/knowledge/}") private String uploadPath;
     @Value("${knowledge.max-file-size:209715200}") private long maxFileSize;
+    @Value("${knowledge.graph.extraction-timeout-millis:900000}")
+    private int graphExtractionTimeoutMillis;
+    @Value("${knowledge.graph.alignment-timeout-millis:300000}")
+    private int graphAlignmentTimeoutMillis;
 
     @Override
     public List<KnowledgeBaseDTO> listBases(Long userId) {
@@ -191,6 +203,22 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
     }
 
     @Override
+    public KnowledgeDocumentDTO extractKnowledgeGraph(Long userId, Long id) {
+        KnowledgeDocument document = requireDocument(userId, id);
+        KnowledgeDocumentVersion version = currentVersion(document);
+        if (!"ready".equals(version.getStatus())) {
+            throw new IllegalArgumentException("文档可检索后才能抽取知识图谱");
+        }
+        graphClient.markDocumentGraphStatus(
+                document.getDocumentId(),
+                version.getVersion(),
+                "running",
+                "");
+        CompletableFuture.runAsync(() -> runGraphExtraction(userId, document.getId(), version.getVersion()));
+        return detail(userId, id);
+    }
+
+    @Override
     public KnowledgeDocumentDTO move(Long userId, Long id, Long knowledgeBaseId) {
         KnowledgeDocument document = requireDocument(userId, id);
         KnowledgeBase base = requireBase(userId, knowledgeBaseId);
@@ -225,11 +253,22 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
     public void delete(Long userId, Long id) {
         KnowledgeDocument document = requireDocument(userId, id);
         if (ACTIVE_STATUSES.contains(document.getStatus())) cancel(userId, id);
+        try {
+            graphClient.deleteDocumentKnowledgeGraph(document.getDocumentId());
+        } catch (Exception ignored) {
+        }
         callQuietly("/api/v1/index/documents/" + document.getDocumentId(), "DELETE");
         versionMapper.delete(new LambdaQueryWrapper<KnowledgeDocumentVersion>()
                 .eq(KnowledgeDocumentVersion::getDocumentId, document.getId()));
         documentMapper.deleteById(document.getId());
         try { Files.deleteIfExists(Paths.get(document.getStoragePath())); } catch (IOException ignored) { }
+    }
+
+    @Override
+    public KnowledgeDocumentDTO deleteKnowledgeGraph(Long userId, Long id) {
+        KnowledgeDocument document = requireDocument(userId, id);
+        graphClient.deleteDocumentKnowledgeGraph(document.getDocumentId());
+        return detail(userId, id);
     }
 
     @Override
@@ -336,6 +375,92 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
                 }
             } catch (Exception ignored) { }
         }
+    }
+
+    private void runGraphExtraction(Long userId, Long documentPk, Integer versionNumber) {
+        KnowledgeDocument document = documentMapper.selectById(documentPk);
+        if (document == null) {
+            return;
+        }
+        try {
+            KnowledgeDocumentVersion version = versionMapper.selectOne(
+                    new LambdaQueryWrapper<KnowledgeDocumentVersion>()
+                            .eq(KnowledgeDocumentVersion::getDocumentId, document.getId())
+                            .eq(KnowledgeDocumentVersion::getVersion, versionNumber)
+                            .last("LIMIT 1"));
+            if (version == null || !"ready".equals(version.getStatus())) {
+                throw new IllegalStateException("文档当前版本不可抽取");
+            }
+            Map<String, Object> graph = requestDocumentGraphExtraction(userId, document, version);
+            List<WrongQuestionEvidenceDTO> evidences = wrongQuestionStatMapper.selectRecommendationEvidence(userId.intValue());
+            if (evidences != null && !evidences.isEmpty()) {
+                graphClient.syncWrongQuestionEvidence(userId.intValue(), evidences);
+                try {
+                    Map<String, Object> alignment = requestWrongQuestionAlignment(userId, document, graph, evidences);
+                    graph.put("wrong_question_alignments", alignment.get("alignments"));
+                    graph.put("wrong_question_alignment_source", "llm_semantic_alignment");
+                } catch (Exception alignmentException) {
+                    graph.put("wrong_question_alignments", Collections.emptyList());
+                    graph.put("wrong_question_alignment_error", message(alignmentException));
+                }
+            }
+            graphClient.syncDocumentKnowledgeGraph(
+                    userId.intValue(),
+                    document.getDocumentId(),
+                    document.getKnowledgeBaseId(),
+                    document.getFileName(),
+                    version.getVersion(),
+                    graph);
+        } catch (Exception exception) {
+            graphClient.markDocumentGraphStatus(
+                    document.getDocumentId(),
+                    versionNumber,
+                    "failed",
+                    message(exception));
+        }
+    }
+
+    private Map<String, Object> requestDocumentGraphExtraction(
+            Long userId,
+            KnowledgeDocument document,
+            KnowledgeDocumentVersion version) throws Exception {
+        Map<String, Object> body = new HashMap<>();
+        body.put("knowledge_base_id", document.getKnowledgeBaseId());
+        body.put("document_id", document.getDocumentId());
+        body.put("version", version.getVersion());
+        body.put("max_chunks", GRAPH_CHUNK_LIMIT);
+        byte[] payload = objectMapper.writeValueAsBytes(body);
+        HttpURLConnection connection = connection("/api/v1/knowledge-graph/documents/extract", "POST");
+        connection.setReadTimeout(Math.max(60_000, graphExtractionTimeoutMillis));
+        connection.setDoOutput(true);
+        connection.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+        try (OutputStream output = connection.getOutputStream()) {
+            output.write(payload);
+        }
+        return readJson(connection);
+    }
+
+    private Map<String, Object> requestWrongQuestionAlignment(
+            Long userId,
+            KnowledgeDocument document,
+            Map<String, Object> graph,
+            List<WrongQuestionEvidenceDTO> evidences) throws Exception {
+        Map<String, Object> body = new HashMap<>();
+        body.put("user_id", String.valueOf(userId));
+        body.put("document_id", document.getDocumentId());
+        body.put("wrong_questions", limitList(evidences, KG_ALIGNMENT_WRONG_QUESTION_LIMIT));
+        body.put("entity_nodes", graph.get("entity_nodes"));
+        body.put("kg_extraction_chunks", graph.get("kg_extraction_chunks"));
+        body.put("max_alignments", KG_ALIGNMENT_LIMIT);
+        byte[] payload = objectMapper.writeValueAsBytes(body);
+        HttpURLConnection connection = connection("/api/v1/knowledge-graph/wrong-question-alignments", "POST");
+        connection.setReadTimeout(Math.max(60_000, graphAlignmentTimeoutMillis));
+        connection.setDoOutput(true);
+        connection.setRequestProperty("Content-Type", "application/json; charset=UTF-8");
+        try (OutputStream output = connection.getOutputStream()) {
+            output.write(payload);
+        }
+        return readJson(connection);
     }
 
     private KnowledgeBase ensureDefaultBase(Long userId) {
@@ -501,11 +626,27 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
         dto.setVersion(version.getVersion());
         dto.setProgress(version.getProgress());
         dto.setQueuedAhead(version.getQueuedAhead());
+        applyGraphStatus(dto, document, version);
         dto.setOptions(parseOptions(version.getOptionsJson()));
         dto.setVersions(history);
         dto.setCreateTime(document.getCreateTime());
         dto.setUpdateTime(version.getUpdateTime());
         return dto;
+    }
+
+    private void applyGraphStatus(
+            KnowledgeDocumentDTO dto,
+            KnowledgeDocument document,
+            KnowledgeDocumentVersion version) {
+        Map<String, Object> status = graphClient.documentGraphStatus(
+                document.getDocumentId(),
+                version.getVersion());
+        dto.setGraphStatus(string(status.get("graphStatus")));
+        dto.setGraphNodeCount(integer(status.get("graphNodeCount")));
+        dto.setGraphRelationCount(integer(status.get("graphRelationCount")));
+        dto.setGraphPendingCount(integer(status.get("graphPendingCount")));
+        dto.setGraphErrorMessage(string(status.get("graphErrorMessage")));
+        dto.setGraphUpdatedAt(string(status.get("graphUpdatedAt")));
     }
 
     private KnowledgeDocumentVersionDTO toVersionDTO(KnowledgeDocumentVersion version) {
@@ -738,6 +879,12 @@ public class KnowledgeDocumentServiceImpl implements KnowledgeDocumentService {
         Map<String, Object> map = new HashMap<>();
         map.put(key, value);
         return map;
+    }
+    private <T> List<T> limitList(List<T> values, int limit) {
+        if (values == null || values.size() <= limit) {
+            return values;
+        }
+        return values.subList(0, limit);
     }
     private Map<String, Object> asMap(Object value) {
         if (!(value instanceof Map)) return new HashMap<>();
