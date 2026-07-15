@@ -21,6 +21,7 @@ import { AdminDashboard } from './components/admin/AdminDashboard';
 import { AdminUsers } from './components/admin/AdminUsers';
 import { AdminQuestions } from './components/admin/AdminQuestions';
 import { AdminOssUpload } from './components/admin/AdminOssUpload';
+import { AdminRouteGuard } from './components/admin/AdminRouteGuard';
 import { useExamSession } from './hooks/useExamSession';
 import { useAuth } from './hooks/useAuth';
 import { ExamConfig as ExamConfigType, ExamPaper } from './types/exam';
@@ -496,33 +497,41 @@ export default function App() {
         <Route
           path="/admin"
           element={
-            <AdminLayout>
-              <AdminDashboard />
-            </AdminLayout>
+            <AdminRouteGuard>
+              <AdminLayout>
+                <AdminDashboard />
+              </AdminLayout>
+            </AdminRouteGuard>
           }
         />
         <Route
           path="/admin/users"
           element={
-            <AdminLayout>
-              <AdminUsers />
-            </AdminLayout>
+            <AdminRouteGuard>
+              <AdminLayout>
+                <AdminUsers />
+              </AdminLayout>
+            </AdminRouteGuard>
           }
         />
         <Route
           path="/admin/questions"
           element={
-            <AdminLayout>
-              <AdminQuestions />
-            </AdminLayout>
+            <AdminRouteGuard>
+              <AdminLayout>
+                <AdminQuestions />
+              </AdminLayout>
+            </AdminRouteGuard>
           }
         />
         <Route
           path="/admin/oss"
           element={
-            <AdminLayout>
-              <AdminOssUpload />
-            </AdminLayout>
+            <AdminRouteGuard>
+              <AdminLayout>
+                <AdminOssUpload />
+              </AdminLayout>
+            </AdminRouteGuard>
           }
         />
         <Route path="*" element={<Navigate to={ROUTES.home} replace />} />

@@ -176,10 +176,12 @@ export function AppHeader({ onShowAuth, onShowProfile }: AppHeaderProps) {
                     <BookOpenCheck className="h-4 w-4" aria-hidden="true" />
                     错题分析
                   </DropdownMenuItem>
-                  <DropdownMenuItem onClick={() => navigate('/admin')} className="flex items-center gap-2 rounded-lg">
-                    <Shield className="h-4 w-4" aria-hidden="true" />
-                    后台管理
-                  </DropdownMenuItem>
+                  {user.role === 'ADMIN' && (
+                    <DropdownMenuItem onClick={() => navigate('/admin')} className="flex items-center gap-2 rounded-lg">
+                      <Shield className="h-4 w-4" aria-hidden="true" />
+                      后台管理
+                    </DropdownMenuItem>
+                  )}
                   <DropdownMenuItem onClick={logout} className="flex items-center gap-2 rounded-lg text-red-600 focus:text-red-700">
                     <LogOut className="h-4 w-4" aria-hidden="true" />
                     退出登录
@@ -304,14 +306,16 @@ export function AppHeader({ onShowAuth, onShowProfile }: AppHeaderProps) {
                       <BookOpenCheck className="h-5 w-5" aria-hidden="true" />
                       错题分析
                     </button>
-                    <button
-                      type="button"
-                      onClick={() => closeAndRun(() => navigate('/admin'))}
-                      className="flex min-h-12 w-full items-center gap-3 rounded-xl px-4 text-left font-medium text-slate-700 outline-none hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-blue-600"
-                    >
-                      <Shield className="h-5 w-5" aria-hidden="true" />
-                      后台管理
-                    </button>
+                    {user.role === 'ADMIN' && (
+                      <button
+                        type="button"
+                        onClick={() => closeAndRun(() => navigate('/admin'))}
+                        className="flex min-h-12 w-full items-center gap-3 rounded-xl px-4 text-left font-medium text-slate-700 outline-none hover:bg-slate-100 focus-visible:ring-2 focus-visible:ring-blue-600"
+                      >
+                        <Shield className="h-5 w-5" aria-hidden="true" />
+                        后台管理
+                      </button>
+                    )}
                     <button
                       type="button"
                       onClick={handleLogout}

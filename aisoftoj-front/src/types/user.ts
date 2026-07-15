@@ -7,6 +7,7 @@ export interface User {
   nickname: string;
   avatar?: string;
   phone?: string;
+  role: 'USER' | 'ADMIN';
   joinDate: string;
   lastLoginDate: string;
   totalExams: number;
