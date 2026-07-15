@@ -2,6 +2,7 @@ package com.nan.aisoftoj.service.impl;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nan.aisoftoj.common.ForbiddenException;
+import com.nan.aisoftoj.common.ResourceNotFoundException;
 import com.nan.aisoftoj.consts.PracticeSessionState;
 import com.nan.aisoftoj.dto.*;
 import com.nan.aisoftoj.entity.Paper;
@@ -55,8 +56,10 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
 
         //校验paperId是否存在
         Paper paper = paperService.getById(paperId);
-        if (paper == null) {
-            throw new IllegalArgumentException("试卷不存在");
+        if (paper == null
+                || Boolean.TRUE.equals(paper.getIsDeleted())
+                || !Boolean.TRUE.equals(paper.getPublishStatus())) {
+            throw new ResourceNotFoundException("试卷不存在或暂未发布");
         }
 
         //检查用户是否已创建该试卷的会话记录

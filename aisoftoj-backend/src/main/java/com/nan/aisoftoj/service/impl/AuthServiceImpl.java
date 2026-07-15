@@ -93,17 +93,12 @@ public class AuthServiceImpl implements AuthService {
 
     @Override
     public AuthUserDTO getCurrentUser(String token) {
-        Integer userId = getUserIdByToken(token);
-        User user = userMapper.selectById(userId);
-        if (user == null || Boolean.TRUE.equals(user.getIsDeleted())) {
-            throw new IllegalArgumentException("用户不存在");
-        }
-        return buildUserDTO(user);
+        return buildUserDTO(getActiveUserByToken(token));
     }
 
     @Override
     public Integer getCurrentUserId(String token) {
-        return getUserIdByToken(token);
+        return getActiveUserByToken(token).getId();
     }
 
     @Override
@@ -150,27 +145,48 @@ public class AuthServiceImpl implements AuthService {
     private Integer getUserIdByToken(String token) {
         String normalizedToken = normalizeToken(token);
         if (StrUtil.isBlank(normalizedToken)) {
-            throw new UnauthorizedException("未登录或登录已过期");
+            throw unauthorized();
         }
 
         byte[] secretBytes = getSecretBytes();
-        if (!JWTUtil.verify(normalizedToken, secretBytes)) {
-            throw new UnauthorizedException("未登录或登录已过期");
-        }
+        try {
+            if (!JWTUtil.verify(normalizedToken, secretBytes)) {
+                throw unauthorized();
+            }
 
-        JWT jwt = JWTUtil.parseToken(normalizedToken);
-        Object expiresAt = jwt.getPayload("exp");
-        Object userId = jwt.getPayload("userId");
-        if (expiresAt == null || userId == null) {
-            throw new UnauthorizedException("未登录或登录已过期");
-        }
+            JWT jwt = JWTUtil.parseToken(normalizedToken);
+            Object expiresAt = jwt.getPayload("exp");
+            Object userId = jwt.getPayload("userId");
+            if (expiresAt == null || userId == null) {
+                throw unauthorized();
+            }
 
-        long expireAtMillis = Long.parseLong(String.valueOf(expiresAt));
-        if (expireAtMillis <= System.currentTimeMillis()) {
-            throw new UnauthorizedException("未登录或登录已过期");
-        }
+            long expireAtMillis = Long.parseLong(String.valueOf(expiresAt));
+            if (expireAtMillis <= System.currentTimeMillis()) {
+                throw unauthorized();
+            }
 
-        return Integer.parseInt(String.valueOf(userId));
+            return Integer.parseInt(String.valueOf(userId));
+        } catch (UnauthorizedException ex) {
+            throw ex;
+        } catch (RuntimeException ex) {
+            throw unauthorized();
+        }
+    }
+
+    private User getActiveUserByToken(String token) {
+        Integer userId = getUserIdByToken(token);
+        User user = userMapper.selectById(userId);
+        if (user == null
+                || Boolean.TRUE.equals(user.getIsDeleted())
+                || !Boolean.TRUE.equals(user.getIsEnabled())) {
+            throw unauthorized();
+        }
+        return user;
+    }
+
+    private UnauthorizedException unauthorized() {
+        return new UnauthorizedException("未登录或登录已过期");
     }
 
     private String createToken(Integer userId) {

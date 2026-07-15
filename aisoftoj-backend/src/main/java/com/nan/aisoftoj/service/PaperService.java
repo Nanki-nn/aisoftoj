@@ -11,6 +11,8 @@ public interface PaperService {
 
     List<PaperDTO> getPapers(Integer userId, Integer subjectId, Integer cateId);
 
+    Paper getPublishedPaper(Integer id);
+
     Paper getById(Integer id);
 
 }

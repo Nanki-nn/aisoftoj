@@ -1,7 +1,7 @@
 import { useState, useCallback } from 'react';
 import { ExamSession, ExamConfig, Question } from '../types/exam';
 import { filterQuestions, getQuestionsByPaper } from '../data/questions';
-import { ExamPaper } from '../data/examPapers';
+import { ExamPaper } from '../types/exam';
 
 export function useExamSession() {
   const [currentSession, setCurrentSession] = useState<ExamSession | null>(null);

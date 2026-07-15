@@ -1,9 +1,10 @@
 package com.nan.aisoftoj.common;
 
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ControllerAdvice;
 import org.springframework.web.bind.annotation.ExceptionHandler;
-import org.springframework.web.bind.annotation.ResponseBody;
 
 import javax.servlet.http.HttpServletRequest;
 
@@ -11,35 +12,47 @@ import javax.servlet.http.HttpServletRequest;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(IllegalArgumentException.class)
-    @ResponseBody
-    public ErrorResponse handleIllegalArgumentException(HttpServletRequest request, IllegalArgumentException ex) {
-        return new ErrorResponse(400, ex.getMessage(), request.getRequestURI());
+    public ResponseEntity<ErrorResponse> handleIllegalArgumentException(
+            HttpServletRequest request, IllegalArgumentException ex) {
+        return error(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
-    @ResponseBody
-    public ErrorResponse handleMethodArgumentNotValidException(HttpServletRequest request, MethodArgumentNotValidException ex) {
+    public ResponseEntity<ErrorResponse> handleMethodArgumentNotValidException(
+            HttpServletRequest request, MethodArgumentNotValidException ex) {
         String message = ex.getBindingResult().getFieldErrors().isEmpty()
                 ? "请求参数不合法"
                 : ex.getBindingResult().getFieldErrors().get(0).getDefaultMessage();
-        return new ErrorResponse(400, message, request.getRequestURI());
+        return error(HttpStatus.BAD_REQUEST, message, request);
     }
 
     @ExceptionHandler(UnauthorizedException.class)
-    @ResponseBody
-    public ErrorResponse handleUnauthorizedException(HttpServletRequest request, UnauthorizedException ex) {
-        return new ErrorResponse(401, ex.getMessage(), request.getRequestURI());
+    public ResponseEntity<ErrorResponse> handleUnauthorizedException(
+            HttpServletRequest request, UnauthorizedException ex) {
+        return error(HttpStatus.UNAUTHORIZED, ex.getMessage(), request);
     }
 
     @ExceptionHandler(ForbiddenException.class)
-    @ResponseBody
-    public ErrorResponse handleForbiddenException(HttpServletRequest request, ForbiddenException ex) {
-        return new ErrorResponse(403, ex.getMessage(), request.getRequestURI());
+    public ResponseEntity<ErrorResponse> handleForbiddenException(
+            HttpServletRequest request, ForbiddenException ex) {
+        return error(HttpStatus.FORBIDDEN, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(ResourceNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleResourceNotFoundException(
+            HttpServletRequest request, ResourceNotFoundException ex) {
+        return error(HttpStatus.NOT_FOUND, ex.getMessage(), request);
     }
 
     @ExceptionHandler(Exception.class)
-    @ResponseBody
-    public ErrorResponse handleGeneralException(HttpServletRequest request, Exception ex) {
-        return new ErrorResponse(500, "服务器内部错误", request.getRequestURI());
+    public ResponseEntity<ErrorResponse> handleGeneralException(
+            HttpServletRequest request, Exception ex) {
+        return error(HttpStatus.INTERNAL_SERVER_ERROR, "服务器内部错误", request);
+    }
+
+    private ResponseEntity<ErrorResponse> error(
+            HttpStatus status, String message, HttpServletRequest request) {
+        return ResponseEntity.status(status)
+                .body(new ErrorResponse(status.value(), message, request.getRequestURI()));
     }
 }
