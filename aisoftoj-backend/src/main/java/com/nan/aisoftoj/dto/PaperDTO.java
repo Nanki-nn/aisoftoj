@@ -29,6 +29,9 @@ public class PaperDTO {
     /** 当前用户在该试卷下创建过的会话数。 */
     private Integer readCt;
 
+    /** 当前用户在该试卷中的已完成题数。 */
+    private Integer completedCount;
+
     /** 当前用户正在进行的会话 ID。 */
     private Integer doingSessionId;
 

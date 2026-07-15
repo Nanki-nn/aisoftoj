@@ -58,16 +58,12 @@ public class PaperServiceImpl implements PaperService {
 
         Map<Integer, Long> sessionCountByPaperId = sessions.stream()
                 .collect(Collectors.groupingBy(PracticeSession::getPaperId, Collectors.counting()));
-        Map<Integer, Integer> doingSessionIdByPaperId = sessions.stream()
+        Map<Integer, PracticeSession> doingSessionByPaperId = sessions.stream()
                 .filter(this::isDoing)
                 .collect(Collectors.toMap(
                         PracticeSession::getPaperId,
-                        PracticeSession::getId,
+                        session -> session,
                         (existing, replacement) -> replacement));
-        Set<Integer> doingPaperIds = sessions.stream()
-                .filter(this::isDoing)
-                .map(PracticeSession::getPaperId)
-                .collect(Collectors.toSet());
         Set<Integer> finishedPaperIds = sessions.stream()
                 .filter(this::isFinished)
                 .map(PracticeSession::getPaperId)
@@ -78,8 +74,7 @@ public class PaperServiceImpl implements PaperService {
                         paper,
                         userId,
                         sessionCountByPaperId,
-                        doingSessionIdByPaperId,
-                        doingPaperIds,
+                        doingSessionByPaperId,
                         finishedPaperIds))
                 .collect(Collectors.toList());
     }
@@ -88,8 +83,7 @@ public class PaperServiceImpl implements PaperService {
             Paper paper,
             Integer userId,
             Map<Integer, Long> sessionCountByPaperId,
-            Map<Integer, Integer> doingSessionIdByPaperId,
-            Set<Integer> doingPaperIds,
+            Map<Integer, PracticeSession> doingSessionByPaperId,
             Set<Integer> finishedPaperIds) {
         PaperDTO dto = new PaperDTO();
         dto.setId(paper.getId());
@@ -102,14 +96,20 @@ public class PaperServiceImpl implements PaperService {
         dto.setUpdateTime(paper.getUpdateTime());
 
         if (userId != null) {
+            PracticeSession doingSession = doingSessionByPaperId.get(paper.getId());
             dto.setReadCt(sessionCountByPaperId.getOrDefault(paper.getId(), 0L).intValue());
-            dto.setDoingSessionId(doingSessionIdByPaperId.get(paper.getId()));
-            if (doingPaperIds.contains(paper.getId())) {
+            if (doingSession != null) {
+                dto.setDoingSessionId(doingSession.getId());
                 dto.setPaperStatus(PaperStatus.IN_PROGRESS);
+                dto.setCompletedCount(doingSession.getAnsweredCount() == null
+                        ? 0
+                        : doingSession.getAnsweredCount());
             } else if (finishedPaperIds.contains(paper.getId())) {
                 dto.setPaperStatus(PaperStatus.COMPLETED);
+                dto.setCompletedCount(paper.getQuestionTotal() == null ? 0 : paper.getQuestionTotal());
             } else {
                 dto.setPaperStatus(PaperStatus.NOT_STARTED);
+                dto.setCompletedCount(0);
             }
         }
         return dto;

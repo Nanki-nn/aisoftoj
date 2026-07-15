@@ -351,14 +351,6 @@ export default function App() {
     navigate(ROUTES.profile);
   };
 
-  const handleShowPracticeHistory = () => {
-    navigate(ROUTES.practiceHistory);
-  };
-
-  const handleShowWrongQuestions = () => {
-    navigate(ROUTES.wrongQuestions);
-  };
-
   const handleContinuePracticeFromHistory = async (recordId: string, status: PracticeSessionRecord['status']) => {
     try {
       const session = await continuePracticeSession(recordId);
@@ -429,8 +421,6 @@ export default function App() {
               onStartPaper={handleStartPaper}
               onShowProfile={handleShowProfile}
               onShowAuth={handleShowAuth}
-              onShowPracticeHistory={handleShowPracticeHistory}
-              onShowWrongQuestions={handleShowWrongQuestions}
             />
           }
         />
@@ -441,7 +431,6 @@ export default function App() {
           element={
             <AppShell onShowAuth={handleShowAuth} onShowProfile={handleShowProfile}>
               <PracticeHistory
-                onBack={handleBackToHome}
                 onContinue={handleContinuePracticeFromHistory}
                 onViewResult={handleViewPracticeResultFromHistory}
               />
@@ -452,7 +441,7 @@ export default function App() {
           path={ROUTES.wrongQuestions}
           element={
             <AppShell onShowAuth={handleShowAuth} onShowProfile={handleShowProfile}>
-              <WrongQuestions onBack={handleBackToHome} onViewQuestion={handleViewWrongQuestion} />
+              <WrongQuestions onViewQuestion={handleViewWrongQuestion} />
             </AppShell>
           }
         />

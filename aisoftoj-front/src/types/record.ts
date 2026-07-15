@@ -12,11 +12,26 @@ export interface PracticeSessionRecord {
   status: 'inProgress' | 'completed'; // 状态
 }
 
-export interface PageResult<T> {
+export interface PageResult<T, S = undefined> {
   records: T[];
   total: number;
   page: number;
   pageSize: number;
+  summary?: S;
+}
+
+export interface PracticeHistorySummary {
+  totalCount: number;
+  inProgressCount: number;
+  completedCount: number;
+  answeredCount: number;
+}
+
+export interface WrongQuestionSummary {
+  totalCount: number;
+  masterCount: number;
+  frequentCount: number;
+  paperCount: number;
 }
 
 // 错题记录
