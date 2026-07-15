@@ -2,6 +2,9 @@ logging:
   level:
     com.nan.aisoftoj: warn
 
+server:
+  address: ${SERVER_ADDRESS:127.0.0.1}
+
 spring:
   datasource:
     url: ${DB_URL}

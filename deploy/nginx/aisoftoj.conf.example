@@ -1,0 +1,66 @@
+server {
+    listen 80;
+    listen [::]:80;
+    server_name your-domain.example;
+
+    root /var/www/aisoftoj;
+    index index.html;
+
+    # Spring Boot 限制单文件 10 MB；这里为 multipart 请求头预留空间。
+    client_max_body_size 12m;
+
+    location = /api {
+        return 308 /api/;
+    }
+
+    # proxy_pass 的尾斜杠会将外部 /api/ 前缀剥离后再转发。
+    location ^~ /api/ {
+        proxy_pass http://127.0.0.1:8080/;
+        proxy_http_version 1.1;
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_connect_timeout 5s;
+        proxy_send_timeout 120s;
+        proxy_read_timeout 120s;
+    }
+
+    location = /uploads {
+        return 308 /uploads/;
+    }
+
+    # 兼容后端 FILE_UPLOAD_URL_PREFIX=/uploads/ 的本地文件访问。
+    location ^~ /uploads/ {
+        proxy_pass http://127.0.0.1:8080/uploads/;
+        proxy_http_version 1.1;
+
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $remote_addr;
+        proxy_set_header X-Forwarded-Proto $scheme;
+
+        proxy_connect_timeout 5s;
+        proxy_send_timeout 120s;
+        proxy_read_timeout 120s;
+    }
+
+    # Vite 文件名包含内容哈希，可以长期缓存。
+    location ^~ /assets/ {
+        try_files $uri =404;
+        add_header Cache-Control "public, max-age=31536000, immutable";
+    }
+
+    # 每次重新验证 SPA 入口，确保新版本能及时加载。
+    location = /index.html {
+        try_files $uri =404;
+        add_header Cache-Control "no-cache, no-store, must-revalidate";
+    }
+
+    # React Router history fallback。
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+}
