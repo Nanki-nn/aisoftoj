@@ -14,5 +14,7 @@ public interface AuthService {
 
     Integer getCurrentUserId(String token);
 
+    Integer requireAdmin(String token);
+
     void logout(String token);
 }

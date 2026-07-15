@@ -28,7 +28,7 @@ public class AdminController {
 
     @GetMapping("/dashboard")
     public ResultDTO<AdminDashboardDTO> dashboard(HttpServletRequest request) {
-        requireLogin(request);
+        requireAdmin(request);
         return ResultDTO.success(adminService.getDashboard());
     }
 
@@ -38,7 +38,7 @@ public class AdminController {
                                                        @RequestParam(required = false) Boolean enabled,
                                                        @RequestParam(defaultValue = "1") Integer page,
                                                        @RequestParam(defaultValue = "10") Integer pageSize) {
-        requireLogin(request);
+        requireAdmin(request);
         return ResultDTO.success(adminService.listUsers(keyword, enabled, page, pageSize));
     }
 
@@ -46,13 +46,13 @@ public class AdminController {
     public ResultDTO<AdminUserDTO> updateUser(HttpServletRequest request,
                                               @PathVariable Integer userId,
                                               @RequestBody AdminUserUpdateRequest updateRequest) {
-        requireLogin(request);
+        requireAdmin(request);
         return ResultDTO.success(adminService.updateUser(userId, updateRequest));
     }
 
     @DeleteMapping("/users/{userId}")
     public ResultDTO<Void> deleteUser(HttpServletRequest request, @PathVariable Integer userId) {
-        requireLogin(request);
+        requireAdmin(request);
         adminService.deleteUser(userId);
         return ResultDTO.success();
     }
@@ -68,14 +68,14 @@ public class AdminController {
                                                               @RequestParam(required = false) Integer paperCateId,
                                                               @RequestParam(defaultValue = "1") Integer page,
                                                               @RequestParam(defaultValue = "10") Integer pageSize) {
-        requireLogin(request);
+        requireAdmin(request);
         return ResultDTO.success(adminService.listQuestions(keyword, questionType, difficulty, subjectName, year, month, paperCateId, page, pageSize));
     }
 
     @PostMapping("/questions")
     public ResultDTO<AdminQuestionDTO> createQuestion(HttpServletRequest request,
                                                       @Validated @RequestBody AdminQuestionRequest questionRequest) {
-        requireLogin(request);
+        requireAdmin(request);
         return ResultDTO.success(adminService.createQuestion(questionRequest));
     }
 
@@ -83,37 +83,36 @@ public class AdminController {
     public ResultDTO<AdminQuestionDTO> updateQuestion(HttpServletRequest request,
                                                       @PathVariable Integer questionId,
                                                       @Validated @RequestBody AdminQuestionRequest questionRequest) {
-        requireLogin(request);
+        requireAdmin(request);
         return ResultDTO.success(adminService.updateQuestion(questionId, questionRequest));
     }
 
     @DeleteMapping("/questions/{questionId}")
     public ResultDTO<Void> deleteQuestion(HttpServletRequest request, @PathVariable Integer questionId) {
-        requireLogin(request);
+        requireAdmin(request);
         adminService.deleteQuestion(questionId);
         return ResultDTO.success();
     }
 
     @GetMapping("/questions/subjects")
     public ResultDTO<List<String>> listSubjects(HttpServletRequest request) {
-        requireLogin(request);
+        requireAdmin(request);
         return ResultDTO.success(adminService.listSubjectNames());
     }
 
     @GetMapping("/questions/years")
     public ResultDTO<List<Integer>> listYears(HttpServletRequest request) {
-        requireLogin(request);
+        requireAdmin(request);
         return ResultDTO.success(adminService.listPaperYears());
     }
 
     @GetMapping("/questions/months")
     public ResultDTO<List<Integer>> listMonths(HttpServletRequest request) {
-        requireLogin(request);
+        requireAdmin(request);
         return ResultDTO.success(adminService.listPaperMonths());
     }
 
-    private void requireLogin(HttpServletRequest request) {
-        authService.getCurrentUserId(request.getHeader("Authorization"));
+    private void requireAdmin(HttpServletRequest request) {
+        authService.requireAdmin(request.getHeader("Authorization"));
     }
 }
-

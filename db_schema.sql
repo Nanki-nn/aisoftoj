@@ -15,6 +15,7 @@ CREATE TABLE `user` (
   `nick_name` varchar(64) COLLATE utf8mb4_bin NOT NULL DEFAULT '' COMMENT '昵称',
   `avatar` varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '头像URL或附件ID',
   `password` varchar(128) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '密码（BCrypt加密，可为空）',
+  `role` varchar(16) COLLATE utf8mb4_bin NOT NULL DEFAULT 'USER' COMMENT '用户角色：USER-普通用户，ADMIN-管理员',
   `is_enabled` tinyint(1) NOT NULL DEFAULT '1' COMMENT '是否启用：1-启用，0-停用',
   `is_deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT '删除状态：0-未删除，1-已删除',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',

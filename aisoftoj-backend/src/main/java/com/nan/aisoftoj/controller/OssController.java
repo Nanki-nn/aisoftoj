@@ -31,7 +31,7 @@ public class OssController {
     public ResultDTO<String> upload(HttpServletRequest request,
                                     @RequestParam("file") MultipartFile file,
                                     @RequestParam(value = "dir", required = false) String dir) {
-        authService.getCurrentUserId(request.getHeader("Authorization"));
+        authService.requireAdmin(request.getHeader("Authorization"));
 
         if (file == null || file.isEmpty()) {
             throw new IllegalArgumentException("文件不能为空");

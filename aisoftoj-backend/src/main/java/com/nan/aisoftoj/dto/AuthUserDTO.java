@@ -10,6 +10,7 @@ public class AuthUserDTO {
     private String nickname;
     private String avatar;
     private String phone;
+    private String role;
     private String joinDate;
     private String lastLoginDate;
     private Integer totalExams;

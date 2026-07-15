@@ -6,7 +6,9 @@ import cn.hutool.crypto.digest.BCrypt;
 import cn.hutool.jwt.JWT;
 import cn.hutool.jwt.JWTUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.nan.aisoftoj.common.ForbiddenException;
 import com.nan.aisoftoj.common.UnauthorizedException;
+import com.nan.aisoftoj.common.UserRole;
 import com.nan.aisoftoj.dto.AuthLoginRequest;
 import com.nan.aisoftoj.dto.AuthRegisterRequest;
 import com.nan.aisoftoj.dto.AuthResponse;
@@ -85,6 +87,7 @@ public class AuthServiceImpl implements AuthService {
         user.setPhone(StrUtil.blankToDefault(request.getPhone(), null));
         user.setAvatar("https://api.dicebear.com/7.x/avataaars/svg?seed=" + request.getUsername());
         user.setPassword(BCrypt.hashpw(request.getPassword()));
+        user.setRole(UserRole.USER.name());
         user.setIsEnabled(true);
         user.setIsDeleted(false);
         userMapper.insert(user);
@@ -99,6 +102,15 @@ public class AuthServiceImpl implements AuthService {
     @Override
     public Integer getCurrentUserId(String token) {
         return getActiveUserByToken(token).getId();
+    }
+
+    @Override
+    public Integer requireAdmin(String token) {
+        User user = getActiveUserByToken(token);
+        if (!UserRole.isAdmin(user.getRole())) {
+            throw new ForbiddenException("需要管理员权限");
+        }
+        return user.getId();
     }
 
     @Override
@@ -122,6 +134,7 @@ public class AuthServiceImpl implements AuthService {
         dto.setNickname(StrUtil.blankToDefault(user.getNickName(), dto.getUsername()));
         dto.setAvatar(user.getAvatar());
         dto.setPhone(user.getPhone());
+        dto.setRole(UserRole.normalize(user.getRole()));
         String joinDate = user.getCreateTime() == null ? DateUtil.today() : DateUtil.formatDate(user.getCreateTime());
         dto.setJoinDate(joinDate);
         dto.setLastLoginDate(DateUtil.formatDate(new Date()));
