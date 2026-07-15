@@ -1,6 +1,12 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
 import { User, LoginForm, RegisterForm } from '../types/user';
-import { fetchCurrentUser, loginByEmail, logoutAuth, registerByEmail } from '../lib/api';
+import {
+  fetchCurrentUser,
+  isApiRequestError,
+  loginByEmail,
+  logoutAuth,
+  registerByEmail,
+} from '../lib/api';
 
 const AUTH_TOKEN_KEY = 'authToken';
 const AUTH_USER_KEY = 'user';
@@ -8,10 +14,13 @@ const AUTH_USER_KEY = 'user';
 type AuthContextValue = {
   user: User | null;
   isLoading: boolean;
+  isAuthInitialized: boolean;
+  authInitializationError: string | null;
   error: string | null;
   login: (loginData: LoginForm) => Promise<boolean>;
   register: (registerData: RegisterForm) => Promise<boolean>;
   logout: () => void;
+  clearAuth: () => void;
   updateUser: (updatedData: Partial<User>) => void;
   checkAuthStatus: () => Promise<void>;
   isAuthenticated: boolean;
@@ -35,7 +44,18 @@ function getStoredUser(): User | null {
 export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(() => getStoredUser());
   const [isLoading, setIsLoading] = useState(false);
+  const [isAuthInitialized, setIsAuthInitialized] = useState(false);
+  const [authInitializationError, setAuthInitializationError] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
+
+  const clearAuth = useCallback(() => {
+    setUser(null);
+    setError(null);
+    setAuthInitializationError(null);
+    setIsAuthInitialized(true);
+    localStorage.removeItem(AUTH_TOKEN_KEY);
+    localStorage.removeItem(AUTH_USER_KEY);
+  }, []);
 
   const login = useCallback(async (loginData: LoginForm): Promise<boolean> => {
     setIsLoading(true);
@@ -44,6 +64,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const result = await loginByEmail(loginData);
       setUser(result.user);
+      setIsAuthInitialized(true);
+      setAuthInitializationError(null);
       localStorage.setItem(AUTH_TOKEN_KEY, result.token);
       localStorage.setItem(AUTH_USER_KEY, JSON.stringify(result.user));
       return true;
@@ -62,6 +84,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     try {
       const result = await registerByEmail(registerData);
       setUser(result.user);
+      setIsAuthInitialized(true);
+      setAuthInitializationError(null);
       localStorage.setItem(AUTH_TOKEN_KEY, result.token);
       localStorage.setItem(AUTH_USER_KEY, JSON.stringify(result.user));
       return true;
@@ -78,11 +102,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     if (token) {
       void logoutAuth(token).catch(() => undefined);
     }
-    setUser(null);
-    setError(null);
-    localStorage.removeItem(AUTH_TOKEN_KEY);
-    localStorage.removeItem(AUTH_USER_KEY);
-  }, []);
+    clearAuth();
+  }, [clearAuth]);
 
   const updateUser = useCallback((updatedData: Partial<User>) => {
     setUser(prevUser => {
@@ -96,12 +117,15 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   }, []);
 
   const checkAuthStatus = useCallback(async () => {
+    setIsAuthInitialized(false);
+    setAuthInitializationError(null);
     const token = localStorage.getItem(AUTH_TOKEN_KEY);
     const storedUser = getStoredUser();
 
     if (!token) {
       setUser(null);
       localStorage.removeItem(AUTH_USER_KEY);
+      setIsAuthInitialized(true);
       return;
     }
 
@@ -113,24 +137,45 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       const currentUser = await fetchCurrentUser(token);
       setUser(currentUser);
       localStorage.setItem(AUTH_USER_KEY, JSON.stringify(currentUser));
+      setIsAuthInitialized(true);
     } catch (error) {
-      setUser(null);
-      localStorage.removeItem(AUTH_TOKEN_KEY);
-      localStorage.removeItem(AUTH_USER_KEY);
+      if (isApiRequestError(error) && (error.status === 401 || error.code === 401)) {
+        clearAuth();
+        return;
+      }
+
+      // 网络故障或服务端异常时保留本地登录信息，阻止业务请求并允许用户重试。
+      setAuthInitializationError((error as Error)?.message || '登录状态校验失败，请检查网络后重试');
+      setIsAuthInitialized(false);
     }
-  }, []);
+  }, [clearAuth]);
 
   const value = useMemo<AuthContextValue>(() => ({
     user,
     isLoading,
+    isAuthInitialized,
+    authInitializationError,
     error,
     login,
     register,
     logout,
+    clearAuth,
     updateUser,
     checkAuthStatus,
     isAuthenticated: !!user,
-  }), [user, isLoading, error, login, register, logout, updateUser, checkAuthStatus]);
+  }), [
+    user,
+    isLoading,
+    isAuthInitialized,
+    authInitializationError,
+    error,
+    login,
+    register,
+    logout,
+    clearAuth,
+    updateUser,
+    checkAuthStatus,
+  ]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

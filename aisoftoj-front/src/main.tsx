@@ -5,7 +5,6 @@
   import { AuthProvider } from "./hooks/useAuth";
   import { ThemeProvider } from "./hooks/useTheme";
   import "./index.css";
-  import "./styles/globals.css";
 
   createRoot(document.getElementById("root")!).render(
     <BrowserRouter>

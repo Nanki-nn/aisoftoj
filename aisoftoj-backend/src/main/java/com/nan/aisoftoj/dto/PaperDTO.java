@@ -1,69 +1,37 @@
 package com.nan.aisoftoj.dto;
 
-import com.baomidou.mybatisplus.annotation.IdType;
-import com.baomidou.mybatisplus.annotation.TableId;
 import com.fasterxml.jackson.annotation.JsonFormat;
-import com.nan.aisoftoj.entity.Paper;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.util.Date;
 
 /**
- * 试卷DTO，包含试卷基本信息以及答题状态信息
+ * 面向普通用户的试卷目录 DTO。
+ * 公共字段可供游客浏览；个人状态字段仅在已认证请求中赋值并输出。
  */
-@Setter
 @Getter
+@Setter
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public class PaperDTO {
-
-    @TableId(type = IdType.AUTO)
     private Integer id;
-
-    private String frontMockId;
-
-    private Integer paperSubjectId;
-
-    private String subjectName;
-
-    private Integer paperCateId;
-
-    private Integer paperYear;
-
-    private Integer paperMonth;
-
     private String name;
-
-    private Integer orderNum;
-
+    private String subjectName;
+    private Integer paperCateId;
+    private Integer paperYear;
+    private Integer paperMonth;
     private Integer questionTotal;
-
-    private Integer readCt;
-
-    /**
-     * 正在进行的答题记录ID
-     */
-    private Integer doingSessionId;
-
-    /**
-     * 试卷状态
-     */
-    private String paperStatus;
-
-    /**
-     * 做题进度（已完成题目数）
-     */
-    private Integer progress;
-
-    private Integer completedCount;
-
-
-    private Boolean isDeleted;
-
-    @JsonFormat(pattern = "yyyy年MM月dd日 HH时mm分ss秒", timezone = "GMT+8")
-    private Date createTime;
 
     @JsonFormat(pattern = "yyyy年MM月dd日 HH时mm分ss秒", timezone = "GMT+8")
     private Date updateTime;
 
+    /** 当前用户在该试卷下创建过的会话数。 */
+    private Integer readCt;
 
+    /** 当前用户正在进行的会话 ID。 */
+    private Integer doingSessionId;
+
+    /** 当前用户的试卷状态。 */
+    private String paperStatus;
 }

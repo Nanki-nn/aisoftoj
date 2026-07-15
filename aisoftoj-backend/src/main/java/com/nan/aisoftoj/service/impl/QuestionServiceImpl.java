@@ -1,6 +1,7 @@
 package com.nan.aisoftoj.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
+import com.nan.aisoftoj.common.ResourceNotFoundException;
 import com.nan.aisoftoj.dto.GetQuestionDetailDTO;
 import com.nan.aisoftoj.dto.QuestionRecordRequest;
 import com.nan.aisoftoj.entity.Question;
@@ -29,13 +30,15 @@ public class QuestionServiceImpl implements QuestionService {
     @Override
     public GetQuestionDetailDTO getQuestionById(Integer questionId, Boolean withAnswer) {
         Question question = questionMapper.selectById(questionId);
-        // 如果不包含答案，则清空答案字段
-        if (!withAnswer && question != null) {
-            question.setAnswer(null);
+        if (question == null
+                || question.getIsDeleted() == null
+                || question.getIsDeleted() != 0
+                || questionMapper.countPublishedPaperRelations(questionId) == 0) {
+            throw new ResourceNotFoundException("题目不存在或暂未发布");
         }
-
-        if (question == null) {
-            return null;
+        // 如果不包含答案，则清空答案字段
+        if (!Boolean.TRUE.equals(withAnswer)) {
+            question.setAnswer(null);
         }
 
         GetQuestionDetailDTO questionDetailDTO = new GetQuestionDetailDTO();

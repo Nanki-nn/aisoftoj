@@ -1,5 +1,4 @@
-import { ExamPaper } from '../data/examPapers';
-import { ExamSession, Question, QuestionOption } from '../types/exam';
+import { ExamPaper, ExamSession, Question, QuestionOption } from '../types/exam';
 import { PageResult, PracticeRecord, PracticeSessionRecord } from '../types/record';
 import { LoginForm, RegisterForm, User } from '../types/user';
 
@@ -21,6 +20,22 @@ type ApiError = {
   timestamp?: number;
 };
 
+export class ApiRequestError extends Error {
+  readonly status: number;
+  readonly code?: number;
+
+  constructor(message: string, status: number, code?: number) {
+    super(message);
+    this.name = 'ApiRequestError';
+    this.status = status;
+    this.code = code;
+  }
+}
+
+export function isApiRequestError(error: unknown): error is ApiRequestError {
+  return error instanceof ApiRequestError;
+}
+
 type PageQuery = {
   page?: number;
   pageSize?: number;
@@ -28,12 +43,13 @@ type PageQuery = {
 
 type PaperDTO = {
   id: number;
+  name?: string;
   subjectName?: string;
   paperCateId: number;
   paperYear?: number;
   paperMonth?: number;
   questionTotal: number;
-  readCt: number;
+  readCt?: number;
   doingSessionId?: number | null;
   paperStatus?: 'not_started' | 'in_progress' | 'completed';
   progress?: number;
@@ -287,31 +303,38 @@ function parseServerDate(value?: string | number): Date | undefined {
 
 export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   const authToken = localStorage.getItem('authToken');
-  const defaultHeaders: HeadersInit = {
-    'Content-Type': 'application/json',
-  };
-  if (authToken && !(init?.headers && new Headers(init.headers).has('Authorization'))) {
-    defaultHeaders.Authorization = `Bearer ${authToken}`;
+  const headers = new Headers(init?.headers);
+  if (!headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+  if (authToken && !headers.has('Authorization')) {
+    headers.set('Authorization', `Bearer ${authToken}`);
   }
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: {
-      ...defaultHeaders,
-      ...(init?.headers || {}),
-    },
     ...init,
+    headers,
   });
 
   const payload = await response.json().catch(() => null as ApiResult<T> | ApiError | null);
 
   if (!response.ok) {
     const errorPayload = payload as ApiError | null;
-    throw new Error(errorPayload?.message || `请求失败: ${response.status}`);
+    throw new ApiRequestError(
+      errorPayload?.message || `请求失败: ${response.status}`,
+      response.status,
+      errorPayload?.code
+    );
   }
 
   const result = payload as ApiResult<T>;
   if (!result || result.code !== 200) {
-    throw new Error((payload as ApiError | null)?.message || result?.message || '请求失败');
+    const errorPayload = payload as ApiError | null;
+    throw new ApiRequestError(
+      errorPayload?.message || result?.message || '请求失败',
+      response.status,
+      errorPayload?.code ?? result?.code
+    );
   }
   return result.data;
 }

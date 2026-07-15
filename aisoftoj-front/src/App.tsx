@@ -23,8 +23,7 @@ import { AdminQuestions } from './components/admin/AdminQuestions';
 import { AdminOssUpload } from './components/admin/AdminOssUpload';
 import { useExamSession } from './hooks/useExamSession';
 import { useAuth } from './hooks/useAuth';
-import { ExamConfig as ExamConfigType } from './types/exam';
-import { ExamPaper } from './data/examPapers';
+import { ExamConfig as ExamConfigType, ExamPaper } from './types/exam';
 import { PracticeRecord, PracticeSessionRecord } from './types/record';
 import {
   cachePracticeSessionAnswers,

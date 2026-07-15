@@ -1,5 +1,19 @@
 // 考试相关类型定义
 
+export interface ExamPaper {
+  id: string;
+  year: number;
+  month: number;
+  subject: string;
+  category: '综合知识' | '案例分析' | '论文';
+  questionCount: number;
+  lastUpdated: string;
+  practiceCount: number;
+  status: 'not_started' | 'in_progress' | 'completed';
+  completedCount?: number;
+  doingSessionId?: string | null;
+}
+
 export interface QuestionOption {
   key: string;
   text: string;
