@@ -1,12 +1,10 @@
 import React, { useEffect, useMemo, useState } from 'react';
-import { Link } from 'react-router-dom';
 import {
   AlertCircle,
   BookOpen,
   CalendarDays,
   FileText,
   GraduationCap,
-  History,
   LogIn,
   Play,
   RefreshCw,
@@ -23,7 +21,9 @@ import {
   DialogHeader,
   DialogTitle,
 } from './ui/dialog';
+import { Progress } from './ui/progress';
 import { Skeleton } from './ui/skeleton';
+import { PapersWorkspaceHeader } from './PapersWorkspaceHeader';
 import {
   fetchPapers,
   fetchPracticeHistory,
@@ -37,8 +37,6 @@ interface PapersPageProps {
   onStartPaper: (paper: ExamPaper, mode: 'practice' | 'exam') => void;
   onShowProfile: () => void;
   onShowAuth: () => void;
-  onShowPracticeHistory: () => void;
-  onShowWrongQuestions: () => void;
 }
 
 const SUBJECT_ORDER = [
@@ -72,6 +70,26 @@ function formatDate(dateValue: string) {
   return `${year}/${month.padStart(2, '0')}/${day.padStart(2, '0')}`;
 }
 
+function getPaperProgress(paper: ExamPaper) {
+  const total = Math.max(0, paper.questionCount || 0);
+  let completed = 0;
+
+  if (paper.status === 'completed') {
+    completed = total;
+  } else if (paper.status === 'in_progress') {
+    const value = typeof paper.completedCount === 'number' && Number.isFinite(paper.completedCount)
+      ? Math.trunc(paper.completedCount)
+      : 0;
+    completed = Math.min(total, Math.max(0, value));
+  }
+
+  return {
+    completed,
+    total,
+    percentage: total > 0 ? (completed / total) * 100 : 0,
+  };
+}
+
 function PapersSkeleton() {
   return (
     <div className="space-y-8" aria-label="正在加载试卷数据" aria-busy="true">
@@ -89,21 +107,30 @@ function PapersSkeleton() {
           ))}
         </div>
       </div>
-      <div className="grid gap-5 md:grid-cols-2">
-        {[0, 1, 2, 3].map((item) => (
-          <div key={item} className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+      <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+        {[0, 1, 2, 3, 4, 5].map((item) => (
+          <div
+            key={item}
+            className="flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
+            style={{ minHeight: 300 }}
+          >
             <div className="flex justify-between gap-4">
               <div className="space-y-3">
-                <Skeleton className="h-6 w-40" />
-                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-6 w-36" />
+                <Skeleton className="h-4 w-28" />
               </div>
-              <Skeleton className="h-7 w-20 rounded-lg" />
+              <Skeleton className="h-6 w-16 rounded-lg" />
             </div>
-            <div className="mt-8 space-y-4">
-              <Skeleton className="h-4 w-full" />
-              <Skeleton className="h-4 w-full" />
+            <div className="mt-8 space-y-5">
+              {[0, 1, 2].map((row) => (
+                <div key={row} className="flex items-center justify-between gap-4">
+                  <Skeleton className="h-4 w-20" />
+                  <Skeleton className="h-4 w-12" />
+                </div>
+              ))}
+              <Skeleton className="h-2 w-full rounded-full" />
             </div>
-            <div className="mt-7 flex items-center justify-between border-t border-slate-100 pt-5">
+            <div className="mt-auto flex items-center justify-between border-t border-slate-100 pt-5">
               <Skeleton className="h-4 w-28" />
               <Skeleton className="h-9 w-24 rounded-lg" />
             </div>
@@ -118,8 +145,6 @@ export function PapersPage({
   onStartPaper,
   onShowProfile,
   onShowAuth,
-  onShowPracticeHistory,
-  onShowWrongQuestions,
 }: PapersPageProps) {
   const {
     isAuthenticated,
@@ -312,15 +337,7 @@ export function PapersPage({
       <AppHeader onShowAuth={onShowAuth} onShowProfile={onShowProfile} />
 
       <main id="main-content" className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-12">
-        <div className="flex items-center gap-3">
-          <span className="flex h-11 w-11 items-center justify-center rounded-2xl bg-blue-600 text-white shadow-lg shadow-blue-600/20">
-            <FileText className="h-6 w-6" aria-hidden="true" />
-          </span>
-          <div>
-            <p className="text-sm font-medium text-blue-700">历年真题题库</p>
-            <h1 className="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">刷真题</h1>
-          </div>
-        </div>
+        <PapersWorkspaceHeader activeTab="papers" historyCount={historyCount} wrongCount={wrongCount} />
 
         {!isAuthInitialized && !authInitializationError && (
           <div className="mt-8">
@@ -366,39 +383,6 @@ export function PapersPage({
                 <span>你正在以游客身份浏览真实试卷目录；选择试卷开始刷题时再登录即可。</span>
               </div>
             )}
-
-            <nav className="mt-8 inline-flex max-w-full items-center gap-1 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-1.5 shadow-sm" aria-label="真题功能导航">
-              <Link
-                to="/papers"
-                aria-current="page"
-                className="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-xl bg-blue-600 px-4 text-sm font-semibold text-white no-underline shadow-sm outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
-              >
-                <FileText className="h-4 w-4" aria-hidden="true" />
-                试卷列表
-              </Link>
-              <button
-                type="button"
-                onClick={isAuthenticated ? onShowPracticeHistory : onShowAuth}
-                className="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-xl px-4 text-sm font-medium text-slate-600 no-underline outline-none hover:bg-slate-100 hover:text-slate-950 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
-              >
-                <History className="h-4 w-4" aria-hidden="true" />
-                刷题记录
-                {isAuthenticated && (
-                  <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-xs tabular-nums text-slate-600">{historyCount ?? '--'}</span>
-                )}
-              </button>
-              <button
-                type="button"
-                onClick={isAuthenticated ? onShowWrongQuestions : onShowAuth}
-                className="inline-flex min-h-10 shrink-0 items-center gap-2 rounded-xl px-4 text-sm font-medium text-slate-600 no-underline outline-none hover:bg-slate-100 hover:text-slate-950 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
-              >
-                <AlertCircle className="h-4 w-4" aria-hidden="true" />
-                错题分析
-                {isAuthenticated && (
-                  <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-xs tabular-nums text-slate-600">{wrongCount ?? '--'}</span>
-                )}
-              </button>
-            </nav>
 
             <div className="mt-8">
               {isLoading && <PapersSkeleton />}
@@ -498,54 +482,62 @@ export function PapersPage({
                       </Badge>
                     </div>
 
-                    <div className="grid gap-5 md:grid-cols-2">
-                      {filteredPapers.map((paper) => (
-                        <Card
-                          key={paper.id}
-                          className="group flex flex-col rounded-2xl border-slate-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-lg motion-reduce:transform-none"
-                          style={{ minHeight: 256 }}
-                        >
-                          <CardHeader className="pb-4">
-                            <div className="flex items-start justify-between gap-4">
-                              <div className="min-w-0">
-                                <CardTitle className="text-xl font-semibold tracking-tight text-slate-950 transition-colors group-hover:text-blue-700">
-                                  {paper.year}年{paper.month}月真题
-                                </CardTitle>
-                                <p className="mt-2 truncate text-sm text-slate-500">{paper.subject}</p>
-                              </div>
-                              <Badge className="shrink-0 rounded-lg border border-blue-100 bg-blue-50 text-blue-700 hover:bg-blue-50">
-                                {paper.category}
-                              </Badge>
-                            </div>
-                          </CardHeader>
-                          <CardContent className="flex flex-1 flex-col pt-0">
-                            <dl className={`grid gap-4 rounded-xl bg-slate-50 p-4 ${isAuthenticated ? 'grid-cols-2' : 'grid-cols-1'}`}>
-                              <div>
-                                <dt className="text-xs font-medium text-slate-500">题目数量</dt>
-                                <dd className="mt-1 text-base font-semibold tabular-nums text-slate-900">{paper.questionCount} 题</dd>
-                              </div>
-                              {isAuthenticated && (
-                                <div>
-                                  <dt className="text-xs font-medium text-slate-500">练习次数</dt>
-                                  <dd className="mt-1 text-base font-semibold tabular-nums text-slate-900">{paper.practiceCount}</dd>
+                    <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
+                      {filteredPapers.map((paper) => {
+                        const progress = getPaperProgress(paper);
+                        return (
+                          <Card
+                            key={paper.id}
+                            className="group flex flex-col rounded-2xl border-slate-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-lg motion-reduce:transform-none"
+                            style={{ minHeight: 300 }}
+                          >
+                            <CardHeader className="pb-5">
+                              <div className="flex items-start justify-between gap-4">
+                                <div className="min-w-0">
+                                  <CardTitle className="text-lg font-semibold tracking-tight text-slate-950 transition-colors group-hover:text-blue-700">
+                                    {paper.year}年{paper.month}月真题
+                                  </CardTitle>
+                                  <p className="mt-2 truncate text-sm text-slate-500">{paper.subject}</p>
                                 </div>
-                              )}
-                            </dl>
-
-                            {isAuthenticated && paper.status === 'in_progress' && (
-                              <div className="mt-4 inline-flex w-fit items-center gap-2 rounded-lg bg-amber-50 px-3 py-1.5 text-xs font-semibold text-amber-800">
-                                <span className="h-2 w-2 rounded-full bg-amber-500" aria-hidden="true" />
-                                进行中
+                                <Badge className="shrink-0 rounded-lg border border-blue-100 bg-blue-50 text-blue-700 hover:bg-blue-50">
+                                  {paper.category}
+                                </Badge>
                               </div>
-                            )}
+                            </CardHeader>
+                            <CardContent className="flex flex-1 flex-col pt-0">
+                              <dl className="space-y-4 text-sm">
+                                <div className="flex items-center justify-between gap-4">
+                                  <dt className="text-slate-600">题目数量</dt>
+                                  <dd className="font-semibold tabular-nums text-slate-900">{progress.total} 题</dd>
+                                </div>
+                                <div className="flex items-center justify-between gap-4">
+                                  <dt className="text-slate-600">练习次数</dt>
+                                  <dd className="font-medium tabular-nums text-slate-900">{paper.practiceCount || 0}</dd>
+                                </div>
+                                <div className="space-y-2">
+                                  <div className="flex items-center justify-between gap-4">
+                                    <dt className="text-slate-600">练习进度</dt>
+                                    <dd className="font-medium tabular-nums text-slate-900">
+                                      {progress.completed}/{progress.total}
+                                    </dd>
+                                  </div>
+                                  <Progress
+                                    value={progress.percentage}
+                                    aria-label={`${paper.year}年${paper.month}月真题练习进度`}
+                                    aria-valuetext={`${progress.completed}/${progress.total}`}
+                                    className="h-2 bg-slate-100 [&>div]:bg-blue-600"
+                                  />
+                                </div>
+                              </dl>
 
-                            <div className="mt-auto flex flex-col gap-4 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
-                              <span className="text-xs text-slate-500">更新于 {formatDate(paper.lastUpdated)}</span>
-                              {renderStatusAction(paper)}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
+                              <div className="mt-auto flex flex-col gap-4 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
+                                <span className="text-xs text-slate-500">更新：{formatDate(paper.lastUpdated)}</span>
+                                {renderStatusAction(paper)}
+                              </div>
+                            </CardContent>
+                          </Card>
+                        );
+                      })}
                     </div>
                   </section>
                 </>

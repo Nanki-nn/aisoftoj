@@ -1,5 +1,11 @@
 import { ExamPaper, ExamSession, Question, QuestionOption } from '../types/exam';
-import { PageResult, PracticeRecord, PracticeSessionRecord } from '../types/record';
+import {
+  PageResult,
+  PracticeHistorySummary,
+  PracticeRecord,
+  PracticeSessionRecord,
+  WrongQuestionSummary,
+} from '../types/record';
 import { LoginForm, RegisterForm, User } from '../types/user';
 
 const API_BASE_URL =
@@ -418,8 +424,8 @@ export async function startPaperSession(
   };
 }
 
-export async function fetchPracticeHistory(params: PageQuery = {}): Promise<PageResult<PracticeSessionRecord>> {
-  return request<PageResult<PracticeSessionRecord>>(
+export async function fetchPracticeHistory(params: PageQuery = {}): Promise<PageResult<PracticeSessionRecord, PracticeHistorySummary>> {
+  return request<PageResult<PracticeSessionRecord, PracticeHistorySummary>>(
     `/session/history${buildQueryString({
       page: params.page,
       pageSize: params.pageSize,
@@ -427,8 +433,8 @@ export async function fetchPracticeHistory(params: PageQuery = {}): Promise<Page
   );
 }
 
-export async function fetchWrongQuestions(params: PageQuery = {}): Promise<PageResult<PracticeRecord>> {
-  return request<PageResult<PracticeRecord>>(
+export async function fetchWrongQuestions(params: PageQuery = {}): Promise<PageResult<PracticeRecord, WrongQuestionSummary>> {
+  return request<PageResult<PracticeRecord, WrongQuestionSummary>>(
     `/wrong-questions${buildQueryString({
       page: params.page,
       pageSize: params.pageSize,

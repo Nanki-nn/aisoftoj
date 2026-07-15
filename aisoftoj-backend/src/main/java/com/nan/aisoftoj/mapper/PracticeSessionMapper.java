@@ -2,6 +2,7 @@ package com.nan.aisoftoj.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.nan.aisoftoj.dto.PracticeHistoryDTO;
+import com.nan.aisoftoj.dto.PracticeHistorySummaryDTO;
 import com.nan.aisoftoj.entity.PracticeSession;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -41,4 +42,13 @@ public interface  PracticeSessionMapper extends BaseMapper<PracticeSession> {
             "FROM practice_session ps " +
             "WHERE ps.user_id = #{userId} AND ps.is_deleted = 0")
     Long countPracticeHistoryByUserId(@Param("userId") Integer userId);
+
+    @Select("SELECT " +
+            "COUNT(1) AS totalCount, " +
+            "COALESCE(SUM(CASE WHEN ps.status = 0 THEN 1 ELSE 0 END), 0) AS inProgressCount, " +
+            "COALESCE(SUM(CASE WHEN ps.status = 1 THEN 1 ELSE 0 END), 0) AS completedCount, " +
+            "COALESCE(SUM(COALESCE(ps.answered_count, 0)), 0) AS answeredCount " +
+            "FROM practice_session ps " +
+            "WHERE ps.user_id = #{userId} AND ps.is_deleted = 0")
+    PracticeHistorySummaryDTO selectPracticeHistorySummaryByUserId(@Param("userId") Integer userId);
 }

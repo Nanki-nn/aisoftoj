@@ -1,9 +1,11 @@
 package com.nan.aisoftoj.controller;
 
-import com.nan.aisoftoj.dto.PageDTO;
+import com.nan.aisoftoj.dto.PageWithSummaryDTO;
 import com.nan.aisoftoj.dto.PracticeHistoryDTO;
+import com.nan.aisoftoj.dto.PracticeHistorySummaryDTO;
 import com.nan.aisoftoj.dto.ResultDTO;
 import com.nan.aisoftoj.dto.WrongQuestionDTO;
+import com.nan.aisoftoj.dto.WrongQuestionSummaryDTO;
 import com.nan.aisoftoj.mapper.PracticeSessionMapper;
 import com.nan.aisoftoj.mapper.UserWrongQuestionStatMapper;
 import com.nan.aisoftoj.service.AuthService;
@@ -28,33 +30,69 @@ public class UserStatsController {
     private AuthService authService;
 
     @GetMapping("/session/history")
-    public ResultDTO<PageDTO<PracticeHistoryDTO>> getPracticeHistory(
+    public ResultDTO<PageWithSummaryDTO<PracticeHistoryDTO, PracticeHistorySummaryDTO>> getPracticeHistory(
             HttpServletRequest request,
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer pageSize) {
         Integer userId = authService.getCurrentUserId(request.getHeader("Authorization"));
         PageParams pageParams = resolvePageParams(page, pageSize);
-        Long total = practiceSessionMapper.countPracticeHistoryByUserId(userId);
+        PracticeHistorySummaryDTO summary = practiceSessionMapper.selectPracticeHistorySummaryByUserId(userId);
+        if (summary == null) {
+            summary = emptyPracticeHistorySummary();
+        }
+        Long total = summary.getTotalCount();
         List<PracticeHistoryDTO> records = practiceSessionMapper.selectPracticeHistoryByUserId(
                 userId,
                 pageParams.pageSize,
                 pageParams.offset);
-        return ResultDTO.success(new PageDTO<>(records, total, pageParams.page, pageParams.pageSize));
+        return ResultDTO.success(new PageWithSummaryDTO<>(
+                records,
+                total,
+                pageParams.page,
+                pageParams.pageSize,
+                summary));
     }
 
     @GetMapping("/wrong-questions")
-    public ResultDTO<PageDTO<WrongQuestionDTO>> getWrongQuestions(
+    public ResultDTO<PageWithSummaryDTO<WrongQuestionDTO, WrongQuestionSummaryDTO>> getWrongQuestions(
             HttpServletRequest request,
             @RequestParam(defaultValue = "1") Integer page,
             @RequestParam(defaultValue = "10") Integer pageSize) {
         Integer userId = authService.getCurrentUserId(request.getHeader("Authorization"));
         PageParams pageParams = resolvePageParams(page, pageSize);
-        Long total = userWrongQuestionStatMapper.countByUserId(userId);
+        WrongQuestionSummaryDTO summary = userWrongQuestionStatMapper.selectSummaryByUserId(userId);
+        if (summary == null) {
+            summary = emptyWrongQuestionSummary();
+        }
+        Long total = summary.getTotalCount();
         List<WrongQuestionDTO> records = userWrongQuestionStatMapper.selectByUserId(
                 userId,
                 pageParams.pageSize,
                 pageParams.offset);
-        return ResultDTO.success(new PageDTO<>(records, total, pageParams.page, pageParams.pageSize));
+        return ResultDTO.success(new PageWithSummaryDTO<>(
+                records,
+                total,
+                pageParams.page,
+                pageParams.pageSize,
+                summary));
+    }
+
+    private PracticeHistorySummaryDTO emptyPracticeHistorySummary() {
+        PracticeHistorySummaryDTO summary = new PracticeHistorySummaryDTO();
+        summary.setTotalCount(0L);
+        summary.setInProgressCount(0L);
+        summary.setCompletedCount(0L);
+        summary.setAnsweredCount(0L);
+        return summary;
+    }
+
+    private WrongQuestionSummaryDTO emptyWrongQuestionSummary() {
+        WrongQuestionSummaryDTO summary = new WrongQuestionSummaryDTO();
+        summary.setTotalCount(0L);
+        summary.setMasterCount(0L);
+        summary.setFrequentCount(0L);
+        summary.setPaperCount(0L);
+        return summary;
     }
 
     private PageParams resolvePageParams(Integer page, Integer pageSize) {

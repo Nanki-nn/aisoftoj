@@ -1,21 +1,65 @@
 import React, { useEffect, useState } from 'react';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
+import {
+  AlertCircle,
+  BookOpenCheck,
+  Clock3,
+  Eye,
+  Flame,
+  LibraryBig,
+  ShieldAlert,
+  Trash2,
+} from 'lucide-react';
 import { Badge } from './ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from './ui/table';
+import { Button } from './ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
-import { ArrowLeft } from 'lucide-react';
-import { importanceLevels } from '../types/record';
-import { PracticeRecord } from '../types/record';
-import { fetchWrongQuestions } from '../lib/api';
+import { Skeleton } from './ui/skeleton';
+import {
+  PapersWorkspaceHeader,
+  WorkspaceStats,
+  type WorkspaceStat,
+} from './PapersWorkspaceHeader';
+import { fetchPracticeHistory, fetchWrongQuestions } from '../lib/api';
+import {
+  importanceLevels,
+  type PracticeRecord,
+  type WrongQuestionSummary,
+} from '../types/record';
 
 interface WrongQuestionsProps {
-  onBack: () => void;
   onViewQuestion: (record: PracticeRecord) => void;
 }
 
-export function WrongQuestions({ onBack, onViewQuestion }: WrongQuestionsProps) {
+function WrongRowsSkeleton() {
+  return (
+    <div className="divide-y divide-slate-100" aria-label="正在加载错题记录" aria-busy="true">
+      {[0, 1, 2, 3, 4].map((item) => (
+        <div key={item} className="flex flex-col gap-4 px-5 py-5 sm:px-6 lg:flex-row lg:items-center">
+          <div className="min-w-0 flex-1">
+            <div className="flex items-center gap-2">
+              <Skeleton className="h-5 w-44" />
+              <Skeleton className="h-6 w-16 rounded-lg" />
+              <Skeleton className="h-6 w-20 rounded-lg" />
+            </div>
+            <div className="mt-3 flex gap-3">
+              <Skeleton className="h-4 w-40" />
+              <Skeleton className="h-4 w-32" />
+            </div>
+          </div>
+          <div className="flex items-center gap-4">
+            <Skeleton className="h-10 w-12" />
+            <Skeleton className="h-9 w-24 rounded-lg" />
+            <Skeleton className="h-9 w-9 rounded-lg" />
+          </div>
+        </div>
+      ))}
+    </div>
+  );
+}
+
+export function WrongQuestions({ onViewQuestion }: WrongQuestionsProps) {
   const [records, setRecords] = useState<PracticeRecord[]>([]);
+  const [summary, setSummary] = useState<WrongQuestionSummary | null>(null);
+  const [historyCount, setHistoryCount] = useState<number | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState(0);
@@ -27,24 +71,38 @@ export function WrongQuestions({ onBack, onViewQuestion }: WrongQuestionsProps) 
 
   useEffect(() => {
     let isMounted = true;
+    fetchPracticeHistory({ pageSize: 1 })
+      .then((data) => {
+        if (isMounted) setHistoryCount(data.total);
+      })
+      .catch(() => {
+        if (isMounted) setHistoryCount(null);
+      });
+    return () => {
+      isMounted = false;
+    };
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
     setIsLoading(true);
+    setError(null);
+
     fetchWrongQuestions({ page, pageSize })
       .then((data) => {
-        if (isMounted) {
-          setRecords(data.records);
-          setTotal(data.total);
-          setError(null);
-        }
+        if (!isMounted) return;
+        setRecords(data.records);
+        setTotal(data.total);
+        setSummary(data.summary ?? null);
       })
       .catch((err) => {
-        if (isMounted) {
-          setError(err.message || '错题记录加载失败');
-        }
+        if (!isMounted) return;
+        setError(err.message || '错题记录加载失败');
+        setRecords([]);
+        setSummary(null);
       })
       .finally(() => {
-        if (isMounted) {
-          setIsLoading(false);
-        }
+        if (isMounted) setIsLoading(false);
       });
 
     return () => {
@@ -53,8 +111,8 @@ export function WrongQuestions({ onBack, onViewQuestion }: WrongQuestionsProps) 
   }, [page, pageSize]);
 
   const handleRemove = (id: string) => {
-    if (confirm('确定要移除这条错题记录吗？')) {
-      setRecords(records.filter(r => r.id !== id));
+    if (confirm('确定要从当前视图移除这条错题记录吗？重新加载后仍会恢复。')) {
+      setRecords((current) => current.filter((record) => record.id !== id));
     }
   };
 
@@ -71,132 +129,140 @@ export function WrongQuestions({ onBack, onViewQuestion }: WrongQuestionsProps) 
     setPageSize(Number(value));
   };
 
-  return (
-    <div className="min-h-screen bg-white">
-      {/* 顶部导航栏 */}
-      <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
-        <div className="max-w-7xl mx-auto px-4 py-3">
-          <div className="flex items-center gap-4">
-            <Button variant="ghost" onClick={onBack} className="flex items-center gap-2">
-              <ArrowLeft className="w-4 h-4" />
-              返回
-            </Button>
-            <div className="text-slate-500">题库列表 {'>'} 错题记录</div>
-          </div>
-        </div>
-      </div>
+  const stats: WorkspaceStat[] = [
+    { label: '错题总数', value: summary?.totalCount ?? total, icon: BookOpenCheck, tone: 'red' },
+    { label: '必须掌握', value: summary?.masterCount ?? '--', icon: ShieldAlert, tone: 'blue' },
+    { label: '高频错题', value: summary?.frequentCount ?? '--', icon: Flame, tone: 'amber' },
+    { label: '涉及题库', value: summary?.paperCount ?? '--', icon: LibraryBig, tone: 'violet' },
+  ];
 
-      {/* 主体内容 */}
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <Card className="bg-white shadow-sm border border-slate-200">
-          <CardHeader className="border-b border-slate-100">
-            <div className="flex items-center justify-between">
-              <CardTitle>错题记录</CardTitle>
-              <div className="flex items-center gap-3">
-                <div className="hidden items-center gap-2 text-sm text-slate-500 sm:flex">
-                  <span>每页</span>
-                  <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
-                    <SelectTrigger className="h-8 w-20 bg-white">
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="10">10</SelectItem>
-                      <SelectItem value="20">20</SelectItem>
-                      <SelectItem value="50">50</SelectItem>
-                    </SelectContent>
-                  </Select>
-                  <span>条</span>
-                </div>
-                <Button className="bg-blue-600 hover:bg-blue-700">
-                  生成练习
-                </Button>
-              </div>
+  return (
+    <div className="min-h-screen bg-gradient-to-b from-blue-50 via-slate-50 to-slate-50 text-slate-950">
+      <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-12">
+        <PapersWorkspaceHeader activeTab="wrong" historyCount={historyCount} wrongCount={total} />
+
+        <section className="mt-10" aria-label="错题统计">
+          <WorkspaceStats items={stats} isLoading={isLoading && records.length === 0} />
+        </section>
+
+        <section className="mt-8 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-sm">
+          <div className="flex flex-col gap-4 border-b border-slate-100 px-5 py-5 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+            <div>
+              <h2 className="text-lg font-semibold text-slate-950">错题列表</h2>
+              <p className="mt-1 text-sm text-slate-500">按错误次数优先排序，集中复习高频薄弱点。</p>
             </div>
-          </CardHeader>
-          <CardContent className="p-0">
-            {isLoading && <div className="p-6 text-slate-500">正在加载错题记录...</div>}
-            {error && <div className="p-6 text-red-600">{error}</div>}
-            {!isLoading && !error && (
+            <div className="flex items-center gap-2 text-sm text-slate-500">
+              <span>每页</span>
+              <Select value={String(pageSize)} onValueChange={handlePageSizeChange}>
+                <SelectTrigger className="h-9 w-20 rounded-lg bg-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="10">10</SelectItem>
+                  <SelectItem value="20">20</SelectItem>
+                  <SelectItem value="50">50</SelectItem>
+                </SelectContent>
+              </Select>
+              <span>条</span>
+            </div>
+          </div>
+
+          {isLoading && <WrongRowsSkeleton />}
+
+          {!isLoading && error && (
+            <div className="px-6 py-14 text-center">
+              <p className="font-medium text-red-700">错题记录加载失败</p>
+              <p className="mt-2 text-sm text-red-600">{error}</p>
+            </div>
+          )}
+
+          {!isLoading && !error && records.length === 0 && (
+            <div className="px-6 py-16 text-center text-slate-500">
+              <AlertCircle className="mx-auto h-10 w-10 text-slate-300" aria-hidden="true" />
+              <p className="mt-4 font-medium text-slate-700">暂无错题记录</p>
+              <p className="mt-1 text-sm">继续刷题，答错的题目会自动沉淀在这里。</p>
+            </div>
+          )}
+
+          {!isLoading && !error && records.length > 0 && (
             <>
-              <Table>
-                <TableHeader>
-                  <TableRow className="bg-slate-50">
-                    <TableHead className="text-slate-600">题目名称</TableHead>
-                    <TableHead className="text-slate-600">所属题库</TableHead>
-                    <TableHead className="text-slate-600 text-center">题目类型</TableHead>
-                    <TableHead className="text-slate-600 text-center">错误次数</TableHead>
-                    <TableHead className="text-slate-600">更新时间</TableHead>
-                    <TableHead className="text-slate-600 text-center">重要级别</TableHead>
-                    <TableHead className="text-slate-600 text-center">操作</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {records.map((record) => (
-                    <TableRow key={record.id} className="hover:bg-slate-50">
-                      <TableCell className="text-slate-800">{record.topicName}</TableCell>
-                      <TableCell className="text-slate-600">{record.questionBank}</TableCell>
-                      <TableCell className="text-center">
-                        <Badge variant="secondary" className="bg-blue-50 text-blue-700 border-blue-200">
-                          {record.topicType}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-center text-slate-800">{record.errorCount}</TableCell>
-                      <TableCell className="text-slate-600">{record.updateTime}</TableCell>
-                      <TableCell className="text-center">
-                        <Badge
-                          variant="secondary"
-                          className={importanceLevels[record.importance].color}
-                        >
-                          {importanceLevels[record.importance].label}
-                        </Badge>
-                      </TableCell>
-                      <TableCell className="text-center">
+              <div className="divide-y divide-slate-100">
+                {records.map((record) => {
+                  const importance = importanceLevels[record.importance];
+                  return (
+                    <article
+                      key={record.id}
+                      className="flex flex-col gap-5 px-5 py-5 transition-colors hover:bg-slate-50/80 sm:px-6 lg:flex-row lg:items-center"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <div className="flex flex-wrap items-center gap-2">
+                          <h3 className="truncate text-base font-semibold text-slate-900">{record.topicName}</h3>
+                          <Badge variant="outline" className="shrink-0 rounded-lg border-slate-200 bg-white text-xs text-slate-600">
+                            {record.topicType}
+                          </Badge>
+                          <Badge variant="outline" className={'shrink-0 rounded-lg border-transparent text-xs ' + importance.color}>
+                            {importance.label}
+                          </Badge>
+                        </div>
+                        <div className="mt-2 flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-slate-500">
+                          <span className="truncate">{record.questionBank}</span>
+                          <span className="inline-flex items-center gap-1.5">
+                            <Clock3 className="h-3.5 w-3.5" aria-hidden="true" />
+                            {record.updateTime}
+                          </span>
+                        </div>
+                      </div>
+
+                      <div className="flex items-center justify-between gap-4 sm:justify-start lg:shrink-0">
+                        <div className="min-w-14 text-center">
+                          <div className="text-xl font-semibold tabular-nums text-red-500">{record.errorCount || 0}</div>
+                          <div className="text-xs text-slate-400">次错误</div>
+                        </div>
                         <Button
-                          variant="ghost"
+                          variant="outline"
                           size="sm"
                           onClick={() => handleView(record)}
-                          className="text-blue-600 hover:text-blue-700 hover:bg-blue-50"
+                          className="h-9 rounded-lg border-blue-200 text-blue-700 hover:bg-blue-50"
                         >
-                          查看
+                          <Eye className="mr-1.5 h-4 w-4" aria-hidden="true" />
+                          查看原题
                         </Button>
                         <Button
                           variant="ghost"
-                          size="sm"
+                          size="icon"
                           onClick={() => handleRemove(record.id)}
-                          className="text-red-600 hover:text-red-700 hover:bg-red-50"
+                          className="h-9 w-9 rounded-lg text-slate-400 hover:bg-red-50 hover:text-red-600"
+                          aria-label={'从当前视图移除' + record.topicName}
+                          title="仅从当前视图移除，重新加载后恢复"
                         >
-                          移除
+                          <Trash2 className="h-4 w-4" aria-hidden="true" />
                         </Button>
-                      </TableCell>
-                    </TableRow>
-                  ))}
-                </TableBody>
-              </Table>
-              {records.length === 0 ? (
-                <div className="py-10 text-center text-slate-500">暂无错题记录</div>
-              ) : (
-                <div className="flex flex-col gap-3 border-t border-slate-100 px-6 py-4 sm:flex-row sm:items-center sm:justify-between">
-                  <div className="text-sm text-slate-500">
-                    共 {total} 条，当前显示 {startRecord}-{endRecord}
-                  </div>
-                  <div className="flex items-center justify-end gap-2">
-                    <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
-                      上一页
-                    </Button>
-                    <span className="min-w-16 text-center text-sm text-slate-600">
-                      {page} / {totalPages}
-                    </span>
-                    <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
-                      下一页
-                    </Button>
-                  </div>
+                      </div>
+                    </article>
+                  );
+                })}
+              </div>
+
+              <div className="flex flex-col gap-3 border-t border-slate-100 px-5 py-4 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+                <div className="text-sm text-slate-500">
+                  共 {total} 条，当前显示 {startRecord}-{endRecord}
                 </div>
-              )}
+                <div className="flex items-center justify-end gap-2">
+                  <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => setPage(page - 1)}>
+                    上一页
+                  </Button>
+                  <span className="min-w-16 text-center text-sm tabular-nums text-slate-600">
+                    {page} / {totalPages}
+                  </span>
+                  <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => setPage(page + 1)}>
+                    下一页
+                  </Button>
+                </div>
+              </div>
             </>
-            )}
-          </CardContent>
-        </Card>
-      </div>
+          )}
+        </section>
+      </main>
     </div>
   );
 }

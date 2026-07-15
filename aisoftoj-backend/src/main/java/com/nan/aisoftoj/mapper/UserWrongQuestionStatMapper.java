@@ -2,6 +2,7 @@ package com.nan.aisoftoj.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.nan.aisoftoj.dto.WrongQuestionDTO;
+import com.nan.aisoftoj.dto.WrongQuestionSummaryDTO;
 import com.nan.aisoftoj.entity.UserWrongQuestionStat;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -33,7 +34,7 @@ public interface UserWrongQuestionStatMapper extends BaseMapper<UserWrongQuestio
             "importance_level AS importance " +
             "FROM user_wrong_question_stat " +
             "WHERE user_id = #{userId} AND is_deleted = 0 " +
-            "ORDER BY last_wrong_time DESC, id DESC " +
+            "ORDER BY error_count DESC, last_wrong_time DESC, id DESC " +
             "LIMIT #{pageSize} OFFSET #{offset}")
     List<WrongQuestionDTO> selectByUserId(
             @Param("userId") Integer userId,
@@ -44,4 +45,13 @@ public interface UserWrongQuestionStatMapper extends BaseMapper<UserWrongQuestio
             "FROM user_wrong_question_stat " +
             "WHERE user_id = #{userId} AND is_deleted = 0")
     Long countByUserId(@Param("userId") Integer userId);
+
+    @Select("SELECT " +
+            "COUNT(1) AS totalCount, " +
+            "COALESCE(SUM(CASE WHEN importance_level = 'high' THEN 1 ELSE 0 END), 0) AS masterCount, " +
+            "COALESCE(SUM(CASE WHEN error_count >= 2 THEN 1 ELSE 0 END), 0) AS frequentCount, " +
+            "COUNT(DISTINCT paper_name) AS paperCount " +
+            "FROM user_wrong_question_stat " +
+            "WHERE user_id = #{userId} AND is_deleted = 0")
+    WrongQuestionSummaryDTO selectSummaryByUserId(@Param("userId") Integer userId);
 }
