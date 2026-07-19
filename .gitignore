@@ -7,6 +7,14 @@
 .vscode/
 .claude/
 
+# Local environment secrets
+.env
+.env.local
+.env.production
+**/.env
+**/.env.local
+**/.env.production
+
 target/
 */target/
 
@@ -25,6 +33,7 @@ scripts/
 assets/
 reports/
 skills/
+.local-backups/
 
 # 草稿与营销素材
 README_NEW.md
