@@ -762,7 +762,7 @@ export function ExamSession({
               </span>
             </div>
 
-            <Card className="bg-white shadow-sm border border-slate-200 sticky top-20 max-h-[400px] flex flex-col">
+            <Card className="bg-white shadow-sm border border-slate-200 sticky top-20 flex flex-col">
               <CardHeader className="border-b border-slate-100 flex-shrink-0">
                 <div className="flex items-center justify-between">
                   <CardTitle className="text-lg">答题卡</CardTitle>
@@ -776,7 +776,7 @@ export function ExamSession({
                   )}
                 </div>
               </CardHeader>
-              <CardContent className="pt-4 flex-1 overflow-y-auto">
+              <CardContent className="pt-4 flex-1">
                 {/* 题号网格 - 5列3行布局 */}
                 <div className="grid grid-cols-5 gap-2 mb-4" style={{ gridTemplateRows: 'repeat(3, 1fr)' }}>
                   {Array.from({ length: endIndex - startIndex }, (_, i) => {
