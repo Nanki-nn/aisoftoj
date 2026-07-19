@@ -30,6 +30,10 @@
 
 去重仅按原始 URL 的完整字节串执行，不自动修改大小写、编码、查询参数、末尾斜杠或重定向地址。下载后的最终 URL 与源文件 SHA-256 只作为审计信息。若不同原始 URL 下载到相同内容，可在人工确认后共享绘图源，但数据库替换仍保留各自的 occurrence 映射。
 
+图片节点解析在第一、第二阶段使用同一套固定实现和版本：Node.js 20、`unified@11`、`remark-parse@11`、`remark-gfm@4`、`parse5@7` 与 `jsonc-parser@3.3.1`。纳入范围的语法为 Markdown 行内图片、Markdown 引用式图片、HTML `<img src>` 和 `<img srcset>` 中的每个候选 URL；排除普通超链接、CSS `background-image` 和脚本动态生成图片。HTML entity、Markdown 转义和 URL 编码同时记录“解码后的语义 URL”与“数据库原文中的精确 lexeme/source span”。固定的 33 次引用必须由该解析规则重新计算得到。
+
+`options` 字段先用 `jsonc-parser` 解析外层 JSON，递归遍历全部字符串叶子；每个 occurrence 额外记录 JSON Pointer、字符串 literal 的 source span、图片节点序号、图片 URL 在解码字符串中的 span、解码语义 URL 和原始转义 lexeme。迁移时只重建发生变化的单个 JSON 字符串 literal，并替换该 literal 的原始 span，不重新序列化整个 JSON；随后验证 JSON 可解析，且除目标图片 destination 外的 JSON AST 与 Markdown/HTML AST 完全一致。
+
 ## 3. 方案选择
 
 ### 3.1 采用方案：确定性 SVG 重绘
@@ -99,6 +103,7 @@ assets/question-images-redrawn/<run-id>/
 
 question-assets/redrawn/<run-id>/
 ├── manifest.json
+├── deployment-state.json
 ├── svg/
 │   └── <asset-id>.svg
 └── qa/
@@ -111,7 +116,9 @@ question-assets/redrawn/<run-id>/
 └── rollback-report.md
 ```
 
-`asset-id` 使用原始 URL 完整字节串的 SHA-256；不得截短到存在碰撞风险的长度。manifest 以 asset 为顶层记录，一个 asset 下保存全部 occurrence 数组，确保复用图片只有一份 SVG/PNG。每个 occurrence 保留原始 URL 和完整原字段哈希，用于精确替换与并发校验。
+`asset-id` 使用原始 URL 完整字节串的 SHA-256；不得截短到存在碰撞风险的长度。manifest 以 asset 为顶层记录，一个 asset 下保存全部 occurrence 数组，确保复用图片只有一份 SVG/PNG。每个 occurrence 保留原始 URL、语义 URL、精确 source span/lexeme、JSON Pointer（如适用）和完整原字段哈希，用于精确替换与并发校验。
+
+manifest 在用户验收前即根据已配置的稳定 `public_base_url` 和 PNG SHA-256 计算最终 OSS URL，并将该 URL 写入 asset。批准后的 manifest 永不修改。上传进度、远端 ETag/长度/SHA-256、失败原因和重试状态只写入独立 `deployment-state.json`；该文件必须引用批准的 manifest digest。
 
 当前 `assets/` 已被 `.gitignore` 忽略，因此下载原图、PNG 和联系表不会意外进入 Git。审核通过后的 SVG、manifest、审核报告和审批摘要进入 `question-assets/`，作为长期可维护源。含完整题目字段的数据库备份只能进入权限为 `600` 的 `.local-backups/`，不得进入 Git、OSS 公共目录或审核页面。备份至少保留到迁移后 90 天，并在删除前再次确认无需回滚。
 
@@ -123,7 +130,8 @@ question-assets/redrawn/<run-id>/
 - 按原始 URL 完整字节串去重，不做隐式规范化。
 - 记录每个 URL 对应的题目 ID、题目名称、字段、图片节点序号、语法类型、完整原字段 SHA-256 和 occurrence 顺序。
 - 下载只允许 `https` 或显式批准的 `http`；拒绝携带凭据的 URL、非网络协议、loopback、私网、链路本地和云元数据地址，并在每次 DNS 解析和重定向后重新检查。
-- 设置连接与读取超时、最大重定向次数、最大下载字节、最大解码像素和最大图片尺寸；同时校验响应 MIME、文件 magic bytes 和安全解码结果。
+- 固定限制为：连接超时 5 秒、读取超时 30 秒、最多 5 次重定向、压缩输入最多 20 MiB、解码后最多 40 megapixels、任一边最多 12,000 px；同时校验响应 MIME、文件 magic bytes 和安全解码结果。任何放宽必须由用户针对具体 asset 明确批准并记录。
+- 每个连接跳在 DNS 校验后固定使用已批准的解析 IP 发起连接，同时保持原始 TLS SNI 与 HTTP Host，防止校验与连接之间的 DNS rebinding。
 - 记录最终 URL、源文件字节数、像素尺寸和源文件 SHA-256。
 - 下载失败、无法解码或语义无法可靠识别的 asset 必须阻断第一阶段完成，不得跳过或猜测；只有用户记录明确处置后才能继续。
 
@@ -135,11 +143,12 @@ question-assets/redrawn/<run-id>/
 - 对复杂图表允许改变布局，但不能改变语义或连线方向。
 - SVG 仅使用自包含文字和矢量元素，不嵌入原图。
 - 使用固定版本渲染器与固定字体导出严格 2 倍 viewBox 尺寸的 PNG。
+- PNG 任一边不得超过 8,192 px，文件不得超过 10 MiB；超限时必须调整布局/viewBox，而不是降低到不可读字号。例外需要用户对具体 asset 明确批准并记录。
 
 ### 7.3 自动检查
 
 - SVG/XML 可解析。
-- PNG 能正常解码，尺寸和文件大小合理。
+- PNG 能正常解码，像素尺寸严格等于 SVG `viewBox` 的 2 倍，任一边不超过 8,192 px，文件不超过 10 MiB。
 - 四角和主要背景为白色，不存在透明异常。
 - 文件中不包含已知来源域名、水印文案、公众号或二维码文本。
 - SVG 不包含脚本、`foreignObject`、远程引用、嵌入位图、隐藏文字或不可见图层。
@@ -159,7 +168,7 @@ question-assets/redrawn/<run-id>/
 - 黑白风格一致。
 - 缩放到实际答题页面宽度后仍清晰可读。
 
-每个 asset 的 review 状态、SVG SHA-256、PNG SHA-256 和审核人/时间写入 manifest。生成联系表后计算 manifest SHA-256；用户必须明确批准该 manifest digest。`approval.json` 只记录 run ID、manifest digest、28 个 PNG digest、批准时间和批准结论，不记录题目答案。任何 SVG、PNG、映射或审核状态变化都会使批准失效并返回第一阶段重新验收。
+每个 asset 的 review 状态、SVG SHA-256、PNG SHA-256、预计算稳定 OSS URL 和审核人/时间写入 manifest。生成联系表后计算 manifest SHA-256；用户必须明确批准该 manifest digest。`approval.json` 只记录 run ID、manifest digest、28 个 PNG digest、批准时间和批准结论，不记录题目答案。任何 SVG、PNG、映射、稳定 URL 或审核状态变化都会使批准失效并返回第一阶段重新验收。
 
 用户验收前不上传 OSS、不更新数据库。
 
@@ -181,25 +190,35 @@ aisoftoj/questions/redrawn/<png-sha256>.png
 - 上传前重新计算 manifest 与全部 PNG SHA-256，必须与 `approval.json` 完全一致。
 - 使用条件式不覆盖上传；对象已存在时，只有远端字节长度和 SHA-256 与本地一致才视为成功，否则停止。
 - 上传后通过稳定 URL GET 对象，检查 TLS 主机、HTTP 状态、`Content-Type`、字节长度和 SHA-256。
-- 新 URL 写回 `manifest.json`，禁止依赖上传顺序进行映射。
-- 任一图片上传失败时停止数据库迁移，manifest 记录已完成对象供幂等重试，不产生半更新题库。
+- 批准后的 manifest 不可修改；上传结果和重试状态写入引用 manifest digest 的 `deployment-state.json`，禁止依赖上传顺序进行映射。
+- 任一图片上传失败时停止数据库迁移，`deployment-state.json` 记录已完成对象供幂等重试，不产生半更新题库。
 - 部分上传对象在迁移成功并超过回滚观察期后，才能根据 manifest 生成清理候选；不自动删除对象。
 
 ## 9. 数据库迁移与回滚
 
-上传全部成功并完成用户验收后：
+第二阶段严格按以下状态顺序执行：
+
+1. 验证 `approval.json`、manifest digest、28 个 PNG digest 和预计算 OSS URL。
+2. 执行只读数据库漂移预检。
+3. 创建数据库权威备份并在临时 schema 中完成恢复测试。
+4. 上传并验证 OSS 对象，将结果写入 `deployment-state.json`。
+5. 开启数据库事务、锁行并执行第二次漂移检查。
+6. 执行语法感知迁移与事务内断言。
+7. 提交后执行 API/页面验证。
+
+具体要求如下：
 
 1. 在任何更新前生成权威备份，包含 run ID、数据库身份、受影响题目的完整四字段、原始字段哈希，并生成独立 SHA-256 校验文件。备份文件权限必须为 `600`。
 2. 在隔离的临时 schema 中导入备份并比较字段哈希，证明备份可恢复。
-3. 第二阶段预检重新解析数据库，要求精确满足 `1163` 条有效题目、`32` 条受影响题目、`33` 个目标图片 occurrence、`28` 个 asset，并要求 occurrence 的题目 ID、字段、节点序号、原始 URL 和完整字段哈希与批准 manifest 一致；否则不上传或不迁移。
+3. OSS 上传前的只读预检重新解析数据库，要求精确满足 `1163` 条有效题目、`32` 条受影响题目、`33` 个目标图片 occurrence、`28` 个 asset，并要求 occurrence 的题目 ID、字段、JSON Pointer、节点序号、原始 lexeme、语义 URL、source span 和完整字段哈希与批准 manifest 一致；否则不创建 OSS 对象。
 4. 开启事务，对 32 条目标题目执行 `SELECT ... FOR UPDATE`，再次解析并核对所有字段哈希，防止预检后并发修改。
-5. 使用 Markdown/HTML 语法感知方式，只替换 manifest 中列出的图片节点 URL；不得对整段文本执行无上下文的字符串替换，也不得修改普通链接或非目标内容。
+5. 使用与第一阶段完全相同版本和配置的 Markdown/HTML/JSON 解析器，只对 manifest 记录的精确 source span/lexeme 应用补丁；不得对整段文本执行无上下文字符串替换，不得整体重序列化 `options`，也不得修改普通链接、非目标 `srcset` 候选或其他内容。
 6. 更新后在同一事务内断言：33 个旧图片节点变为 0、33 个预期新图片节点存在、正好影响 32 条题目、所有非目标内容字节级不变、每个迁移后字段哈希与 manifest 计算值一致。
 7. 任一数量或哈希不匹配立即回滚；全部通过才提交。
 8. “旧 URL 清零”仅指 `is_deleted = 0` 的题目四字段中、manifest 指定的图片节点，不包含软删除行或普通超链接。
 9. 提交后通过题目 API 和前端答题页抽查，并记录迁移后字段哈希。
 
-回滚也必须在事务中执行。恢复前先锁定目标行，并要求当前字段哈希与 manifest 中的迁移后哈希一致；若迁移后又发生编辑，则拒绝普通回滚，只有用户明确批准 force 模式后才能覆盖。回滚后校验完整原字段哈希。OSS 新对象不立即删除，以免回滚后再次切换时丢失。
+回滚也必须在事务中执行。恢复前先锁定目标行，并要求当前字段哈希与 manifest 中的迁移后哈希一致；若迁移后又发生编辑，则拒绝普通回滚。进入 force 模式前，必须先为当前分歧行创建第二份权限为 `600` 的备份，在临时 schema 中恢复验证，生成字段/hash 漂移报告，并让用户批准该第二备份 digest 和明确覆盖范围。force 回滚仍在事务中执行，完成后同时报告被保留的迁移后状态备份 digest 与恢复后的原字段哈希。OSS 新对象不立即删除，以免回滚后再次切换时丢失。
 
 ## 10. 完成标准
 
