@@ -127,16 +127,12 @@ type UpdateAnswerFn = ReturnType<typeof useExamSession>['updateAnswer'];
 
 function ResultRoute({
   currentSession,
-  onRestartExam,
-  onBackToHome,
-  onContinuePractice,
-  onBackToExam,
+  onViewAnswerRecord,
+  onBackToLanding,
 }: {
   currentSession: ReturnType<typeof useExamSession>['currentSession'];
-  onRestartExam: () => void;
-  onBackToHome: () => void;
-  onContinuePractice: () => void;
-  onBackToExam: () => void;
+  onViewAnswerRecord: () => void;
+  onBackToLanding: () => void;
 }) {
   const { sessionId } = useParams();
 
@@ -147,10 +143,8 @@ function ResultRoute({
   return (
     <ExamResult
       session={currentSession}
-      onRestartExam={onRestartExam}
-      onBackToHome={onBackToHome}
-      onContinuePractice={onContinuePractice}
-      onBackToExam={onBackToExam}
+      onViewAnswerRecord={onViewAnswerRecord}
+      onBackToLanding={onBackToLanding}
     />
   );
 }
@@ -173,7 +167,6 @@ function AppShell({
 }
 
 export default function App() {
-  const [lastConfig, setLastConfig] = useState<ExamConfigType | null>(null);
   const [examConfigDraft, setExamConfigDraft] = useState<Partial<ExamConfigType> | null>(null);
   const {
     currentSession,
@@ -214,7 +207,6 @@ export default function App() {
 
   const handleStartExam = async (config: ExamConfigType) => {
     try {
-      setLastConfig(config);
       setExamConfigDraft(config);
       const session = config.paperId
         ? await startPaperSession(config.paperId, config.examMode)
@@ -260,41 +252,6 @@ export default function App() {
     });
   };
 
-  const handleRestartExam = () => {
-    const restartConfig = currentSession?.paperId
-      ? {
-          paperId: currentSession.paperId,
-          paperName: currentSession.paperName || currentSession.subject,
-          subject: currentSession.subject,
-          category: currentSession.category,
-          questionCount: currentSession.questions.length,
-          examMode: currentSession.examMode,
-          randomOrder: false,
-        }
-      : lastConfig;
-
-    if (!restartConfig) {
-      navigate(ROUTES.examConfig);
-      return;
-    }
-
-    if (restartConfig.paperId) {
-      void (async () => {
-        try {
-          const session = await startPaperSession(restartConfig.paperId!, restartConfig.examMode ?? 'practice');
-          setSession(session);
-          navigate(`${ROUTES.examSessionBase}/${session.id}`);
-        } catch (error) {
-          alert('开始考试失败：' + (error as Error).message);
-        }
-      })();
-      return;
-    }
-
-    setExamConfigDraft(restartConfig);
-    navigate(ROUTES.examConfig);
-  };
-
   const handleBackToHome = () => {
     resetSession();
     setExamConfigDraft(null);
@@ -312,35 +269,6 @@ export default function App() {
     resetSession();
     setExamConfigDraft(null);
     navigate(ROUTES.papers);
-  };
-
-  const handleContinuePractice = () => {
-    const continueConfig = currentSession?.paperId
-      ? {
-          paperId: currentSession.paperId,
-          paperName: currentSession.paperName || currentSession.subject,
-          subject: currentSession.subject,
-          category: currentSession.category,
-          questionCount: currentSession.questions.length,
-          examMode: 'practice' as const,
-          randomOrder: false,
-        }
-      : null;
-    resetSession();
-    if (continueConfig?.paperId) {
-      void (async () => {
-        try {
-          const session = await startPaperSession(continueConfig.paperId!, 'practice');
-          setSession(session);
-          navigate(`${ROUTES.examSessionBase}/${session.id}`);
-        } catch (error) {
-          alert('继续练习失败：' + (error as Error).message);
-        }
-      })();
-      return;
-    }
-    setExamConfigDraft(continueConfig);
-    navigate(ROUTES.examConfig);
   };
 
   const handleBackToExam = () => {
@@ -476,10 +404,8 @@ export default function App() {
           element={
             <ResultRoute
               currentSession={currentSession}
-              onRestartExam={handleRestartExam}
-              onBackToHome={handleBackToHome}
-              onContinuePractice={handleContinuePractice}
-              onBackToExam={handleBackToExam}
+              onViewAnswerRecord={handleBackToExam}
+              onBackToLanding={handleBackToHome}
             />
           }
         />

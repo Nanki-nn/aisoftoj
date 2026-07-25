@@ -16,9 +16,7 @@ import {
   XCircle,
   AlertCircle,
   BookOpen,
-  RotateCcw,
   Home,
-  BookMarked,
   ArrowLeft
 } from 'lucide-react';
 import { ExamSession, Question, QuestionOption } from '../types/exam';
@@ -81,13 +79,11 @@ function formatAnswer(answer: string | string[]): string {
 
 interface ExamResultProps {
   session: ExamSession;
-  onRestartExam: () => void;
-  onBackToHome: () => void;
-  onContinuePractice: () => void;
-  onBackToExam: () => void;
+  onViewAnswerRecord: () => void;
+  onBackToLanding: () => void;
 }
 
-export function ExamResult({ session, onRestartExam, onBackToHome, onContinuePractice, onBackToExam }: ExamResultProps) {
+export function ExamResult({ session, onViewAnswerRecord, onBackToLanding }: ExamResultProps) {
   // 所有题目都是主观题（essay）时，不进行自动评分
   const isSubjectiveExam = session.questions.every(q => q.type === 'essay');
 
@@ -150,7 +146,7 @@ export function ExamResult({ session, onRestartExam, onBackToHome, onContinuePra
       <div className="bg-white border-b border-slate-200 sticky top-0 z-10">
         <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex items-center justify-between">
-            <Button variant="ghost" onClick={onBackToExam} className="flex items-center gap-2">
+            <Button variant="ghost" onClick={onViewAnswerRecord} className="flex items-center gap-2">
               <ArrowLeft className="w-4 h-4" />
               返回
             </Button>
@@ -247,21 +243,17 @@ export function ExamResult({ session, onRestartExam, onBackToHome, onContinuePra
         <Card className="mb-6 border-blue-100 bg-white/95 shadow-sm">
           <CardContent className="flex flex-col gap-3 pt-6 sm:flex-row sm:items-center sm:justify-between">
             <div>
-              <div className="text-sm text-slate-500">考试完成后常用操作</div>
-              <div className="text-slate-800">重新作答、继续练习和返回首页都放在这里，首屏就能点。</div>
+              <div className="text-sm text-slate-500">考试完成后</div>
+              <div className="text-slate-800">查看本次做题记录，或返回落地页。</div>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row">
-              <Button onClick={onRestartExam} variant="outline" className="flex items-center gap-2">
-                <RotateCcw className="w-4 h-4" />
-                重新答题
+              <Button onClick={onViewAnswerRecord} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700">
+                <BookOpen className="w-4 h-4" />
+                查看做题记录
               </Button>
-              <Button onClick={onContinuePractice} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700">
-                <BookMarked className="w-4 h-4" />
-                继续刷题
-              </Button>
-              <Button onClick={onBackToHome} variant="outline" className="flex items-center gap-2">
+              <Button onClick={onBackToLanding} variant="outline" className="flex items-center gap-2">
                 <Home className="w-4 h-4" />
-                返回首页
+                返回落地页
               </Button>
             </div>
           </CardContent>
@@ -380,17 +372,13 @@ export function ExamResult({ session, onRestartExam, onBackToHome, onContinuePra
 
         {/* 操作按钮 */}
         <div className="flex flex-col gap-3 sm:flex-row">
-          <Button onClick={onRestartExam} variant="outline" className="flex items-center gap-2">
-            <RotateCcw className="w-4 h-4" />
-            重新答题
+          <Button onClick={onViewAnswerRecord} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700">
+            <BookOpen className="w-4 h-4" />
+            查看做题记录
           </Button>
-          <Button onClick={onContinuePractice} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700">
-            <BookMarked className="w-4 h-4" />
-            继续刷题
-          </Button>
-          <Button onClick={onBackToHome} variant="outline" className="flex items-center gap-2">
+          <Button onClick={onBackToLanding} variant="outline" className="flex items-center gap-2">
             <Home className="w-4 h-4" />
-            返回首页
+            返回落地页
           </Button>
         </div>
       </div>
