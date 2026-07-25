@@ -271,6 +271,11 @@ export default function App() {
     navigate(ROUTES.papers);
   };
 
+  const handleBackToPapers = () => {
+    setExamConfigDraft(null);
+    navigate(ROUTES.papers);
+  };
+
   const handleBackToExam = () => {
     if (currentSession) {
       navigate(`${ROUTES.examSessionBase}/${currentSession.id}`);
@@ -405,7 +410,7 @@ export default function App() {
             <ResultRoute
               currentSession={currentSession}
               onViewAnswerRecord={handleBackToExam}
-              onBackToPapers={handleBackToConfig}
+              onBackToPapers={handleBackToPapers}
             />
           }
         />
