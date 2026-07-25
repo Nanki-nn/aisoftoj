@@ -8,6 +8,7 @@ import { ExamConfig } from './components/ExamConfig';
 import { ExamSession } from './components/ExamSession';
 import { ExamResult } from './components/ExamResult';
 import { AuthPage } from './components/AuthPage';
+import { ForgotPasswordPage } from './components/ForgotPasswordPage';
 import { ProfilePage } from './components/ProfilePage';
 import { PracticeHistory } from './components/PracticeHistory';
 import { WrongQuestions } from './components/WrongQuestions';
@@ -40,6 +41,7 @@ const ROUTES = {
   foundation: '/foundation',
   papers: '/papers',
   auth: '/login',
+  forgotPassword: '/forgot-password',
   profile: '/profile',
   practiceHistory: '/practice-history',
   wrongQuestions: '/wrong-questions',
@@ -366,6 +368,7 @@ export default function App() {
           }
         />
         <Route path={ROUTES.auth} element={<AuthPage onLoginSuccess={handleLoginSuccess} />} />
+        <Route path={ROUTES.forgotPassword} element={<ForgotPasswordPage />} />
         <Route path={ROUTES.profile} element={<ProfilePage onBack={handleBackToHome} />} />
         <Route
           path={ROUTES.practiceHistory}

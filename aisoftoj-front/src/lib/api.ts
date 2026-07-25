@@ -6,7 +6,7 @@ import {
   PracticeSessionRecord,
   WrongQuestionSummary,
 } from '../types/record';
-import { LoginForm, RegisterForm, User } from '../types/user';
+import { EmailCodeLoginForm, LoginForm, PasswordResetForm, RegisterForm, User } from '../types/user';
 import {
   CONTENT_CRYPTO_ENCRYPTED_HEADER,
   ContentCryptoError,
@@ -125,10 +125,12 @@ type GetSessionRes = {
 
 type AuthUserDTO = User;
 
-type AuthResponse = {
+export type AuthResponse = {
   token: string;
   user: AuthUserDTO;
 };
+
+export type EmailCodeScene = 'REGISTER' | 'PASSWORD_RESET' | 'LOGIN';
 
 function mapPaperCate(cateId: number): ExamPaper['category'] {
   switch (cateId) {
@@ -403,6 +405,27 @@ export async function loginByEmail(form: LoginForm): Promise<AuthResponse> {
       email: form.email,
       password: form.password,
     }),
+  });
+}
+
+export async function requestEmailCode(email: string, scene: EmailCodeScene): Promise<void> {
+  await request<void>('/auth/email/code', {
+    method: 'POST',
+    body: JSON.stringify({ email, scene }),
+  });
+}
+
+export async function loginByEmailCode(form: EmailCodeLoginForm): Promise<AuthResponse> {
+  return request<AuthResponse>('/auth/email/login', {
+    method: 'POST',
+    body: JSON.stringify(form),
+  });
+}
+
+export async function resetPasswordByEmail(form: PasswordResetForm): Promise<void> {
+  await request<void>('/auth/password/reset', {
+    method: 'POST',
+    body: JSON.stringify(form),
   });
 }
 
