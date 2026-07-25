@@ -46,7 +46,7 @@
 - 🎯 **智能练习模式**：支持练题模式和考试模式，满足不同学习阶段需求
 - 📊 **实时反馈机制**：答题后立即显示解析，帮助理解知识点
 - 📈 **学习进度追踪**：记录刷题历史和错题本，精准定位薄弱环节
-- 🔐 **完善的用户体系**：邮箱登录注册，全局认证管理
+- 🔐 **完善的用户体系**：注册邮箱验证、密码登录、邮箱验证码免密登录、找回密码与全局认证管理
 
 ### 🎯 覆盖科目
 
@@ -87,7 +87,7 @@
 - ✅ 刷题会话创建与管理
 - ✅ 答题记录实时更新
 - ✅ 试卷提交与智能阅卷
-- ✅ 用户认证与授权
+- ✅ 用户认证与授权（注册验证、免密登录、密码重置、安全限流）
 
 ## 🛠️ 技术架构
 
@@ -115,7 +115,7 @@
 
 ### 数据存储策略
 
-- **生产环境**：后端使用 MySQL 持久化存储（7 张核心表）
+- **生产环境**：后端使用 MySQL 持久化存储（7 张核心业务表 + 3 张认证安全表）
 - **开发环境**：前端原型阶段使用本地静态数据和 localStorage
 
 ## 📁 项目结构
@@ -228,8 +228,27 @@ DB_URL=jdbc:mysql://127.0.0.1:3306/aisoftoj?useUnicode=true&characterEncoding=UT
 DB_USERNAME=aisoftoj
 DB_PASSWORD=change-me
 AUTH_JWT_SECRET=replace-with-a-long-random-string
+AUTH_EMAIL_CODE_SECRET=replace-with-at-least-32-random-bytes
 CORS_ALLOWED_ORIGINS=https://your-frontend-domain.com
+MAIL_HOST=smtp.example.com
+MAIL_PORT=587
+MAIL_USERNAME=no-reply@example.com
+MAIL_PASSWORD=change-me
+MAIL_FROM=no-reply@example.com
+MAIL_STARTTLS_ENABLE=true
+MAIL_STARTTLS_REQUIRED=true
 ```
+
+`AUTH_EMAIL_CODE_SECRET` 用于验证码摘要及待发送邮件的 AES-GCM 加密，必须是至少 32 字节的高熵随机值并稳定保存。更换该密钥会立即使所有尚未消费的验证码失效。正式环境应使用专用事务邮件账号，并为发信域名配置 SPF、DKIM 和 DMARC。
+
+已有数据库升级时，先备份，再依次执行预检与迁移；预检返回任何记录都必须先人工处理，不能继续迁移：
+
+```bash
+mysql -u"$DB_USERNAME" -p aisoftoj < db_migrations/20260726_email_auth_preflight.sql
+mysql -u"$DB_USERNAME" -p aisoftoj < db_migrations/20260726_add_email_auth.sql
+```
+
+迁移会把已有账号标记为邮箱已验证，并新增验证码、邮件发件箱和认证限流表。全新安装只需执行最新的 `db_schema.sql`。
 
 前端如果不是和后端同域部署，需要显式配置：
 
@@ -259,13 +278,16 @@ npm run build
 ### ✅ 上线前检查清单
 
 - 确认 `AUTH_JWT_SECRET` 已替换为高强度随机值，不使用默认开发值。
+- 确认 `AUTH_EMAIL_CODE_SECRET` 至少 32 字节、已安全备份，且不会在普通发布中变化。
+- 确认 SMTP 使用专用事务邮件账号并强制 STARTTLS，发信域名的 SPF、DKIM、DMARC 已生效。
+- 确认邮件发件箱没有持续积压或重复失败，验证码邮件能在 1 分钟内送达测试邮箱。
 - 确认 `CORS_ALLOWED_ORIGINS` 只包含正式前端域名，不保留 `localhost`。
 - 确认数据库账号不是 `root`，并已限制来源 IP 与最小权限。
 - 确认 `APP_LOG_LEVEL` 在生产环境为 `info` 或 `warn`，不要输出调试 SQL。
 - 确认 `CLAUDE_API_KEY` 已配置，或在前端关闭论文批改入口。
 - 确认 `uploads/` 目录已创建，并设置好磁盘配额、备份和访问策略。
 - 确认 HTTPS、域名、反向代理和前端 `VITE_API_BASE_URL` 配置一致。
-- 确认至少手工回归登录、开始答题、继续答题、交卷、错题本、论文批改这几条主流程。
+- 确认至少手工回归注册验证码、密码登录、验证码登录、找回密码、旧令牌失效、开始答题、继续答题、交卷、错题本和论文批改这些主流程。
 
 ### 🌐 在线体验
 
