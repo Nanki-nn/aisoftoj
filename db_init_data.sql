@@ -10,7 +10,7 @@ DELETE FROM question;
 DELETE FROM paper;
 DELETE FROM user;
 
-INSERT INTO user (id, phone, email, login_name, nick_name, avatar, password, is_enabled, is_deleted, create_time, update_time) VALUES (1, '13800138000', 'student@example.com', 'student123', '软考小能手', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student123', NULL, 1, 0, NOW(), NOW());
+INSERT INTO user (id, phone, email, email_normalized, email_verified_at, login_name, nick_name, avatar, password, token_version, is_enabled, is_deleted, create_time, update_time) VALUES (1, '13800138000', 'student@example.com', 'student@example.com', NOW(), 'student123', '软考小能手', 'https://api.dicebear.com/7.x/avataaars/svg?seed=student123', NULL, 0, 1, 0, NOW(), NOW());
 
 INSERT INTO paper (id, front_mock_id, subject_id, subject_name, paper_cate_id, paper_year, paper_month, name, order_num, question_total, read_ct, publish_status, mock_status, completed_count, source_type, is_deleted, create_time, update_time) VALUES (101, 'sa-2025-05-basic', 2, '系统架构设计师', 1, 2025, 5, '2025年5月系统架构设计师综合知识真题', 1, 75, 1414, 1, 'in_progress', 45, 'mock', 0, STR_TO_DATE('2025/10/3 22:35:00', '%Y/%c/%e %H:%i:%s'), STR_TO_DATE('2025/10/3 22:35:00', '%Y/%c/%e %H:%i:%s'));
 INSERT INTO paper (id, front_mock_id, subject_id, subject_name, paper_cate_id, paper_year, paper_month, name, order_num, question_total, read_ct, publish_status, mock_status, completed_count, source_type, is_deleted, create_time, update_time) VALUES (102, 'sa-2024-11-basic', 2, '系统架构设计师', 1, 2024, 11, '2024年11月系统架构设计师综合知识真题', 2, 76, 1071, 1, 'in_progress', 32, 'mock', 0, STR_TO_DATE('2025/10/3 16:59:32', '%Y/%c/%e %H:%i:%s'), STR_TO_DATE('2025/10/3 16:59:32', '%Y/%c/%e %H:%i:%s'));

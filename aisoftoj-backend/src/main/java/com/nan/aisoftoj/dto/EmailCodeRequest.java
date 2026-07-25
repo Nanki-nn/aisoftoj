@@ -2,18 +2,19 @@ package com.nan.aisoftoj.dto;
 
 import lombok.Data;
 
-import javax.validation.constraints.NotBlank;
 import javax.validation.constraints.Email;
+import javax.validation.constraints.NotBlank;
+import javax.validation.constraints.Pattern;
 import javax.validation.constraints.Size;
 
 @Data
-public class AuthLoginRequest {
+public class EmailCodeRequest {
     @NotBlank(message = "邮箱不能为空")
     @Email(message = "邮箱格式不正确")
     @Size(max = 254, message = "邮箱长度不能超过254位")
     private String email;
 
-    @NotBlank(message = "密码不能为空")
-    @Size(max = 64, message = "密码长度不能超过64位")
-    private String password;
+    @NotBlank(message = "验证码场景不能为空")
+    @Pattern(regexp = "REGISTER|PASSWORD_RESET|LOGIN", message = "验证码场景不正确")
+    private String scene;
 }

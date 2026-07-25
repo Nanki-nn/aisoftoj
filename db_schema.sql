@@ -4,17 +4,23 @@ DROP TABLE IF EXISTS `practice_session`;
 DROP TABLE IF EXISTS `paper_question_relation`;
 DROP TABLE IF EXISTS `question`;
 DROP TABLE IF EXISTS `paper`;
+DROP TABLE IF EXISTS `auth_email_outbox`;
+DROP TABLE IF EXISTS `auth_email_code`;
+DROP TABLE IF EXISTS `auth_rate_limit`;
 DROP TABLE IF EXISTS `user`;
 
 CREATE TABLE `user` (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '用户ID',
   `wx_open_id` varchar(64) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '微信OpenID（公众号/小程序）',
   `phone` varchar(20) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '手机号（用于短信登录）',
-  `email` varchar(64) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '邮箱（备用）',
+  `email` varchar(254) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '邮箱（展示值）',
+  `email_normalized` varchar(254) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '规范化邮箱（登录唯一标识）',
+  `email_verified_at` datetime DEFAULT NULL COMMENT '邮箱验证时间',
   `login_name` varchar(64) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '登录名（可选，用于后台管理）',
   `nick_name` varchar(64) COLLATE utf8mb4_bin NOT NULL DEFAULT '' COMMENT '昵称',
   `avatar` varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '头像URL或附件ID',
   `password` varchar(128) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '密码（BCrypt加密，可为空）',
+  `token_version` int unsigned NOT NULL DEFAULT 0 COMMENT 'JWT版本，重置密码后递增',
   `role` varchar(16) COLLATE utf8mb4_bin NOT NULL DEFAULT 'USER' COMMENT '用户角色：USER-普通用户，ADMIN-管理员',
   `is_enabled` tinyint(1) NOT NULL DEFAULT '1' COMMENT '是否启用：1-启用，0-停用',
   `is_deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT '删除状态：0-未删除，1-已删除',
@@ -24,8 +30,58 @@ CREATE TABLE `user` (
   UNIQUE KEY `uk_wx_open_id` (`wx_open_id`),
   UNIQUE KEY `uk_phone` (`phone`),
   UNIQUE KEY `uk_email` (`email`),
+  UNIQUE KEY `uk_email_normalized` (`email_normalized`),
   UNIQUE KEY `uk_login_name` (`login_name`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='用户表';
+
+CREATE TABLE `auth_email_code` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '验证码ID',
+  `email` varchar(254) COLLATE utf8mb4_bin NOT NULL COMMENT '规范化邮箱',
+  `scene` varchar(24) COLLATE utf8mb4_bin NOT NULL COMMENT 'REGISTER/PASSWORD_RESET/LOGIN',
+  `code_hash` char(64) COLLATE ascii_bin NOT NULL COMMENT '验证码HMAC-SHA256',
+  `code_salt` char(32) COLLATE ascii_bin NOT NULL COMMENT '验证码随机盐',
+  `status` varchar(16) COLLATE ascii_bin NOT NULL COMMENT 'PENDING/ACTIVE/CONSUMED/SUPERSEDED/FAILED/SUPPRESSED',
+  `expires_at` datetime DEFAULT NULL COMMENT '成功发送后的过期时间',
+  `activated_at` datetime DEFAULT NULL COMMENT '成功发送激活时间',
+  `consumed_at` datetime DEFAULT NULL COMMENT '消费时间',
+  `failed_attempts` tinyint unsigned NOT NULL DEFAULT 0 COMMENT '错误尝试次数',
+  `request_ip` varchar(64) COLLATE utf8mb4_bin NOT NULL COMMENT '请求IP',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  KEY `idx_auth_email_code_lookup` (`email`, `scene`, `status`, `id`),
+  KEY `idx_auth_email_code_expire` (`expires_at`),
+  KEY `idx_auth_email_code_created` (`create_time`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='邮箱验证码';
+
+CREATE TABLE `auth_email_outbox` (
+  `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '发件箱ID',
+  `code_id` bigint(20) unsigned NOT NULL COMMENT '验证码ID',
+  `email` varchar(254) COLLATE utf8mb4_bin NOT NULL COMMENT '收件邮箱',
+  `scene` varchar(24) COLLATE utf8mb4_bin NOT NULL COMMENT '验证码场景',
+  `payload_ciphertext` text COLLATE ascii_bin DEFAULT NULL COMMENT 'AES-GCM加密验证码',
+  `payload_iv` varchar(32) COLLATE ascii_bin DEFAULT NULL COMMENT 'AES-GCM随机IV',
+  `status` varchar(16) COLLATE ascii_bin NOT NULL COMMENT 'PENDING/SENDING/SENT/FAILED',
+  `attempt_count` tinyint unsigned NOT NULL DEFAULT 0 COMMENT '发送尝试次数',
+  `next_attempt_at` datetime NOT NULL COMMENT '下次尝试时间',
+  `locked_at` datetime DEFAULT NULL COMMENT '工作器抢占时间',
+  `last_error` varchar(255) COLLATE utf8mb4_bin DEFAULT NULL COMMENT '脱敏错误分类',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_auth_email_outbox_code` (`code_id`),
+  KEY `idx_auth_email_outbox_poll` (`status`, `next_attempt_at`, `id`),
+  KEY `idx_auth_email_outbox_locked` (`status`, `locked_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='认证邮件持久化发件箱';
+
+CREATE TABLE `auth_rate_limit` (
+  `limit_key` char(64) COLLATE ascii_bin NOT NULL COMMENT 'HMAC后的限流键',
+  `counter` int unsigned NOT NULL DEFAULT 0 COMMENT '当前窗口计数',
+  `window_start` datetime NOT NULL COMMENT '窗口开始时间',
+  `expires_at` datetime NOT NULL COMMENT '窗口结束时间',
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`limit_key`),
+  KEY `idx_auth_rate_limit_expire` (`expires_at`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_bin COMMENT='认证接口原子限流';
 
 CREATE TABLE `paper` (
   `id` int(11) NOT NULL AUTO_INCREMENT COMMENT '主键',

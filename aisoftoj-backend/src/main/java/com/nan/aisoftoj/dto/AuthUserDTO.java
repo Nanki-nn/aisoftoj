@@ -7,6 +7,7 @@ public class AuthUserDTO {
     private String id;
     private String username;
     private String email;
+    private Boolean emailVerified;
     private String nickname;
     private String avatar;
     private String phone;

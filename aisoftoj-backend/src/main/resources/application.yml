@@ -7,6 +7,18 @@ spring:
     username: root
     password: abc123456
     driver-class-name: com.mysql.cj.jdbc.Driver
+  mail:
+    host: ${MAIL_HOST:}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    default-encoding: UTF-8
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:true}
+          starttls:
+            enable: ${MAIL_STARTTLS_ENABLE:true}
   servlet:
     multipart:
       max-file-size: 10MB
@@ -34,6 +46,11 @@ auth:
   jwt:
     secret: ${AUTH_JWT_SECRET:dev-change-me-before-prod}
     expire-hours: ${AUTH_JWT_EXPIRE_HOURS:168}
+  email:
+    code-secret: ${AUTH_EMAIL_CODE_SECRET:dev-email-code-secret-change-before-production}
+    from: ${MAIL_FROM:}
+    from-name: ${MAIL_FROM_NAME:知构软考}
+    worker-delay-ms: ${AUTH_EMAIL_WORKER_DELAY_MS:1000}
 
 logging:
   level:

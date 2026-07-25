@@ -17,6 +17,10 @@ public class User {
 
     private String email;
 
+    private String emailNormalized;
+
+    private Date emailVerifiedAt;
+
     private String loginName;
 
     private String nickName;
@@ -24,6 +28,8 @@ public class User {
     private String avatar;
 
     private String password;
+
+    private Integer tokenVersion;
 
     private String role;
 
