@@ -16,7 +16,7 @@ import {
   XCircle,
   AlertCircle,
   BookOpen,
-  Home,
+  BookMarked,
   ArrowLeft
 } from 'lucide-react';
 import { ExamSession, Question, QuestionOption } from '../types/exam';
@@ -80,10 +80,10 @@ function formatAnswer(answer: string | string[]): string {
 interface ExamResultProps {
   session: ExamSession;
   onViewAnswerRecord: () => void;
-  onBackToLanding: () => void;
+  onBackToPapers: () => void | Promise<void>;
 }
 
-export function ExamResult({ session, onViewAnswerRecord, onBackToLanding }: ExamResultProps) {
+export function ExamResult({ session, onViewAnswerRecord, onBackToPapers }: ExamResultProps) {
   // 所有题目都是主观题（essay）时，不进行自动评分
   const isSubjectiveExam = session.questions.every(q => q.type === 'essay');
 
@@ -244,16 +244,16 @@ export function ExamResult({ session, onViewAnswerRecord, onBackToLanding }: Exa
           <CardContent className="flex flex-col gap-3 pt-6 sm:flex-row sm:items-center sm:justify-between">
             <div>
               <div className="text-sm text-slate-500">考试完成后</div>
-              <div className="text-slate-800">查看本次做题记录，或返回落地页。</div>
+              <div className="text-slate-800">查看本次做题记录，或返回刷题页选择其他试卷。</div>
             </div>
             <div className="flex flex-col gap-3 sm:flex-row">
               <Button onClick={onViewAnswerRecord} className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700">
                 <BookOpen className="w-4 h-4" />
                 查看做题记录
               </Button>
-              <Button onClick={onBackToLanding} variant="outline" className="flex items-center gap-2">
-                <Home className="w-4 h-4" />
-                返回落地页
+              <Button onClick={onBackToPapers} variant="outline" className="flex items-center gap-2">
+                <BookMarked className="w-4 h-4" />
+                返回刷题页
               </Button>
             </div>
           </CardContent>
@@ -376,9 +376,9 @@ export function ExamResult({ session, onViewAnswerRecord, onBackToLanding }: Exa
             <BookOpen className="w-4 h-4" />
             查看做题记录
           </Button>
-          <Button onClick={onBackToLanding} variant="outline" className="flex items-center gap-2">
-            <Home className="w-4 h-4" />
-            返回落地页
+          <Button onClick={onBackToPapers} variant="outline" className="flex items-center gap-2">
+            <BookMarked className="w-4 h-4" />
+            返回刷题页
           </Button>
         </div>
       </div>

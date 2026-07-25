@@ -128,11 +128,11 @@ type UpdateAnswerFn = ReturnType<typeof useExamSession>['updateAnswer'];
 function ResultRoute({
   currentSession,
   onViewAnswerRecord,
-  onBackToLanding,
+  onBackToPapers,
 }: {
   currentSession: ReturnType<typeof useExamSession>['currentSession'];
   onViewAnswerRecord: () => void;
-  onBackToLanding: () => void;
+  onBackToPapers: () => void | Promise<void>;
 }) {
   const { sessionId } = useParams();
 
@@ -144,7 +144,7 @@ function ResultRoute({
     <ExamResult
       session={currentSession}
       onViewAnswerRecord={onViewAnswerRecord}
-      onBackToLanding={onBackToLanding}
+      onBackToPapers={onBackToPapers}
     />
   );
 }
@@ -405,7 +405,7 @@ export default function App() {
             <ResultRoute
               currentSession={currentSession}
               onViewAnswerRecord={handleBackToExam}
-              onBackToLanding={handleBackToHome}
+              onBackToPapers={handleBackToConfig}
             />
           }
         />
