@@ -1,9 +1,11 @@
 import React, { createContext, useCallback, useContext, useMemo, useState } from 'react';
-import { User, LoginForm, RegisterForm } from '../types/user';
+import { User, EmailCodeLoginForm, LoginForm, RegisterForm } from '../types/user';
 import {
+  AuthResponse,
   fetchCurrentUser,
   isApiRequestError,
   loginByEmail,
+  loginByEmailCode,
   logoutAuth,
   registerByEmail,
 } from '../lib/api';
@@ -18,9 +20,11 @@ type AuthContextValue = {
   authInitializationError: string | null;
   error: string | null;
   login: (loginData: LoginForm) => Promise<boolean>;
+  loginWithEmailCode: (loginData: EmailCodeLoginForm) => Promise<boolean>;
   register: (registerData: RegisterForm) => Promise<boolean>;
   logout: () => void;
   clearAuth: () => void;
+  clearError: () => void;
   updateUser: (updatedData: Partial<User>) => void;
   checkAuthStatus: () => Promise<void>;
   isAuthenticated: boolean;
@@ -57,17 +61,25 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     localStorage.removeItem(AUTH_USER_KEY);
   }, []);
 
+  const clearError = useCallback(() => {
+    setError(null);
+  }, []);
+
+  const applyAuthResult = useCallback((result: AuthResponse) => {
+    setUser(result.user);
+    setIsAuthInitialized(true);
+    setAuthInitializationError(null);
+    localStorage.setItem(AUTH_TOKEN_KEY, result.token);
+    localStorage.setItem(AUTH_USER_KEY, JSON.stringify(result.user));
+  }, []);
+
   const login = useCallback(async (loginData: LoginForm): Promise<boolean> => {
     setIsLoading(true);
     setError(null);
 
     try {
       const result = await loginByEmail(loginData);
-      setUser(result.user);
-      setIsAuthInitialized(true);
-      setAuthInitializationError(null);
-      localStorage.setItem(AUTH_TOKEN_KEY, result.token);
-      localStorage.setItem(AUTH_USER_KEY, JSON.stringify(result.user));
+      applyAuthResult(result);
       return true;
     } catch (err) {
       setError((err as Error).message || '登录失败，请稍后重试');
@@ -75,7 +87,23 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [applyAuthResult]);
+
+  const loginWithEmailCode = useCallback(async (loginData: EmailCodeLoginForm): Promise<boolean> => {
+    setIsLoading(true);
+    setError(null);
+
+    try {
+      const result = await loginByEmailCode(loginData);
+      applyAuthResult(result);
+      return true;
+    } catch (err) {
+      setError((err as Error).message || '验证码登录失败，请稍后重试');
+      return false;
+    } finally {
+      setIsLoading(false);
+    }
+  }, [applyAuthResult]);
 
   const register = useCallback(async (registerData: RegisterForm): Promise<boolean> => {
     setIsLoading(true);
@@ -83,11 +111,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     try {
       const result = await registerByEmail(registerData);
-      setUser(result.user);
-      setIsAuthInitialized(true);
-      setAuthInitializationError(null);
-      localStorage.setItem(AUTH_TOKEN_KEY, result.token);
-      localStorage.setItem(AUTH_USER_KEY, JSON.stringify(result.user));
+      applyAuthResult(result);
       return true;
     } catch (err) {
       setError((err as Error).message || '注册失败，请稍后重试');
@@ -95,7 +119,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setIsLoading(false);
     }
-  }, []);
+  }, [applyAuthResult]);
 
   const logout = useCallback(() => {
     const token = localStorage.getItem(AUTH_TOKEN_KEY);
@@ -157,9 +181,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     authInitializationError,
     error,
     login,
+    loginWithEmailCode,
     register,
     logout,
     clearAuth,
+    clearError,
     updateUser,
     checkAuthStatus,
     isAuthenticated: !!user,
@@ -170,9 +196,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     authInitializationError,
     error,
     login,
+    loginWithEmailCode,
     register,
     logout,
     clearAuth,
+    clearError,
     updateUser,
     checkAuthStatus,
   ]);

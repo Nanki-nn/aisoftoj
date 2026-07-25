@@ -4,6 +4,7 @@ export interface User {
   id: string;
   username: string;
   email: string;
+  emailVerified: boolean;
   nickname: string;
   avatar?: string;
   phone?: string;
@@ -29,10 +30,23 @@ export interface LoginForm {
 export interface RegisterForm {
   username: string;
   email: string;
+  emailCode: string;
   password: string;
   confirmPassword: string;
   phone?: string;
   agreeToTerms: boolean;
+}
+
+export interface EmailCodeLoginForm {
+  email: string;
+  code: string;
+}
+
+export interface PasswordResetForm {
+  email: string;
+  code: string;
+  newPassword: string;
+  confirmPassword: string;
 }
 
 export interface UserStats {
