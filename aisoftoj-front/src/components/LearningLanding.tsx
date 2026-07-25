@@ -103,11 +103,11 @@ export function LearningLanding({ onShowAuth, onShowProfile }: LearningLandingPr
                 查看历年真题
               </Link>
               <a
-                href="#learning-paths"
+                href="#exam-experience"
                 className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-6 text-base font-semibold text-slate-800 no-underline shadow-sm outline-none transition-colors hover:border-slate-400 hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-4"
               >
                 <BookOpen className="h-5 w-5" aria-hidden="true" />
-                了解刷题方式
+                查看备考经验
               </a>
             </div>
           </div>
@@ -174,7 +174,7 @@ export function LearningLanding({ onShowAuth, onShowProfile }: LearningLandingPr
           </div>
         </section>
 
-        <section className="px-4 py-12 sm:px-6 lg:px-8">
+        <section id="exam-experience" className="scroll-mt-24 px-4 py-12 sm:px-6 lg:px-8">
           <div className="mx-auto grid max-w-7xl overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-sm lg:grid-cols-3">
             <div className="relative bg-amber-50 p-7 sm:p-10 lg:col-span-1 lg:p-12">
               <Quote className="h-10 w-10 text-amber-600" aria-hidden="true" />
