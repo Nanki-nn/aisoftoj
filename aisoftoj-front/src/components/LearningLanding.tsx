@@ -4,6 +4,7 @@ import {
   ArrowRight,
   BookOpen,
   CircleCheck,
+  ExternalLink,
   FileText,
   PenTool,
   Quote,
@@ -190,6 +191,20 @@ export function LearningLanding({ onShowAuth, onShowProfile }: LearningLandingPr
                 </p>
                 <p>最终综合知识、案例分析、论文写作全部通过。现在先把最有效的真题筛选与复盘方式做进平台。</p>
               </div>
+
+              <a
+                href="https://github.com/Nanki-nn/aisoftoj/blob/main/guides/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84%E5%B8%88%E5%A4%87%E8%80%83%E7%BB%8F%E9%AA%8C.md"
+                target="_blank"
+                rel="noreferrer"
+                className="group mt-7 inline-flex items-center gap-2 border-b border-amber-300 pb-1 text-sm font-semibold text-amber-800 no-underline outline-none transition-colors hover:border-amber-600 hover:text-amber-950 focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-4"
+              >
+                阅读完整备考经验
+                <ExternalLink
+                  className="h-4 w-4 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 motion-reduce:transform-none"
+                  aria-hidden="true"
+                />
+                <span className="sr-only">（在新标签页打开）</span>
+              </a>
 
               <div className="mt-9 grid gap-3 sm:grid-cols-3">
                 {experienceHighlights.map((item) => (
