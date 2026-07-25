@@ -4,11 +4,15 @@ import cn.hutool.jwt.JWTUtil;
 import com.nan.aisoftoj.common.ForbiddenException;
 import com.nan.aisoftoj.common.UnauthorizedException;
 import com.nan.aisoftoj.common.UserRole;
+import com.nan.aisoftoj.dto.AuthRegisterRequest;
 import com.nan.aisoftoj.entity.User;
+import com.nan.aisoftoj.mapper.PracticeSessionMapper;
 import com.nan.aisoftoj.mapper.UserMapper;
+import com.nan.aisoftoj.mapper.UserWrongQuestionStatMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -19,6 +23,8 @@ import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -28,6 +34,10 @@ class AuthServiceImplTest {
 
     @Mock
     private UserMapper userMapper;
+    @Mock
+    private PracticeSessionMapper practiceSessionMapper;
+    @Mock
+    private UserWrongQuestionStatMapper userWrongQuestionStatMapper;
 
     private AuthServiceImpl authService;
 
@@ -37,6 +47,8 @@ class AuthServiceImplTest {
         ReflectionTestUtils.setField(authService, "jwtSecret", JWT_SECRET);
         ReflectionTestUtils.setField(authService, "jwtExpireHours", 168L);
         ReflectionTestUtils.setField(authService, "userMapper", userMapper);
+        ReflectionTestUtils.setField(authService, "practiceSessionMapper", practiceSessionMapper);
+        ReflectionTestUtils.setField(authService, "userWrongQuestionStatMapper", userWrongQuestionStatMapper);
     }
 
     @Test
@@ -105,6 +117,32 @@ class AuthServiceImplTest {
                 UnauthorizedException.class,
                 () -> authService.requireAdmin(tokenFor(7, System.currentTimeMillis() + 60_000))
         );
+    }
+
+    @Test
+    void registerUsesUsernameWhenNicknameIsOmitted() {
+        AuthRegisterRequest request = new AuthRegisterRequest();
+        request.setUsername("new-user");
+        request.setEmail("new-user@example.com");
+        request.setPassword("password");
+        request.setConfirmPassword("password");
+
+        when(userMapper.selectOne(any())).thenReturn(null);
+        when(practiceSessionMapper.selectCount(any())).thenReturn(0L);
+        when(userWrongQuestionStatMapper.selectCount(any())).thenReturn(0L);
+        doAnswer(invocation -> {
+            User inserted = invocation.getArgument(0);
+            inserted.setId(8);
+            return 1;
+        }).when(userMapper).insert(any(User.class));
+
+        authService.register(request);
+
+        ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
+        org.mockito.Mockito.verify(userMapper).insert(userCaptor.capture());
+        User inserted = userCaptor.getValue();
+        assertEquals("new-user", inserted.getLoginName());
+        assertEquals("new-user", inserted.getNickName());
     }
 
     private User activeUser(String role) {

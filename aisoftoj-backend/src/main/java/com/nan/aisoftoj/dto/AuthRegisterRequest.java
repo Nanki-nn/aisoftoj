@@ -24,7 +24,6 @@ public class AuthRegisterRequest {
     @NotBlank(message = "确认密码不能为空")
     private String confirmPassword;
 
-    @NotBlank(message = "昵称不能为空")
     @Size(max = 64, message = "昵称长度不能超过64位")
     private String nickname;
 

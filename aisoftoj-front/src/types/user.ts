@@ -31,7 +31,6 @@ export interface RegisterForm {
   email: string;
   password: string;
   confirmPassword: string;
-  nickname: string;
   phone?: string;
   agreeToTerms: boolean;
 }
