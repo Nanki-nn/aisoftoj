@@ -8,6 +8,8 @@ public interface PracticeSessionService {
 
     GETPracticeSessionRes getPracticeSessionDetail(Integer userId, Integer sessionId);
 
+    void pausePracticeSession(Integer userId, Integer sessionId);
+
     PaperSubmitResponse submitPracticeSession(Integer userId, Integer sessionId, PaperSubmitRequest request);
 
 }

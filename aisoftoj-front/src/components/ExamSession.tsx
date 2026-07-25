@@ -13,6 +13,16 @@ import { Label } from './ui/label';
 import { Input } from './ui/input';
 import { Textarea } from './ui/textarea';
 import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from './ui/alert-dialog';
+import {
   Clock,
   ChevronLeft,
   ChevronRight,
@@ -94,7 +104,7 @@ interface ExamSessionProps {
   session: ExamSessionType;
   onUpdateAnswer: (questionId: string, answer: string | string[]) => void;
   onCompleteExam: () => void;
-  onBackToConfig: () => void;
+  onBackToConfig: () => void | Promise<void>;
 }
 
 export function ExamSession({ 
@@ -109,6 +119,8 @@ export function ExamSession({
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0); // 已用时间（秒）
+  const [isExiting, setIsExiting] = useState(false);
+  const [showConfirmExit, setShowConfirmExit] = useState(false);
   const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
   const [markedQuestions, setMarkedQuestions] = useState<Set<number>>(new Set());
   const [answerCardPage, setAnswerCardPage] = useState(0);
@@ -281,6 +293,26 @@ export function ExamSession({
       setShowConfirmSubmit(true);
     } else {
       onCompleteExam();
+    }
+  };
+
+  const handleExitRequest = () => {
+    if (isReadOnly) {
+      void onBackToConfig();
+      return;
+    }
+    setShowConfirmExit(true);
+  };
+
+  const handleConfirmExit = async (event: React.MouseEvent<HTMLButtonElement>) => {
+    event.preventDefault();
+    setIsExiting(true);
+    try {
+      await onBackToConfig();
+    } catch (error) {
+      alert('暂停试卷失败：' + ((error as Error).message || '请稍后重试'));
+    } finally {
+      setIsExiting(false);
     }
   };
 
@@ -516,7 +548,7 @@ export function ExamSession({
       <div className="border-b border-slate-200 bg-white/80">
         <div className="max-w-7xl mx-auto px-4 py-3">
           <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-            <Button variant="ghost" size="sm" onClick={onBackToConfig} className="w-fit text-slate-600">
+            <Button variant="ghost" size="sm" onClick={handleExitRequest} className="w-fit text-slate-600">
               首页
             </Button>
             <div className="flex flex-col gap-1 sm:items-center">
@@ -940,6 +972,37 @@ export function ExamSession({
           </div>
         </div>
       </div>
+
+      <AlertDialog
+        open={showConfirmExit}
+        onOpenChange={(open) => {
+          if (!isExiting) {
+            setShowConfirmExit(open);
+          }
+        }}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertCircle className="h-5 w-5 text-amber-600" aria-hidden="true" />
+              确认退出试卷
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              退出后将返回刷真题首页，计时会暂停，本次试卷不会交卷。确定要退出吗？
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={isExiting}>继续答题</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={(event) => void handleConfirmExit(event)}
+              disabled={isExiting}
+              className="bg-red-600 text-white hover:bg-red-700"
+            >
+              {isExiting ? '正在退出...' : '退出试卷'}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* 确认提交对话框 */}
       {showConfirmSubmit && (

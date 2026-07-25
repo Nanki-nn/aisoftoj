@@ -54,6 +54,17 @@ public class PracticeSessionController {
         return ResultDTO.success(paperRecordDetail);
      }
 
+    /**
+     * 暂停进行中的刷题会话，退出页面后的时间不再计入答题用时。
+     */
+    @PatchMapping("/session/{sessionId}/pause")
+    public ResultDTO<Void> pausePracticeSession(@PathVariable Integer sessionId,
+                                                HttpServletRequest request) {
+        Integer userId = authService.getCurrentUserId(request.getHeader("Authorization"));
+        practiceSessionService.pausePracticeSession(userId, sessionId);
+        return ResultDTO.success();
+    }
+
 
 
     /**

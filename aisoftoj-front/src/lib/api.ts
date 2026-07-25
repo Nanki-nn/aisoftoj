@@ -513,6 +513,10 @@ export async function continuePracticeSession(sessionId: string): Promise<ExamSe
   };
 }
 
+export async function pausePracticeSession(sessionId: string): Promise<void> {
+  await request(`/session/${sessionId}/pause`, { method: 'PATCH' });
+}
+
 export async function updatePracticeQuestionRecord(
   questionRecordId: string,
   userAnswer: string | string[],

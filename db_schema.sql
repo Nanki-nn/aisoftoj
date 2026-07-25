@@ -91,7 +91,7 @@ CREATE TABLE `practice_session` (
   `exam_mode` varchar(16) DEFAULT 'practice' COMMENT '练习模式：practice/exam',
   `answered_count` int(11) NOT NULL DEFAULT 0 COMMENT '已答题数',
   `start_time` datetime NOT NULL COMMENT '开始答题时间',
-  `end_time` datetime NOT NULL DEFAULT '1970-01-01 00:00:00' COMMENT '结束时间（未完成时为默认值）',
+  `end_time` datetime NOT NULL DEFAULT '1970-01-01 00:00:00' COMMENT '完成时为结束时间；进行中暂停时为暂停时间，活动时为默认值',
   `score` decimal(5,2) NOT NULL DEFAULT 0.00 COMMENT '用户得分',
   `total_score` decimal(5,2) NOT NULL COMMENT '试卷总分',
   `status` tinyint(3) unsigned NOT NULL DEFAULT 0 COMMENT '状态: 0-进行中, 1-已完成',
