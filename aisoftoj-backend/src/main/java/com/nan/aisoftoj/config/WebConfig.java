@@ -1,8 +1,11 @@
 package com.nan.aisoftoj.config;
 
+import com.nan.aisoftoj.crypto.ContentCryptoHeaders;
+import com.nan.aisoftoj.crypto.ContentPublicKeyInterceptor;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.web.servlet.config.annotation.CorsRegistry;
+import org.springframework.web.servlet.config.annotation.InterceptorRegistry;
 import org.springframework.web.servlet.config.annotation.ResourceHandlerRegistry;
 import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
 
@@ -13,6 +16,12 @@ import java.util.Arrays;
  */
 @Configuration
 public class WebConfig implements WebMvcConfigurer {
+
+    private final ContentPublicKeyInterceptor contentPublicKeyInterceptor;
+
+    public WebConfig(ContentPublicKeyInterceptor contentPublicKeyInterceptor) {
+        this.contentPublicKeyInterceptor = contentPublicKeyInterceptor;
+    }
     
     @Value("${file.upload.path:./uploads/}")
     private String uploadPath;
@@ -32,8 +41,14 @@ public class WebConfig implements WebMvcConfigurer {
                 .allowedOriginPatterns(parseAllowedOrigins())
                 .allowedMethods("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS") // 允许的HTTP方法
                 .allowedHeaders("*") // 允许所有请求头
+                .exposedHeaders(ContentCryptoHeaders.RESPONSE_ENCRYPTED)
                 .allowCredentials(true) // 允许携带凭证
                 .maxAge(3600); // 预检请求的缓存时间
+    }
+
+    @Override
+    public void addInterceptors(InterceptorRegistry registry) {
+        registry.addInterceptor(contentPublicKeyInterceptor).addPathPatterns("/**");
     }
 
     /**

@@ -7,6 +7,12 @@ import {
   WrongQuestionSummary,
 } from '../types/record';
 import { LoginForm, RegisterForm, User } from '../types/user';
+import {
+  CONTENT_CRYPTO_ENCRYPTED_HEADER,
+  ContentCryptoError,
+  decryptContentEnvelope,
+  getContentCryptoRequestHeaders,
+} from './contentCrypto';
 
 const API_BASE_URL =
   import.meta.env.VITE_API_BASE_URL ||
@@ -307,7 +313,11 @@ function parseServerDate(value?: string | number): Date | undefined {
   return Number.isNaN(date.getTime()) ? undefined : date;
 }
 
-export async function request<T>(path: string, init?: RequestInit): Promise<T> {
+async function executeRequest<T>(
+  path: string,
+  init?: RequestInit,
+  encryptedResponse = false
+): Promise<T> {
   const authToken = localStorage.getItem('authToken');
   const headers = new Headers(init?.headers);
   if (!headers.has('Content-Type')) {
@@ -316,13 +326,46 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
   if (authToken && !headers.has('Authorization')) {
     headers.set('Authorization', `Bearer ${authToken}`);
   }
+  if (encryptedResponse) {
+    const cryptoHeaders = await getContentCryptoRequestHeaders();
+    Object.entries(cryptoHeaders).forEach(([name, value]) => headers.set(name, value));
+  }
 
   const response = await fetch(`${API_BASE_URL}${path}`, {
     ...init,
     headers,
   });
 
-  const payload = await response.json().catch(() => null as ApiResult<T> | ApiError | null);
+  let payload: ApiResult<T> | ApiError | null;
+  const rawPayload = await response.json().catch(() => null as unknown);
+
+  if (response.ok && encryptedResponse) {
+    const encryptedMarker = response.headers.get(CONTENT_CRYPTO_ENCRYPTED_HEADER);
+    if (encryptedMarker === '1') {
+      try {
+        payload = await decryptContentEnvelope<ApiResult<T>>(rawPayload);
+      } catch (error) {
+        if (import.meta.env.DEV) {
+          console.error('Encrypted question response validation failed', error);
+        }
+        throw new ApiRequestError(
+          error instanceof ContentCryptoError
+            ? error.message
+            : '题目数据安全校验失败，请刷新后重试',
+          response.status
+        );
+      }
+    } else {
+      const plainPayload = rawPayload as ApiResult<T> | ApiError | null;
+      if (plainPayload && plainPayload.code !== 200) {
+        payload = plainPayload;
+      } else {
+        throw new ApiRequestError('题目数据安全校验失败，请刷新后重试', response.status);
+      }
+    }
+  } else {
+    payload = rawPayload as ApiResult<T> | ApiError | null;
+  }
 
   if (!response.ok) {
     const errorPayload = payload as ApiError | null;
@@ -343,6 +386,14 @@ export async function request<T>(path: string, init?: RequestInit): Promise<T> {
     );
   }
   return result.data;
+}
+
+export async function request<T>(path: string, init?: RequestInit): Promise<T> {
+  return executeRequest<T>(path, init, false);
+}
+
+export async function requestEncrypted<T>(path: string, init?: RequestInit): Promise<T> {
+  return executeRequest<T>(path, init, true);
 }
 
 export async function loginByEmail(form: LoginForm): Promise<AuthResponse> {
@@ -400,7 +451,7 @@ export async function startPaperSession(
   paperId: string,
   examMode: ExamSession['examMode'] = 'practice'
 ): Promise<ExamSession> {
-  const data = await request<StartSessionRes>('/session/start', {
+  const data = await requestEncrypted<StartSessionRes>('/session/start', {
     method: 'POST',
     body: JSON.stringify({
       paperId: Number(paperId),
@@ -434,7 +485,7 @@ export async function fetchPracticeHistory(params: PageQuery = {}): Promise<Page
 }
 
 export async function fetchWrongQuestions(params: PageQuery = {}): Promise<PageResult<PracticeRecord, WrongQuestionSummary>> {
-  return request<PageResult<PracticeRecord, WrongQuestionSummary>>(
+  return requestEncrypted<PageResult<PracticeRecord, WrongQuestionSummary>>(
     `/wrong-questions${buildQueryString({
       page: params.page,
       pageSize: params.pageSize,
@@ -443,7 +494,7 @@ export async function fetchWrongQuestions(params: PageQuery = {}): Promise<PageR
 }
 
 export async function continuePracticeSession(sessionId: string): Promise<ExamSession> {
-  const data = await request<GetSessionRes>(`/session/${sessionId}`);
+  const data = await requestEncrypted<GetSessionRes>(`/session/${sessionId}`);
   const questions = data.questionList.map(q => mapQuestion(q, data.paper?.paperCateId ?? 1));
   const isCompleted = data.status === 1;
   const resolvedSessionId = String(data.id);
@@ -538,7 +589,7 @@ export async function getEssayQuestions(subject?: string): Promise<EssayQuestion
   const path = subject
     ? `/essay/questions?subject=${encodeURIComponent(subject)}`
     : '/essay/questions';
-  return request<EssayQuestion[]>(path);
+  return requestEncrypted<EssayQuestion[]>(path);
 }
 
 export async function submitEssay(
@@ -560,7 +611,7 @@ export async function getEssayResult(submissionId: string): Promise<EssayResultD
 }
 
 export async function getEssayHistory(): Promise<EssayHistoryItem[]> {
-  return request<EssayHistoryItem[]>('/essay/history', {
+  return requestEncrypted<EssayHistoryItem[]>('/essay/history', {
     headers: { Authorization: `Bearer ${getAuthToken()}` },
   });
 }
@@ -676,7 +727,7 @@ export async function listAdminQuestions(params: {
   page?: number;
   pageSize?: number;
 }): Promise<AdminPageDTO<AdminQuestionDTO>> {
-  return request<AdminPageDTO<AdminQuestionDTO>>(
+  return requestEncrypted<AdminPageDTO<AdminQuestionDTO>>(
     `/admin/questions${buildQueryString({
       keyword: params.keyword,
       questionType: params.questionType,
@@ -692,7 +743,7 @@ export async function listAdminQuestions(params: {
 }
 
 export async function createAdminQuestion(data: AdminQuestionRequest): Promise<AdminQuestionDTO> {
-  return request<AdminQuestionDTO>('/admin/questions', {
+  return requestEncrypted<AdminQuestionDTO>('/admin/questions', {
     method: 'POST',
     body: JSON.stringify(data),
   });
@@ -702,7 +753,7 @@ export async function updateAdminQuestion(
   questionId: number,
   data: AdminQuestionRequest
 ): Promise<AdminQuestionDTO> {
-  return request<AdminQuestionDTO>(`/admin/questions/${questionId}`, {
+  return requestEncrypted<AdminQuestionDTO>(`/admin/questions/${questionId}`, {
     method: 'PUT',
     body: JSON.stringify(data),
   });

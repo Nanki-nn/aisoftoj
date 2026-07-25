@@ -14,6 +14,8 @@ spring:
 app:
   cors:
     allowed-origins: ${CORS_ALLOWED_ORIGINS}
+  content-crypto:
+    max-plaintext-bytes: ${CONTENT_CRYPTO_MAX_PLAINTEXT_BYTES:8388608}
 
 auth:
   jwt:

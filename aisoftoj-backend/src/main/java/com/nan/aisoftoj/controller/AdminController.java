@@ -1,5 +1,6 @@
 package com.nan.aisoftoj.controller;
 
+import com.nan.aisoftoj.crypto.EncryptedQuestionResponse;
 import com.nan.aisoftoj.dto.PageDTO;
 import com.nan.aisoftoj.dto.ResultDTO;
 import com.nan.aisoftoj.dto.admin.AdminDashboardDTO;
@@ -57,6 +58,7 @@ public class AdminController {
         return ResultDTO.success();
     }
 
+    @EncryptedQuestionResponse
     @GetMapping("/questions")
     public ResultDTO<PageDTO<AdminQuestionDTO>> listQuestions(HttpServletRequest request,
                                                               @RequestParam(required = false) String keyword,
@@ -72,6 +74,7 @@ public class AdminController {
         return ResultDTO.success(adminService.listQuestions(keyword, questionType, difficulty, subjectName, year, month, paperCateId, page, pageSize));
     }
 
+    @EncryptedQuestionResponse
     @PostMapping("/questions")
     public ResultDTO<AdminQuestionDTO> createQuestion(HttpServletRequest request,
                                                       @Validated @RequestBody AdminQuestionRequest questionRequest) {
@@ -79,6 +82,7 @@ public class AdminController {
         return ResultDTO.success(adminService.createQuestion(questionRequest));
     }
 
+    @EncryptedQuestionResponse
     @PutMapping("/questions/{questionId}")
     public ResultDTO<AdminQuestionDTO> updateQuestion(HttpServletRequest request,
                                                       @PathVariable Integer questionId,

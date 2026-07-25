@@ -1,5 +1,6 @@
 package com.nan.aisoftoj.controller;
 
+import com.nan.aisoftoj.crypto.EncryptedQuestionResponse;
 import com.nan.aisoftoj.dto.EssayHistoryItem;
 import com.nan.aisoftoj.dto.EssayResultResponse;
 import com.nan.aisoftoj.dto.EssaySubmitRequest;
@@ -52,6 +53,7 @@ public class EssayController {
      * URI: /essay/history
      * Method: GET
      */
+    @EncryptedQuestionResponse
     @GetMapping("/history")
     public ResultDTO<List<EssayHistoryItem>> getHistory(HttpServletRequest httpRequest) {
         Long userId = getCurrentUserId(httpRequest);
@@ -63,6 +65,7 @@ public class EssayController {
      * URI: /essay/questions
      * Method: GET
      */
+    @EncryptedQuestionResponse
     @GetMapping("/questions")
     public ResultDTO<List<Map<String, Object>>> getQuestions(
             @RequestParam(required = false) String subject) {

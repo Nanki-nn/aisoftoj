@@ -1,5 +1,6 @@
 package com.nan.aisoftoj.controller;
 
+import com.nan.aisoftoj.crypto.EncryptedQuestionResponse;
 import com.nan.aisoftoj.dto.PageWithSummaryDTO;
 import com.nan.aisoftoj.dto.PracticeHistoryDTO;
 import com.nan.aisoftoj.dto.PracticeHistorySummaryDTO;
@@ -53,6 +54,7 @@ public class UserStatsController {
                 summary));
     }
 
+    @EncryptedQuestionResponse
     @GetMapping("/wrong-questions")
     public ResultDTO<PageWithSummaryDTO<WrongQuestionDTO, WrongQuestionSummaryDTO>> getWrongQuestions(
             HttpServletRequest request,

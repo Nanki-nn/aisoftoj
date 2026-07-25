@@ -3,6 +3,7 @@ package com.nan.aisoftoj.service.impl;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.nan.aisoftoj.crypto.ContentCryptoPayloadTooLargeException;
 import com.nan.aisoftoj.dto.EssayHistoryItem;
 import com.nan.aisoftoj.dto.EssayResultResponse;
 import com.nan.aisoftoj.dto.EssaySubmitRequest;
@@ -44,6 +45,7 @@ public class EssayServiceImpl implements EssayService {
 
     private static final String CLAUDE_API_URL = "https://api.anthropic.com/v1/messages";
     private static final int CONTENT_MAX_LENGTH = 3000;
+    private static final int MAX_ESSAY_QUESTIONS = 200;
 
     @Value("${claude.api-key:}")
     private String apiKey;
@@ -160,6 +162,7 @@ public class EssayServiceImpl implements EssayService {
                         .eq(EssaySubmission::getUserId, userId)
                         .eq(EssaySubmission::getIsDeleted, 0)
                         .orderByDesc(EssaySubmission::getCreateTime)
+                        .last("LIMIT 100")
         );
 
         List<EssayHistoryItem> historyItems = submissions.stream().map(submission -> {
@@ -191,6 +194,9 @@ public class EssayServiceImpl implements EssayService {
     @Override
     public ResultDTO<List<Map<String, Object>>> getQuestions(String subject) {
         List<Map<String, Object>> questions = questionMapper.selectEssayQuestionsWithPaper();
+        if (questions.size() > MAX_ESSAY_QUESTIONS) {
+            throw new ContentCryptoPayloadTooLargeException("论文题目数量超过 200 道");
+        }
         if (subject != null && !subject.trim().isEmpty()) {
             questions = questions.stream()
                     .filter(q -> subject.equals(q.get("subjectName")))
