@@ -29,7 +29,7 @@ public class GETPracticeSessionRes {
     private Date startTime;
 
     /**
-     * 结束答题时间
+     * 完成时为结束时间；进行中暂停时为暂停时间，活动时为纪元默认值。
      */
     private Date endTime;
 

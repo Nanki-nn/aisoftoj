@@ -29,6 +29,7 @@ import { PracticeRecord, PracticeSessionRecord } from './types/record';
 import {
   cachePracticeSessionAnswers,
   continuePracticeSession,
+  pausePracticeSession,
   startPaperSession,
   submitPracticeSession,
   updatePracticeQuestionRecord,
@@ -63,7 +64,7 @@ function SessionRoute({
   setSession: ReturnType<typeof useExamSession>['setSession'];
   updateAnswer: ReturnType<typeof useExamSession>['updateAnswer'];
   onCompleteExam: () => void;
-  onBackToConfig: () => void;
+  onBackToConfig: () => void | Promise<void>;
 }) {
   const { sessionId } = useParams();
   const [isLoading, setIsLoading] = useState(false);
@@ -300,10 +301,17 @@ export default function App() {
     navigate(ROUTES.home);
   };
 
-  const handleBackToConfig = () => {
+  const handleBackToConfig = async () => {
+    if (
+      currentSession
+      && !currentSession.isCompleted
+      && !String(currentSession.id).startsWith('exam_')
+    ) {
+      await pausePracticeSession(currentSession.id);
+    }
     resetSession();
     setExamConfigDraft(null);
-    navigate(ROUTES.home);
+    navigate(ROUTES.papers);
   };
 
   const handleContinuePractice = () => {

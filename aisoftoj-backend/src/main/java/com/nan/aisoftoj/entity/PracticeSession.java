@@ -31,7 +31,7 @@ public class PracticeSession {
     private Date startTime;
     
     /**
-     * 结束时间（未完成时为默认值）
+     * 完成时为结束时间；进行中暂停时为暂停时间，活动时为纪元默认值。
      */
     private Date endTime;
 

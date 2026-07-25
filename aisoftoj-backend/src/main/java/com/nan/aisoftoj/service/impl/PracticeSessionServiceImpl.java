@@ -32,6 +32,8 @@ import java.util.stream.Collectors;
 @Service
 public class PracticeSessionServiceImpl implements PracticeSessionService {
 
+    private static final long PAUSED_END_TIME_CUTOFF_MILLIS = 946684800000L;
+
     @Autowired
     private PaperService paperService;
     @Autowired
@@ -72,6 +74,7 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
         );
         if (practiceSession != null) {
            // 如果存在未完成的记录，返回该记录ID
+			resumeSessionIfPaused(practiceSession);
 			return getStatPracticeSessionRes(practiceSession, paperId, paper);
         }
 
@@ -200,12 +203,14 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
     }
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public GETPracticeSessionRes getPracticeSessionDetail(Integer userId, Integer practiceSessionId) {
         //校验practiceSessionId是否存在
         PracticeSession practiceSession = getOwnedSession(userId, practiceSessionId);
         if (practiceSession == null) {
             throw new IllegalArgumentException("试卷会话记录不存在");
         }
+        resumeSessionIfPaused(practiceSession);
         //获取试卷信息
         Paper paper = paperService.getById(practiceSession.getPaperId());
         if (paper == null) {
@@ -231,6 +236,25 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
         getQuestionDTOs(questions, resDTO, getSessionQuestionRecordMap(practiceSessionId));
         return resDTO;
 
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void pausePracticeSession(Integer userId, Integer practiceSessionId) {
+        PracticeSession practiceSession = getOwnedSession(userId, practiceSessionId);
+        if (practiceSession == null) {
+            throw new IllegalArgumentException("试卷会话记录不存在");
+        }
+        if (!isDoing(practiceSession) || isPaused(practiceSession)) {
+            return;
+        }
+
+        Date pausedAt = new Date();
+        PracticeSession updateSession = new PracticeSession();
+        updateSession.setId(practiceSessionId);
+        updateSession.setEndTime(pausedAt);
+        practiceSessionMapper.updateById(updateSession);
+        practiceSession.setEndTime(pausedAt);
     }
 
     private void getQuestionDTOs(List<Question> questions, GETPracticeSessionRes resDTO, Map<Integer, PracticeSessionQuestionRecord> recordMap) {
@@ -399,6 +423,40 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
             throw new ForbiddenException("无权访问该试卷会话");
         }
         return practiceSession;
+    }
+
+    private void resumeSessionIfPaused(PracticeSession practiceSession) {
+        if (!isDoing(practiceSession) || !isPaused(practiceSession)) {
+            return;
+        }
+
+        Date resumedAt = new Date();
+        Date pausedAt = practiceSession.getEndTime();
+        Date startTime = practiceSession.getStartTime();
+        long pausedMillis = Math.max(0L, resumedAt.getTime() - pausedAt.getTime());
+        Date adjustedStartTime = startTime == null
+                ? resumedAt
+                : new Date(startTime.getTime() + pausedMillis);
+        Date activeEndTime = new Date(0L);
+
+        PracticeSession updateSession = new PracticeSession();
+        updateSession.setId(practiceSession.getId());
+        updateSession.setStartTime(adjustedStartTime);
+        updateSession.setEndTime(activeEndTime);
+        practiceSessionMapper.updateById(updateSession);
+
+        practiceSession.setStartTime(adjustedStartTime);
+        practiceSession.setEndTime(activeEndTime);
+    }
+
+    private boolean isDoing(PracticeSession practiceSession) {
+        return practiceSession.getStatus() != null
+                && practiceSession.getStatus() == PracticeSessionState.DOING.getCode();
+    }
+
+    private boolean isPaused(PracticeSession practiceSession) {
+        return practiceSession.getEndTime() != null
+                && practiceSession.getEndTime().getTime() >= PAUSED_END_TIME_CUTOFF_MILLIS;
     }
 
     private boolean isCorrectAnswer(String standardAnswer, String userAnswer) {
