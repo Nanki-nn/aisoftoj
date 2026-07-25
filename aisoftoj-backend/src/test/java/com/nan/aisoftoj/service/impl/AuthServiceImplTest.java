@@ -1,14 +1,19 @@
 package com.nan.aisoftoj.service.impl;
 
 import cn.hutool.jwt.JWTUtil;
+import com.nan.aisoftoj.auth.EmailCodeScene;
 import com.nan.aisoftoj.common.ForbiddenException;
 import com.nan.aisoftoj.common.UnauthorizedException;
 import com.nan.aisoftoj.common.UserRole;
+import com.nan.aisoftoj.dto.AuthEmailCodeLoginRequest;
 import com.nan.aisoftoj.dto.AuthRegisterRequest;
+import com.nan.aisoftoj.dto.PasswordResetRequest;
 import com.nan.aisoftoj.entity.User;
 import com.nan.aisoftoj.mapper.PracticeSessionMapper;
 import com.nan.aisoftoj.mapper.UserMapper;
 import com.nan.aisoftoj.mapper.UserWrongQuestionStatMapper;
+import com.nan.aisoftoj.service.AuthRateLimitService;
+import com.nan.aisoftoj.service.EmailCodeService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -20,6 +25,7 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Date;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -38,6 +44,10 @@ class AuthServiceImplTest {
     private PracticeSessionMapper practiceSessionMapper;
     @Mock
     private UserWrongQuestionStatMapper userWrongQuestionStatMapper;
+    @Mock
+    private EmailCodeService emailCodeService;
+    @Mock
+    private AuthRateLimitService rateLimitService;
 
     private AuthServiceImpl authService;
 
@@ -49,6 +59,8 @@ class AuthServiceImplTest {
         ReflectionTestUtils.setField(authService, "userMapper", userMapper);
         ReflectionTestUtils.setField(authService, "practiceSessionMapper", practiceSessionMapper);
         ReflectionTestUtils.setField(authService, "userWrongQuestionStatMapper", userWrongQuestionStatMapper);
+        ReflectionTestUtils.setField(authService, "emailCodeService", emailCodeService);
+        ReflectionTestUtils.setField(authService, "rateLimitService", rateLimitService);
     }
 
     @Test
@@ -124,6 +136,7 @@ class AuthServiceImplTest {
         AuthRegisterRequest request = new AuthRegisterRequest();
         request.setUsername("new-user");
         request.setEmail("new-user@example.com");
+        request.setEmailCode("123456");
         request.setPassword("password");
         request.setConfirmPassword("password");
 
@@ -143,6 +156,58 @@ class AuthServiceImplTest {
         User inserted = userCaptor.getValue();
         assertEquals("new-user", inserted.getLoginName());
         assertEquals("new-user", inserted.getNickName());
+        assertEquals("new-user@example.com", inserted.getEmailNormalized());
+        org.junit.jupiter.api.Assertions.assertNotNull(inserted.getEmailVerifiedAt());
+        org.mockito.Mockito.verify(emailCodeService)
+                .consumeCode("new-user@example.com", EmailCodeScene.REGISTER, "123456");
+    }
+
+    @Test
+    void emailCodeLoginRequiresVerifiedActiveUserAndConsumesCode() {
+        User user = activeUser(UserRole.USER.name());
+        user.setEmailNormalized("user@example.com");
+        user.setEmailVerifiedAt(new Date());
+        when(userMapper.selectByNormalizedEmailForUpdate("user@example.com")).thenReturn(user);
+        when(practiceSessionMapper.selectCount(any())).thenReturn(0L);
+        when(userWrongQuestionStatMapper.selectCount(any())).thenReturn(0L);
+
+        AuthEmailCodeLoginRequest request = new AuthEmailCodeLoginRequest();
+        request.setEmail("USER@example.com ");
+        request.setCode("654321");
+
+        authService.loginByEmailCode(request);
+
+        org.mockito.Mockito.verify(emailCodeService)
+                .consumeCode("user@example.com", EmailCodeScene.LOGIN, "654321");
+    }
+
+    @Test
+    void passwordResetChangesPasswordVersionAndInvalidatesOldToken() {
+        User user = activeUser(UserRole.USER.name());
+        user.setEmailNormalized("user@example.com");
+        user.setEmailVerifiedAt(new Date());
+        user.setPassword(cn.hutool.crypto.digest.BCrypt.hashpw("old-password"));
+        user.setTokenVersion(0);
+        when(userMapper.selectByNormalizedEmailForUpdate("user@example.com")).thenReturn(user);
+
+        PasswordResetRequest request = new PasswordResetRequest();
+        request.setEmail("user@example.com");
+        request.setCode("123456");
+        request.setNewPassword("new-password");
+        request.setConfirmPassword("new-password");
+
+        authService.resetPassword(request);
+
+        assertEquals(1, user.getTokenVersion());
+        org.junit.jupiter.api.Assertions.assertTrue(
+                cn.hutool.crypto.digest.BCrypt.checkpw("new-password", user.getPassword()));
+        org.mockito.Mockito.verify(emailCodeService)
+                .consumeCode("user@example.com", EmailCodeScene.PASSWORD_RESET, "123456");
+        org.mockito.Mockito.verify(userMapper).updateById(user);
+
+        when(userMapper.selectById(7)).thenReturn(user);
+        assertThrows(UnauthorizedException.class,
+                () -> authService.getCurrentUser(tokenFor(7, 0, System.currentTimeMillis() + 60_000)));
     }
 
     private User activeUser(String role) {
@@ -151,12 +216,20 @@ class AuthServiceImplTest {
         user.setRole(role);
         user.setIsEnabled(true);
         user.setIsDeleted(false);
+        user.setTokenVersion(0);
         return user;
     }
 
     private String tokenFor(Integer userId, long expiresAt) {
+        return tokenFor(userId, null, expiresAt);
+    }
+
+    private String tokenFor(Integer userId, Integer tokenVersion, long expiresAt) {
         Map<String, Object> payload = new HashMap<>();
         payload.put("userId", userId);
+        if (tokenVersion != null) {
+            payload.put("tokenVersion", tokenVersion);
+        }
         payload.put("exp", expiresAt);
         payload.put("iat", System.currentTimeMillis());
         return JWTUtil.createToken(payload, JWT_SECRET.getBytes(StandardCharsets.UTF_8));

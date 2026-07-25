@@ -1,6 +1,7 @@
 package com.nan.aisoftoj.service.impl;
 
 import cn.hutool.core.util.StrUtil;
+import com.nan.aisoftoj.auth.EmailNormalizer;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
@@ -28,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
+import java.util.Date;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -106,7 +108,16 @@ public class AdminServiceImpl implements AdminService {
             user.setNickName(request.getNickName().trim());
         }
         if (request.getEmail() != null) {
-            user.setEmail(StrUtil.blankToDefault(request.getEmail().trim(), null));
+            String normalizedEmail = StrUtil.isBlank(request.getEmail())
+                    ? null
+                    : EmailNormalizer.normalize(request.getEmail());
+            User emailOwner = normalizedEmail == null ? null : userMapper.selectAnyByNormalizedEmail(normalizedEmail);
+            if (emailOwner != null && !emailOwner.getId().equals(userId)) {
+                throw new IllegalArgumentException("该邮箱已被其他账号使用");
+            }
+            user.setEmail(normalizedEmail);
+            user.setEmailNormalized(normalizedEmail);
+            user.setEmailVerifiedAt(normalizedEmail == null ? null : new Date());
         }
         if (request.getPhone() != null) {
             user.setPhone(StrUtil.blankToDefault(request.getPhone().trim(), null));

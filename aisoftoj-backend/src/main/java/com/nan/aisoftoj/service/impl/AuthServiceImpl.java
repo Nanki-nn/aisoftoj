@@ -6,18 +6,25 @@ import cn.hutool.crypto.digest.BCrypt;
 import cn.hutool.jwt.JWT;
 import cn.hutool.jwt.JWTUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
+import com.nan.aisoftoj.auth.EmailCodeScene;
+import com.nan.aisoftoj.auth.EmailNormalizer;
 import com.nan.aisoftoj.common.ForbiddenException;
+import com.nan.aisoftoj.common.InvalidEmailCodeException;
 import com.nan.aisoftoj.common.UnauthorizedException;
 import com.nan.aisoftoj.common.UserRole;
+import com.nan.aisoftoj.dto.AuthEmailCodeLoginRequest;
 import com.nan.aisoftoj.dto.AuthLoginRequest;
 import com.nan.aisoftoj.dto.AuthRegisterRequest;
 import com.nan.aisoftoj.dto.AuthResponse;
 import com.nan.aisoftoj.dto.AuthUserDTO;
+import com.nan.aisoftoj.dto.PasswordResetRequest;
 import com.nan.aisoftoj.entity.User;
 import com.nan.aisoftoj.mapper.PracticeSessionMapper;
 import com.nan.aisoftoj.mapper.UserMapper;
 import com.nan.aisoftoj.mapper.UserWrongQuestionStatMapper;
 import com.nan.aisoftoj.service.AuthService;
+import com.nan.aisoftoj.service.AuthRateLimitService;
+import com.nan.aisoftoj.service.EmailCodeService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -31,6 +38,8 @@ import java.util.Map;
 @Service
 public class AuthServiceImpl implements AuthService {
 
+    private static final String DUMMY_PASSWORD_HASH = BCrypt.hashpw("not-a-real-user-password");
+
     @Value("${auth.jwt.secret}")
     private String jwtSecret;
 
@@ -43,32 +52,38 @@ public class AuthServiceImpl implements AuthService {
     private PracticeSessionMapper practiceSessionMapper;
     @Autowired
     private UserWrongQuestionStatMapper userWrongQuestionStatMapper;
+    @Autowired
+    private EmailCodeService emailCodeService;
+    @Autowired
+    private AuthRateLimitService rateLimitService;
 
     @Override
-    public AuthResponse login(AuthLoginRequest request) {
-        User user = userMapper.selectOne(Wrappers.lambdaQuery(User.class)
-                .eq(User::getEmail, request.getEmail())
-                .eq(User::getIsDeleted, false)
-                .last("LIMIT 1"));
-        if (user == null || !Boolean.TRUE.equals(user.getIsEnabled())) {
-            throw new IllegalArgumentException("账号不存在或已被禁用");
-        }
-        if (StrUtil.isBlank(user.getPassword()) || !BCrypt.checkpw(request.getPassword(), user.getPassword())) {
+    public AuthResponse login(AuthLoginRequest request, String requestIp) {
+        String normalizedEmail = EmailNormalizer.normalize(request.getEmail());
+        rateLimitService.acquirePasswordLoginLimits(normalizedEmail, requestIp);
+        User user = userMapper.selectByNormalizedEmail(normalizedEmail);
+        String passwordHash = user == null || StrUtil.isBlank(user.getPassword())
+                ? DUMMY_PASSWORD_HASH
+                : user.getPassword();
+        boolean passwordMatches = BCrypt.checkpw(request.getPassword(), passwordHash);
+        if (user == null
+                || Boolean.TRUE.equals(user.getIsDeleted())
+                || !Boolean.TRUE.equals(user.getIsEnabled())
+                || user.getEmailVerifiedAt() == null
+                || !passwordMatches) {
             throw new IllegalArgumentException("邮箱或密码错误");
         }
         return buildAuthResponse(user);
     }
 
     @Override
-    @Transactional(rollbackFor = Exception.class)
+    @Transactional(rollbackFor = Exception.class, noRollbackFor = InvalidEmailCodeException.class)
     public AuthResponse register(AuthRegisterRequest request) {
         if (!StrUtil.equals(request.getPassword(), request.getConfirmPassword())) {
             throw new IllegalArgumentException("两次输入的密码不一致");
         }
-        User emailUser = userMapper.selectOne(Wrappers.lambdaQuery(User.class)
-                .eq(User::getEmail, request.getEmail())
-                .eq(User::getIsDeleted, false)
-                .last("LIMIT 1"));
+        String normalizedEmail = EmailNormalizer.normalize(request.getEmail());
+        User emailUser = userMapper.selectAnyByNormalizedEmail(normalizedEmail);
         if (emailUser != null) {
             throw new IllegalArgumentException("该邮箱已被注册");
         }
@@ -80,18 +95,57 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalArgumentException("该用户名已存在");
         }
 
+        emailCodeService.consumeCode(normalizedEmail, EmailCodeScene.REGISTER, request.getEmailCode());
+
         User user = new User();
         user.setLoginName(request.getUsername());
-        user.setEmail(request.getEmail());
+        user.setEmail(normalizedEmail);
+        user.setEmailNormalized(normalizedEmail);
+        user.setEmailVerifiedAt(new Date());
         user.setNickName(StrUtil.blankToDefault(request.getNickname(), request.getUsername()));
         user.setPhone(StrUtil.blankToDefault(request.getPhone(), null));
         user.setAvatar("https://api.dicebear.com/7.x/avataaars/svg?seed=" + request.getUsername());
         user.setPassword(BCrypt.hashpw(request.getPassword()));
+        user.setTokenVersion(0);
         user.setRole(UserRole.USER.name());
         user.setIsEnabled(true);
         user.setIsDeleted(false);
         userMapper.insert(user);
         return buildAuthResponse(user);
+    }
+
+    @Override
+    public void sendEmailCode(String email, EmailCodeScene scene, String requestIp) {
+        emailCodeService.requestCode(email, scene, requestIp);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class, noRollbackFor = InvalidEmailCodeException.class)
+    public AuthResponse loginByEmailCode(AuthEmailCodeLoginRequest request) {
+        String normalizedEmail = EmailNormalizer.normalize(request.getEmail());
+        User user = userMapper.selectByNormalizedEmailForUpdate(normalizedEmail);
+        if (!isActiveVerifiedUser(user)) {
+            throw new InvalidEmailCodeException();
+        }
+        emailCodeService.consumeCode(normalizedEmail, EmailCodeScene.LOGIN, request.getCode());
+        return buildAuthResponse(user);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class, noRollbackFor = InvalidEmailCodeException.class)
+    public void resetPassword(PasswordResetRequest request) {
+        if (!StrUtil.equals(request.getNewPassword(), request.getConfirmPassword())) {
+            throw new IllegalArgumentException("两次输入的密码不一致");
+        }
+        String normalizedEmail = EmailNormalizer.normalize(request.getEmail());
+        User user = userMapper.selectByNormalizedEmailForUpdate(normalizedEmail);
+        if (!isActiveVerifiedUser(user)) {
+            throw new InvalidEmailCodeException();
+        }
+        emailCodeService.consumeCode(normalizedEmail, EmailCodeScene.PASSWORD_RESET, request.getCode());
+        user.setPassword(BCrypt.hashpw(request.getNewPassword()));
+        user.setTokenVersion(currentTokenVersion(user) + 1);
+        userMapper.updateById(user);
     }
 
     @Override
@@ -119,7 +173,7 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private AuthResponse buildAuthResponse(User user) {
-        String token = createToken(user.getId());
+        String token = createToken(user);
         AuthResponse response = new AuthResponse();
         response.setToken(token);
         response.setUser(buildUserDTO(user));
@@ -131,6 +185,7 @@ public class AuthServiceImpl implements AuthService {
         dto.setId(String.valueOf(user.getId()));
         dto.setUsername(StrUtil.blankToDefault(user.getLoginName(), "user" + user.getId()));
         dto.setEmail(StrUtil.blankToDefault(user.getEmail(), ""));
+        dto.setEmailVerified(user.getEmailVerifiedAt() != null);
         dto.setNickname(StrUtil.blankToDefault(user.getNickName(), dto.getUsername()));
         dto.setAvatar(user.getAvatar());
         dto.setPhone(user.getPhone());
@@ -155,7 +210,7 @@ public class AuthServiceImpl implements AuthService {
         return dto;
     }
 
-    private Integer getUserIdByToken(String token) {
+    private TokenClaims getTokenClaims(String token) {
         String normalizedToken = normalizeToken(token);
         if (StrUtil.isBlank(normalizedToken)) {
             throw unauthorized();
@@ -179,7 +234,10 @@ public class AuthServiceImpl implements AuthService {
                 throw unauthorized();
             }
 
-            return Integer.parseInt(String.valueOf(userId));
+            Object tokenVersion = jwt.getPayload("tokenVersion");
+            return new TokenClaims(
+                    Integer.parseInt(String.valueOf(userId)),
+                    tokenVersion == null ? 0 : Integer.parseInt(String.valueOf(tokenVersion)));
         } catch (UnauthorizedException ex) {
             throw ex;
         } catch (RuntimeException ex) {
@@ -188,11 +246,12 @@ public class AuthServiceImpl implements AuthService {
     }
 
     private User getActiveUserByToken(String token) {
-        Integer userId = getUserIdByToken(token);
-        User user = userMapper.selectById(userId);
+        TokenClaims claims = getTokenClaims(token);
+        User user = userMapper.selectById(claims.getUserId());
         if (user == null
                 || Boolean.TRUE.equals(user.getIsDeleted())
-                || !Boolean.TRUE.equals(user.getIsEnabled())) {
+                || !Boolean.TRUE.equals(user.getIsEnabled())
+                || currentTokenVersion(user) != claims.getTokenVersion()) {
             throw unauthorized();
         }
         return user;
@@ -202,10 +261,11 @@ public class AuthServiceImpl implements AuthService {
         return new UnauthorizedException("未登录或登录已过期");
     }
 
-    private String createToken(Integer userId) {
+    private String createToken(User user) {
         long expireAt = System.currentTimeMillis() + jwtExpireHours * 60 * 60 * 1000;
         Map<String, Object> payload = new HashMap<>();
-        payload.put("userId", userId);
+        payload.put("userId", user.getId());
+        payload.put("tokenVersion", currentTokenVersion(user));
         payload.put("exp", expireAt);
         payload.put("iat", System.currentTimeMillis());
         return JWTUtil.createToken(payload, getSecretBytes());
@@ -227,5 +287,34 @@ public class AuthServiceImpl implements AuthService {
             return trimmed.substring(7).trim();
         }
         return trimmed;
+    }
+
+    private boolean isActiveVerifiedUser(User user) {
+        return user != null
+                && !Boolean.TRUE.equals(user.getIsDeleted())
+                && Boolean.TRUE.equals(user.getIsEnabled())
+                && user.getEmailVerifiedAt() != null;
+    }
+
+    private int currentTokenVersion(User user) {
+        return user.getTokenVersion() == null ? 0 : user.getTokenVersion();
+    }
+
+    private static final class TokenClaims {
+        private final Integer userId;
+        private final int tokenVersion;
+
+        private TokenClaims(Integer userId, int tokenVersion) {
+            this.userId = userId;
+            this.tokenVersion = tokenVersion;
+        }
+
+        private Integer getUserId() {
+            return userId;
+        }
+
+        private int getTokenVersion() {
+            return tokenVersion;
+        }
     }
 }
