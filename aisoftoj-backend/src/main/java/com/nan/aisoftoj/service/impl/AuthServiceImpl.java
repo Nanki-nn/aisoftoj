@@ -83,7 +83,7 @@ public class AuthServiceImpl implements AuthService {
         User user = new User();
         user.setLoginName(request.getUsername());
         user.setEmail(request.getEmail());
-        user.setNickName(request.getNickname());
+        user.setNickName(StrUtil.blankToDefault(request.getNickname(), request.getUsername()));
         user.setPhone(StrUtil.blankToDefault(request.getPhone(), null));
         user.setAvatar("https://api.dicebear.com/7.x/avataaars/svg?seed=" + request.getUsername());
         user.setPassword(BCrypt.hashpw(request.getPassword()));

@@ -42,7 +42,6 @@ export function AuthPage({ onLoginSuccess }: AuthPageProps) {
     email: '',
     password: '',
     confirmPassword: '',
-    nickname: '',
     phone: '',
     agreeToTerms: false
   });
@@ -220,30 +219,18 @@ export function AuthPage({ onLoginSuccess }: AuthPageProps) {
                   {/* 注册表单 */}
                   <TabsContent value="register">
                     <form onSubmit={handleRegister} className="space-y-4">
-                      <div className="grid grid-cols-2 gap-4">
-                        <div className="space-y-2">
-                          <Label htmlFor="username" className="flex items-center gap-2">
-                            <User className="w-4 h-4" />
-                            用户名
-                          </Label>
-                          <Input
-                              id="username"
-                              placeholder="用户名"
-                              value={registerForm.username}
-                              onChange={(e) => setRegisterForm(prev => ({ ...prev, username: e.target.value }))}
-                              required
-                          />
-                        </div>
-                        <div className="space-y-2">
-                          <Label htmlFor="nickname">昵称</Label>
-                          <Input
-                              id="nickname"
-                              placeholder="昵称"
-                              value={registerForm.nickname}
-                              onChange={(e) => setRegisterForm(prev => ({ ...prev, nickname: e.target.value }))}
-                              required
-                          />
-                        </div>
+                      <div className="space-y-2">
+                        <Label htmlFor="username" className="flex items-center gap-2">
+                          <User className="w-4 h-4" />
+                          用户名
+                        </Label>
+                        <Input
+                            id="username"
+                            placeholder="用户名"
+                            value={registerForm.username}
+                            onChange={(e) => setRegisterForm(prev => ({ ...prev, username: e.target.value }))}
+                            required
+                        />
                       </div>
 
                       <div className="space-y-2">
