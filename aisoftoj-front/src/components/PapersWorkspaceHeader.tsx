@@ -73,7 +73,6 @@ export function PapersWorkspaceHeader({ activeTab, historyCount, wrongCount }: P
           <FileText className="h-6 w-6" aria-hidden="true" />
         </span>
         <div>
-          <p className="text-sm font-medium text-blue-700">历年真题题库</p>
           <h1 className="text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">刷真题</h1>
         </div>
       </div>
