@@ -1,5 +1,6 @@
 package com.nan.aisoftoj.controller;
 
+import com.nan.aisoftoj.crypto.EncryptedQuestionResponse;
 import com.nan.aisoftoj.dto.*;
 import com.nan.aisoftoj.service.AuthService;
 import com.nan.aisoftoj.service.PracticeSessionService;
@@ -28,6 +29,7 @@ public class PracticeSessionController {
      * 请求体：CreatePracticeSessionReq
      * 返回：
      */
+     @EncryptedQuestionResponse
      @PostMapping("/session/start")
      public ResultDTO<StartPracticeSessionRes> startPracticeSession(@RequestBody StartPracticeSessionReq startPracticeSessionReq,
                                                                    HttpServletRequest request) {
@@ -43,6 +45,7 @@ public class PracticeSessionController {
      * Method: GET
      * 返回刷题会话详情
      */
+    @EncryptedQuestionResponse
     @GetMapping("/session/{sessionId}")
     public ResultDTO<GETPracticeSessionRes> getPracticeSessionDetail(@PathVariable Integer sessionId,
                                                                      HttpServletRequest request) {

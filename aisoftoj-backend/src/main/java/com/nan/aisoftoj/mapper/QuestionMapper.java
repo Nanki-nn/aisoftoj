@@ -14,7 +14,8 @@ public interface QuestionMapper extends BaseMapper<Question> {
 
     @Select("SELECT t1.* FROM question t1 " +
             "JOIN paper_question_relation t2 ON t1.id = t2.question_id " +
-            "WHERE t2.paper_id = #{paperId} AND t1.is_deleted = 0")
+            "WHERE t2.paper_id = #{paperId} AND t1.is_deleted = 0 " +
+            "LIMIT 201")
     List<Question> selectQuestionsByPaperId(Integer paperId);
 
     @Select("SELECT COUNT(1) FROM question q " +
@@ -31,7 +32,8 @@ public interface QuestionMapper extends BaseMapper<Question> {
             "LEFT JOIN paper p ON pqr.paper_id = p.id " +
             "WHERE q.question_type = 6 AND q.is_deleted = 0 " +
             "GROUP BY q.id, q.name, q.intro " +
-            "ORDER BY MAX(p.paper_year) DESC")
+            "ORDER BY MAX(p.paper_year) DESC " +
+            "LIMIT 201")
     List<Map<String, Object>> selectEssayQuestionsWithPaper();
 
     /**

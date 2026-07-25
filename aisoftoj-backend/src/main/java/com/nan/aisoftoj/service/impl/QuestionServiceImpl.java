@@ -2,6 +2,7 @@ package com.nan.aisoftoj.service.impl;
 
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import com.nan.aisoftoj.common.ResourceNotFoundException;
+import com.nan.aisoftoj.crypto.ContentCryptoPayloadTooLargeException;
 import com.nan.aisoftoj.dto.GetQuestionDetailDTO;
 import com.nan.aisoftoj.dto.QuestionRecordRequest;
 import com.nan.aisoftoj.entity.Question;
@@ -14,6 +15,8 @@ import java.util.List;
 
 @Service
 public class QuestionServiceImpl implements QuestionService {
+
+    private static final int MAX_QUESTIONS_PER_PAPER = 200;
     
     @Autowired
     private QuestionMapper questionMapper;
@@ -24,7 +27,7 @@ public class QuestionServiceImpl implements QuestionService {
         // 这里应该查询试卷关联的题目列表
 
 
-        return questionMapper.selectQuestionsByPaperId(paperId);
+        return enforceQuestionCount(questionMapper.selectQuestionsByPaperId(paperId));
     }
 
     @Override
@@ -61,12 +64,19 @@ public class QuestionServiceImpl implements QuestionService {
 
     @Override
     public List<Question> listByPaperId(Integer paperId) {
-        return questionMapper.selectQuestionsByPaperId(paperId);
+        return enforceQuestionCount(questionMapper.selectQuestionsByPaperId(paperId));
     }
 
     @Override
     public Question getById(Integer questionId) {
         return questionMapper.selectById(questionId);
+    }
+
+    private List<Question> enforceQuestionCount(List<Question> questions) {
+        if (questions.size() > MAX_QUESTIONS_PER_PAPER) {
+            throw new ContentCryptoPayloadTooLargeException("单张试卷题目数量超过 200 道");
+        }
+        return questions;
     }
 
 

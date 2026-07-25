@@ -57,10 +57,12 @@
             "@vitejs/plugin-react-swc": "^3.10.2",
             "tailwindcss": "^4.1.3",
             "tw-animate-css": "^1.3.0",
-            "vite": "6.3.5"
+            "vite": "6.3.5",
+            "vitest": "^4.1.10"
       },
       "scripts": {
             "dev": "vite",
-            "build": "vite build"
+            "build": "vite build",
+            "test": "vitest run --globals"
       }
 }

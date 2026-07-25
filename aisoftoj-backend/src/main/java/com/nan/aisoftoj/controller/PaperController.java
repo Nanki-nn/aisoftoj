@@ -1,6 +1,7 @@
 package com.nan.aisoftoj.controller;
 
 import com.nan.aisoftoj.common.ResourceNotFoundException;
+import com.nan.aisoftoj.crypto.EncryptedQuestionResponse;
 import com.nan.aisoftoj.dto.PaperDTO;
 import com.nan.aisoftoj.dto.ResultDTO;
 import com.nan.aisoftoj.entity.Paper;
@@ -44,6 +45,7 @@ public class PaperController {
     }
 
     /** 题目内容属于登录后能力，并且仅开放已发布试卷。 */
+    @EncryptedQuestionResponse
     @GetMapping("/detail/{paperId}")
     public ResultDTO<List<Question>> getPaperQuestions(
             @PathVariable Integer paperId, HttpServletRequest request) {

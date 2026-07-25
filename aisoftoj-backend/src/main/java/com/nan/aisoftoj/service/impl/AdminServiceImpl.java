@@ -25,6 +25,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +33,12 @@ import java.util.stream.Collectors;
 
 @Service
 public class AdminServiceImpl implements AdminService {
+
+    private static final int NAME_MAX_BYTES = 1024;
+    private static final int INTRO_MAX_BYTES = 1024 * 1024;
+    private static final int OPTIONS_MAX_BYTES = 512 * 1024;
+    private static final int ANSWER_MAX_BYTES = 64 * 1024;
+    private static final int ANALYSIS_MAX_BYTES = 1024 * 1024;
 
     @Autowired
     private UserMapper userMapper;
@@ -224,6 +231,11 @@ public class AdminServiceImpl implements AdminService {
     }
 
     private void fillQuestion(Question question, AdminQuestionRequest request) {
+        validateQuestionField("题目名称", request.getName(), NAME_MAX_BYTES);
+        validateQuestionField("题干", request.getIntro(), INTRO_MAX_BYTES);
+        validateQuestionField("选项", request.getOptions(), OPTIONS_MAX_BYTES);
+        validateQuestionField("标准答案", request.getAnswer(), ANSWER_MAX_BYTES);
+        validateQuestionField("解析", request.getAnalysis(), ANALYSIS_MAX_BYTES);
         question.setName(request.getName().trim());
         question.setIntro(StrUtil.blankToDefault(request.getIntro(), ""));
         question.setOptions(StrUtil.blankToDefault(request.getOptions(), "[]"));
@@ -231,6 +243,12 @@ public class AdminServiceImpl implements AdminService {
         question.setAnalysis(StrUtil.blankToDefault(request.getAnalysis(), ""));
         question.setQuestionType(request.getQuestionType());
         question.setDifficulty(request.getDifficulty());
+    }
+
+    private void validateQuestionField(String fieldName, String value, int maxBytes) {
+        if (value != null && value.getBytes(StandardCharsets.UTF_8).length > maxBytes) {
+            throw new IllegalArgumentException(fieldName + "内容过长");
+        }
     }
 
     private AdminUserDTO toAdminUserDTO(User user) {

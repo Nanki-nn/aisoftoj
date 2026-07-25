@@ -1,5 +1,8 @@
 package com.nan.aisoftoj.common;
 
+import com.nan.aisoftoj.crypto.ContentCryptoPayloadTooLargeException;
+import com.nan.aisoftoj.crypto.ContentEncryptionException;
+import com.nan.aisoftoj.crypto.InvalidContentCryptoKeyException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -42,6 +45,24 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleResourceNotFoundException(
             HttpServletRequest request, ResourceNotFoundException ex) {
         return error(HttpStatus.NOT_FOUND, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(InvalidContentCryptoKeyException.class)
+    public ResponseEntity<ErrorResponse> handleInvalidContentCryptoKeyException(
+            HttpServletRequest request, InvalidContentCryptoKeyException ex) {
+        return error(HttpStatus.BAD_REQUEST, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(ContentCryptoPayloadTooLargeException.class)
+    public ResponseEntity<ErrorResponse> handleContentCryptoPayloadTooLargeException(
+            HttpServletRequest request, ContentCryptoPayloadTooLargeException ex) {
+        return error(HttpStatus.PAYLOAD_TOO_LARGE, ex.getMessage(), request);
+    }
+
+    @ExceptionHandler(ContentEncryptionException.class)
+    public ResponseEntity<ErrorResponse> handleContentEncryptionException(
+            HttpServletRequest request, ContentEncryptionException ex) {
+        return error(HttpStatus.INTERNAL_SERVER_ERROR, "题目数据加密失败", request);
     }
 
     @ExceptionHandler(Exception.class)
