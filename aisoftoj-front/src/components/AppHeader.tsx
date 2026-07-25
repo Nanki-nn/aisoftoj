@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   BookOpenCheck,
@@ -34,7 +34,30 @@ interface AppHeaderProps {
   onShowProfile: () => void;
 }
 
-const EXAM_DATE = new Date('2026-05-23T00:00:00+08:00');
+const EXAM_START_AT = new Date('2026-10-24T00:00:00+08:00').getTime();
+const EXAM_END_AT = new Date('2026-10-28T00:00:00+08:00').getTime();
+const DAY_IN_MS = 24 * 60 * 60 * 1000;
+const STATUS_REFRESH_INTERVAL_MS = 60 * 1000;
+
+type ExamStatus =
+  | { phase: 'upcoming'; days: number }
+  | { phase: 'ongoing'; days: 0 }
+  | { phase: 'ended'; days: 0 };
+
+export function getExamStatus(now: number): ExamStatus {
+  if (now < EXAM_START_AT) {
+    return {
+      phase: 'upcoming',
+      days: Math.ceil((EXAM_START_AT - now) / DAY_IN_MS),
+    };
+  }
+
+  if (now < EXAM_END_AT) {
+    return { phase: 'ongoing', days: 0 };
+  }
+
+  return { phase: 'ended', days: 0 };
+}
 
 const NAV_LINKS = [
   { path: '/foundation', label: '打基础', enabled: false },
@@ -51,14 +74,26 @@ export function AppHeader({ onShowAuth, onShowProfile }: AppHeaderProps) {
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
 
-  const examStatus = useMemo(() => {
-    const diff = EXAM_DATE.getTime() - Date.now();
-    if (diff <= 0) {
-      return { ended: true, days: 0 };
-    }
-    return { ended: false, days: Math.ceil(diff / (1000 * 60 * 60 * 24)) };
+  useEffect(() => {
+    const syncNow = () => setNow(Date.now());
+    const intervalId = window.setInterval(syncNow, STATUS_REFRESH_INTERVAL_MS);
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        syncNow();
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      window.clearInterval(intervalId);
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, []);
+
+  const examStatus = getExamStatus(now);
 
   const closeAndRun = (action: () => void) => {
     setMobileOpen(false);
@@ -123,10 +158,15 @@ export function AppHeader({ onShowAuth, onShowProfile }: AppHeaderProps) {
         <div className="flex shrink-0 items-center gap-2 sm:gap-3">
           <div className="inline-flex h-10 items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 text-sm font-medium text-amber-900 sm:px-4">
             <CalendarDays className="h-4 w-4 shrink-0" aria-hidden="true" />
-            {examStatus.ended ? (
+            {examStatus.phase === 'ended' ? (
               <>
                 <span className="sm:hidden">已结束</span>
                 <span className="hidden sm:inline">本期考试已结束</span>
+              </>
+            ) : examStatus.phase === 'ongoing' ? (
+              <>
+                <span className="sm:hidden">进行中</span>
+                <span className="hidden sm:inline">本期考试进行中</span>
               </>
             ) : (
               <>
