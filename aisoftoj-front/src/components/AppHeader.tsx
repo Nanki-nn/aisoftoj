@@ -75,6 +75,7 @@ export function AppHeader({ onShowAuth, onShowProfile }: AppHeaderProps) {
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [now, setNow] = useState(() => Date.now());
+  const isLanding = location.pathname === '/';
 
   useEffect(() => {
     const syncNow = () => setNow(Date.now());
@@ -107,17 +108,28 @@ export function AppHeader({ onShowAuth, onShowProfile }: AppHeaderProps) {
 
   return (
     <header className="sticky top-0 z-50 border-b border-slate-200/80 bg-white/95 backdrop-blur-xl">
-      <div className="mx-auto flex h-16 max-w-7xl items-center justify-between gap-4 px-4 sm:px-6 lg:px-8">
-        <div className="flex min-w-0 items-center gap-8">
+      <div
+        className={`mx-auto flex items-center justify-between gap-4 px-4 sm:px-6 ${
+          isLanding ? 'h-16 lg:h-24 lg:px-12' : 'h-16 max-w-7xl lg:px-8'
+        }`}
+        style={isLanding ? { maxWidth: '1840px' } : undefined}
+      >
+        <div className={`flex min-w-0 items-center ${isLanding ? 'gap-10 xl:gap-14' : 'gap-8'}`}>
           <Link
             to="/"
             className="group inline-flex shrink-0 items-center gap-2.5 rounded-lg text-slate-900 no-underline outline-none transition-opacity hover:opacity-80 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-4"
             aria-label="返回知构软考首页"
           >
-            <span className="flex h-9 w-9 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm shadow-blue-600/20">
-              <GraduationCap className="h-5 w-5" aria-hidden="true" />
+            <span className={`flex items-center justify-center ${
+              isLanding
+                ? 'h-10 w-10 text-blue-600 lg:h-12 lg:w-12'
+                : 'h-9 w-9 rounded-xl bg-blue-600 text-white shadow-sm shadow-blue-600/20'
+            }`}>
+              <GraduationCap className={isLanding ? 'h-9 w-9 lg:h-10 lg:w-10' : 'h-5 w-5'} aria-hidden="true" />
             </span>
-            <span className="whitespace-nowrap text-lg font-semibold tracking-tight">知构软考</span>
+            <span className={`whitespace-nowrap font-semibold ${isLanding ? 'text-xl lg:text-2xl' : 'text-lg'}`}>
+              知构软考
+            </span>
           </Link>
 
           <nav className="hidden items-center gap-1 lg:flex" aria-label="主导航">
@@ -127,12 +139,18 @@ export function AppHeader({ onShowAuth, onShowProfile }: AppHeaderProps) {
                   <span
                     key={link.path}
                     aria-disabled="true"
-                    className="inline-flex h-10 cursor-not-allowed items-center gap-2 rounded-lg px-4 text-sm font-medium text-slate-400"
+                    className={`inline-flex cursor-not-allowed items-center gap-2 rounded-lg ${
+                      isLanding
+                        ? 'h-12 px-5 text-lg font-semibold text-slate-600'
+                        : 'h-10 px-4 text-sm font-medium text-slate-400'
+                    }`}
                   >
                     {link.label}
-                    <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-400">
-                      暂未开放
-                    </span>
+                    {!isLanding && (
+                      <span className="rounded-md bg-slate-100 px-1.5 py-0.5 text-[10px] font-semibold text-slate-400">
+                        暂未开放
+                      </span>
+                    )}
                   </span>
                 );
               }
@@ -142,7 +160,9 @@ export function AppHeader({ onShowAuth, onShowProfile }: AppHeaderProps) {
                   key={link.path}
                   to={link.path}
                   aria-current={active ? 'page' : undefined}
-                  className={`inline-flex h-10 items-center rounded-lg px-4 text-sm font-medium no-underline outline-none transition-colors focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 ${
+                  className={`inline-flex items-center rounded-lg no-underline outline-none transition-colors focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 ${
+                    isLanding ? 'h-12 px-5 text-lg font-semibold' : 'h-10 px-4 text-sm font-medium'
+                  } ${
                     active
                       ? 'bg-blue-600 text-white shadow-sm shadow-blue-600/20'
                       : 'text-slate-600 hover:bg-slate-100 hover:text-slate-950'
@@ -155,9 +175,11 @@ export function AppHeader({ onShowAuth, onShowProfile }: AppHeaderProps) {
           </nav>
         </div>
 
-        <div className="flex shrink-0 items-center gap-2 sm:gap-3">
-          <div className="inline-flex h-10 items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 text-sm font-medium text-amber-900 sm:px-4">
-            <CalendarDays className="h-4 w-4 shrink-0" aria-hidden="true" />
+        <div className={`flex shrink-0 items-center gap-2 sm:gap-3 ${isLanding ? 'lg:gap-5' : ''}`}>
+          <div className={`inline-flex items-center gap-2 rounded-xl border border-amber-200 bg-amber-50 px-3 font-medium text-amber-900 sm:px-4 ${
+            isLanding ? 'h-10 text-sm lg:h-14 lg:px-6 lg:text-lg' : 'h-10 text-sm'
+          }`}>
+            <CalendarDays className={isLanding ? 'h-4 w-4 shrink-0 lg:h-5 lg:w-5' : 'h-4 w-4 shrink-0'} aria-hidden="true" />
             {examStatus.phase === 'ended' ? (
               <>
                 <span className="sm:hidden">已结束</span>
@@ -180,7 +202,9 @@ export function AppHeader({ onShowAuth, onShowProfile }: AppHeaderProps) {
             href="https://github.com/Nanki-nn/aisoftoj"
             target="_blank"
             rel="noopener noreferrer"
-            className="hidden h-10 items-center gap-2 rounded-lg px-3 text-sm font-medium text-slate-700 no-underline outline-none transition-colors hover:bg-slate-100 hover:text-slate-950 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 lg:inline-flex"
+            className={`hidden items-center gap-2 rounded-lg text-slate-700 no-underline outline-none transition-colors hover:bg-slate-100 hover:text-slate-950 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 lg:inline-flex ${
+              isLanding ? 'h-12 px-4 text-lg font-semibold' : 'h-10 px-3 text-sm font-medium'
+            }`}
           >
             <Github className="h-4 w-4" aria-hidden="true" />
             Star
@@ -232,7 +256,9 @@ export function AppHeader({ onShowAuth, onShowProfile }: AppHeaderProps) {
               <Button
                 onClick={onShowAuth}
                 variant="outline"
-                className="h-10 rounded-lg border-slate-300 bg-white px-4 font-medium text-slate-800 shadow-sm hover:bg-slate-50"
+                className={`rounded-lg border-slate-300 bg-white font-medium text-slate-800 shadow-sm hover:bg-slate-50 ${
+                  isLanding ? 'h-12 px-5 text-lg' : 'h-10 px-4'
+                }`}
               >
                 登录 / 注册
               </Button>

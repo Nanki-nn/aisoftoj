@@ -8,7 +8,6 @@ import {
   FileText,
   PenTool,
   Quote,
-  Route,
   Sparkles,
   Zap,
 } from 'lucide-react';
@@ -77,37 +76,34 @@ const capabilities = [
 
 export function LearningLanding({ onShowAuth, onShowProfile }: LearningLandingProps) {
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 via-slate-50 to-white text-slate-950">
+    <div className="min-h-screen bg-white text-slate-950">
       <AppHeader onShowAuth={onShowAuth} onShowProfile={onShowProfile} />
 
       <main id="main-content">
-        <section className="relative overflow-hidden px-4 pb-12 pt-14 sm:px-6 sm:pb-16 sm:pt-20 lg:px-8 lg:pt-24">
+        <section className="relative overflow-hidden border-b border-blue-100 bg-blue-50/70 px-4 pb-14 pt-16 sm:px-6 sm:pb-16 sm:pt-20 lg:px-8 lg:pt-28">
           <div className="relative z-10 mx-auto max-w-6xl text-center">
-            <div className="mx-auto mb-6 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-white/80 px-4 py-2 text-sm font-medium text-blue-800 shadow-sm">
-              <Route className="h-4 w-4" aria-hidden="true" />
-              真题优先 · 给在职工程师的高效备考方式
-            </div>
-            <h1 className="text-4xl font-semibold leading-tight tracking-tight text-slate-950 sm:text-5xl lg:text-6xl">
-              先刷真题，再精准补弱项。
+            <h1 className="text-4xl font-semibold leading-tight text-slate-950 sm:text-6xl lg:text-7xl">
+              软考备考，从路径开始。
             </h1>
-            <p className="mx-auto mt-6 max-w-3xl text-base leading-8 text-slate-600 sm:text-lg">
-              从真实历年试卷开始，用练习与考试双模式校准水平，
-              再通过刷题记录和错题复盘，把碎片时间沉淀成稳定进度。
+            <p className="mx-auto mt-7 max-w-5xl text-base leading-8 text-slate-600 sm:mt-9 sm:text-xl sm:leading-9 lg:text-2xl lg:leading-10">
+              不靠玄学，靠路径。把 2 个月备考拆成三条清晰路线，每条路线有对应工具支撑，专为
+              <br className="hidden lg:block" />
+              碎片时间设计
             </p>
-            <div className="mt-8 flex flex-col items-stretch justify-center gap-3 sm:flex-row sm:items-center">
+            <div className="mt-10 flex flex-col items-stretch justify-center gap-4 sm:mt-12 sm:flex-row sm:items-center">
               <Link
                 to="/papers"
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl bg-blue-600 px-6 text-base font-semibold text-white no-underline shadow-lg shadow-blue-600/20 outline-none transition-transform duration-200 hover:-translate-y-0.5 hover:bg-blue-700 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-4 motion-reduce:transform-none"
+                className="inline-flex min-h-14 items-center justify-center gap-2.5 rounded-lg bg-blue-600 px-7 text-lg font-semibold text-white no-underline shadow-lg shadow-blue-600/20 outline-none transition-transform duration-200 hover:-translate-y-0.5 hover:bg-blue-700 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-4 motion-reduce:transform-none sm:min-h-16 sm:px-8 sm:text-xl"
               >
                 <Zap className="h-5 w-5" aria-hidden="true" />
-                查看历年真题
+                直接刷真题
               </Link>
               <a
-                href="#exam-experience"
-                className="inline-flex min-h-12 items-center justify-center gap-2 rounded-xl border border-slate-300 bg-white px-6 text-base font-semibold text-slate-800 no-underline shadow-sm outline-none transition-colors hover:border-slate-400 hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-4"
+                href="#learning-paths"
+                className="inline-flex min-h-14 items-center justify-center gap-2.5 rounded-lg border border-slate-300 bg-white px-7 text-lg font-semibold text-slate-900 no-underline shadow-sm outline-none transition-colors hover:border-slate-400 hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-4 sm:min-h-16 sm:px-8 sm:text-xl"
               >
                 <BookOpen className="h-5 w-5" aria-hidden="true" />
-                查看备考经验
+                先看备考路径
               </a>
             </div>
           </div>
