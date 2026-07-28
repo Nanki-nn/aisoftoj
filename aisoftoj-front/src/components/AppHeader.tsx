@@ -28,6 +28,7 @@ import {
   DialogTrigger,
 } from './ui/dialog';
 import { useAuth } from '../hooks/useAuth';
+import { CommunityQrHoverCard } from './CommunityQrHoverCard';
 
 interface AppHeaderProps {
   onShowAuth: () => void;
@@ -209,6 +210,8 @@ export function AppHeader({ onShowAuth, onShowProfile }: AppHeaderProps) {
             <Github className="h-4 w-4" aria-hidden="true" />
             Star
           </a>
+
+          <CommunityQrHoverCard />
 
           <div className="hidden lg:block">
             {isAuthenticated && user ? (
