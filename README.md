@@ -4,6 +4,8 @@
 
 <div align="center">
 
+[![立即在线刷题](https://img.shields.io/badge/立即在线刷题-aisoftoj.cn-2563EB?style=for-the-badge&logo=googlechrome&logoColor=white)](https://aisoftoj.cn/)
+
 ![GitHub Stars](https://img.shields.io/github/stars/Nanki-nn/aisoftoj?style=social)
 ![GitHub Forks](https://img.shields.io/github/forks/Nanki-nn/aisoftoj?style=social)
 [![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
@@ -291,7 +293,7 @@ npm run build
 
 ### 🌐 在线体验
 
-> 💡 公共演示环境部署中，敬请期待！
+> 🚀 正式站点：[https://aisoftoj.cn/](https://aisoftoj.cn/)
 >
 > GitHub 仓库：https://github.com/Nanki-nn/aisoftoj
 
