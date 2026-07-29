@@ -30,9 +30,10 @@ const learningPaths = [
     title: '打基础',
     description: '系统学习基础知识，构建知识体系',
     icon: BookOpen,
-    path: '/foundation',
+    path: 'https://www.yuque.com/jiangnan-3o7ge/psketn/qhzlsv6emvy1rz9i',
     color: 'from-blue-500 to-blue-600',
-    enabled: false,
+    enabled: true,
+    external: true,
   },
   {
     id: '02',
@@ -42,15 +43,17 @@ const learningPaths = [
     path: '/papers',
     color: 'from-emerald-500 to-emerald-600',
     enabled: true,
+    external: false,
   },
   {
     id: '03',
     title: '论文冲刺',
     description: 'AI 批改论文，提升写作能力',
     icon: PenTool,
-    path: '/essay-sprint',
+    path: 'https://www.yuque.com/jiangnan-3o7ge/psketn/crwg7ayq7zf5si6z',
     color: 'from-violet-500 to-violet-600',
-    enabled: false,
+    enabled: true,
+    external: true,
   },
 ] as const;
 
@@ -138,6 +141,21 @@ export function LearningLanding({ onShowAuth, onShowProfile }: LearningLandingPr
                   <article key={path.id} aria-disabled="true" className={cardClassName}>
                     {cardContent}
                   </article>
+                );
+              }
+
+              if (path.external) {
+                return (
+                  <a
+                    key={path.id}
+                    href={path.path}
+                    target="_blank"
+                    rel="noreferrer"
+                    className={cardClassName}
+                  >
+                    {cardContent}
+                    <span className="sr-only">（在新标签页打开）</span>
+                  </a>
                 );
               }
 
