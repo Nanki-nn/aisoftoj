@@ -44,6 +44,8 @@ export interface ExamSession {
   id: string;
   paperId?: string;
   paperName?: string;
+  paperYear?: number;
+  paperMonth?: number;
   subject: string;
   category: string;
   questions: Question[];

@@ -6,6 +6,8 @@ import com.nan.aisoftoj.common.ForbiddenException;
 import com.nan.aisoftoj.common.UnauthorizedException;
 import com.nan.aisoftoj.common.UserRole;
 import com.nan.aisoftoj.dto.AuthEmailCodeLoginRequest;
+import com.nan.aisoftoj.dto.AuthLoginRequest;
+import com.nan.aisoftoj.dto.AuthUserDTO;
 import com.nan.aisoftoj.dto.AuthRegisterRequest;
 import com.nan.aisoftoj.dto.PasswordResetRequest;
 import com.nan.aisoftoj.entity.User;
@@ -27,10 +29,13 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.Date;
 
+import cn.hutool.core.date.DateUtil;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.eq;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -143,6 +148,7 @@ class AuthServiceImplTest {
         when(userMapper.selectOne(any())).thenReturn(null);
         when(practiceSessionMapper.selectCount(any())).thenReturn(0L);
         when(userWrongQuestionStatMapper.selectCount(any())).thenReturn(0L);
+        when(userMapper.updateLastLoginTime(any(Integer.class), any(Date.class))).thenReturn(1);
         doAnswer(invocation -> {
             User inserted = invocation.getArgument(0);
             inserted.setId(8);
@@ -170,6 +176,7 @@ class AuthServiceImplTest {
         when(userMapper.selectByNormalizedEmailForUpdate("user@example.com")).thenReturn(user);
         when(practiceSessionMapper.selectCount(any())).thenReturn(0L);
         when(userWrongQuestionStatMapper.selectCount(any())).thenReturn(0L);
+        when(userMapper.updateLastLoginTime(any(Integer.class), any(Date.class))).thenReturn(1);
 
         AuthEmailCodeLoginRequest request = new AuthEmailCodeLoginRequest();
         request.setEmail("USER@example.com ");
@@ -179,6 +186,44 @@ class AuthServiceImplTest {
 
         org.mockito.Mockito.verify(emailCodeService)
                 .consumeCode("user@example.com", EmailCodeScene.LOGIN, "654321");
+        org.mockito.Mockito.verify(userMapper).updateLastLoginTime(eq(7), any(Date.class));
+    }
+
+    @Test
+    void passwordLoginRecordsLastLoginTime() {
+        User user = activeUser(UserRole.USER.name());
+        user.setEmailNormalized("user@example.com");
+        user.setEmailVerifiedAt(new Date());
+        user.setPassword(cn.hutool.crypto.digest.BCrypt.hashpw("password"));
+        when(userMapper.selectByNormalizedEmail("user@example.com")).thenReturn(user);
+        when(practiceSessionMapper.selectCount(any())).thenReturn(0L);
+        when(userWrongQuestionStatMapper.selectCount(any())).thenReturn(0L);
+        when(userMapper.updateLastLoginTime(any(Integer.class), any(Date.class))).thenReturn(1);
+
+        AuthLoginRequest request = new AuthLoginRequest();
+        request.setEmail("USER@example.com ");
+        request.setPassword("password");
+
+        AuthUserDTO responseUser = authService.login(request, "127.0.0.1").getUser();
+
+        org.junit.jupiter.api.Assertions.assertNotNull(user.getLastLoginTime());
+        assertEquals(DateUtil.formatDateTime(user.getLastLoginTime()), responseUser.getLastLoginDate());
+        org.mockito.Mockito.verify(userMapper).updateLastLoginTime(eq(7), any(Date.class));
+    }
+
+    @Test
+    void authMeUsesPersistedLastLoginTime() {
+        User user = activeUser(UserRole.USER.name());
+        Date lastLoginTime = DateUtil.parseDateTime("2026-07-30 09:15:00");
+        user.setCreateTime(DateUtil.parseDateTime("2026-07-01 08:00:00"));
+        user.setLastLoginTime(lastLoginTime);
+        when(userMapper.selectById(7)).thenReturn(user);
+        when(practiceSessionMapper.selectCount(any())).thenReturn(0L);
+        when(userWrongQuestionStatMapper.selectCount(any())).thenReturn(0L);
+
+        AuthUserDTO currentUser = authService.getCurrentUser(tokenFor(7, System.currentTimeMillis() + 60_000));
+
+        assertEquals(DateUtil.formatDateTime(lastLoginTime), currentUser.getLastLoginDate());
     }
 
     @Test

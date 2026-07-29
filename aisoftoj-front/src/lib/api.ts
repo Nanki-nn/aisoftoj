@@ -103,6 +103,8 @@ type StartSessionRes = {
   paper?: {
     subjectName?: string;
     paperCateId?: number;
+    paperYear?: number;
+    paperMonth?: number;
     questionTotal?: number;
   };
   questionList: BackendQuestionDTO[];
@@ -119,6 +121,8 @@ type GetSessionRes = {
   paper?: {
     subjectName?: string;
     paperCateId?: number;
+    paperYear?: number;
+    paperMonth?: number;
   };
   questionList: BackendQuestionDTO[];
 };
@@ -489,6 +493,8 @@ export async function startPaperSession(
     id: sessionId,
     paperId: String(data.paperId),
     paperName: data.paperName,
+    paperYear: data.paper?.paperYear,
+    paperMonth: data.paper?.paperMonth,
     subject: data.paper?.subjectName || data.paperName,
     category: mapPaperCate(data.paper?.paperCateId || 1),
     questions,
@@ -526,6 +532,8 @@ export async function continuePracticeSession(sessionId: string): Promise<ExamSe
     id: resolvedSessionId,
     paperId: String(data.paperId),
     paperName: data.paperName,
+    paperYear: data.paper?.paperYear,
+    paperMonth: data.paper?.paperMonth,
     subject: data.paper?.subjectName || data.paperName,
     category: mapPaperCate(data.paper?.paperCateId || 1),
     questions,
@@ -663,6 +671,7 @@ export type AdminUserDTO = {
   isEnabled: boolean;
   createTime: string;
   updateTime: string;
+  lastLoginTime: string | null;
   sessionCount: number;
   wrongQuestionCount: number;
 };

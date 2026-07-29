@@ -58,6 +58,7 @@ public class AuthServiceImpl implements AuthService {
     private AuthRateLimitService rateLimitService;
 
     @Override
+    @Transactional(rollbackFor = Exception.class)
     public AuthResponse login(AuthLoginRequest request, String requestIp) {
         String normalizedEmail = EmailNormalizer.normalize(request.getEmail());
         rateLimitService.acquirePasswordLoginLimits(normalizedEmail, requestIp);
@@ -73,6 +74,7 @@ public class AuthServiceImpl implements AuthService {
                 || !passwordMatches) {
             throw new IllegalArgumentException("邮箱或密码错误");
         }
+        markLogin(user);
         return buildAuthResponse(user);
     }
 
@@ -111,6 +113,7 @@ public class AuthServiceImpl implements AuthService {
         user.setIsEnabled(true);
         user.setIsDeleted(false);
         userMapper.insert(user);
+        markLogin(user);
         return buildAuthResponse(user);
     }
 
@@ -128,6 +131,7 @@ public class AuthServiceImpl implements AuthService {
             throw new InvalidEmailCodeException();
         }
         emailCodeService.consumeCode(normalizedEmail, EmailCodeScene.LOGIN, request.getCode());
+        markLogin(user);
         return buildAuthResponse(user);
     }
 
@@ -180,6 +184,15 @@ public class AuthServiceImpl implements AuthService {
         return response;
     }
 
+    private void markLogin(User user) {
+        Date loginTime = new Date();
+        int updatedRows = userMapper.updateLastLoginTime(user.getId(), loginTime);
+        if (updatedRows != 1) {
+            throw new IllegalStateException("记录登录时间失败");
+        }
+        user.setLastLoginTime(loginTime);
+    }
+
     private AuthUserDTO buildUserDTO(User user) {
         AuthUserDTO dto = new AuthUserDTO();
         dto.setId(String.valueOf(user.getId()));
@@ -192,7 +205,10 @@ public class AuthServiceImpl implements AuthService {
         dto.setRole(UserRole.normalize(user.getRole()));
         String joinDate = user.getCreateTime() == null ? DateUtil.today() : DateUtil.formatDate(user.getCreateTime());
         dto.setJoinDate(joinDate);
-        dto.setLastLoginDate(DateUtil.formatDate(new Date()));
+        String lastLoginDate = user.getLastLoginTime() == null
+                ? ""
+                : DateUtil.formatDateTime(user.getLastLoginTime());
+        dto.setLastLoginDate(lastLoginDate);
         Long totalExams = practiceSessionMapper.selectCount(Wrappers.lambdaQuery(com.nan.aisoftoj.entity.PracticeSession.class)
                 .eq(com.nan.aisoftoj.entity.PracticeSession::getUserId, user.getId())
                 .eq(com.nan.aisoftoj.entity.PracticeSession::getIsDeleted, false));

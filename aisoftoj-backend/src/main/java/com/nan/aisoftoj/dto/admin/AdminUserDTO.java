@@ -15,6 +15,7 @@ public class AdminUserDTO {
     private Boolean isEnabled;
     private Date createTime;
     private Date updateTime;
+    private Date lastLoginTime;
     private Long sessionCount;
     private Long wrongQuestionCount;
 }
