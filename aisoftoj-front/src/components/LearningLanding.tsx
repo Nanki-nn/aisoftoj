@@ -48,7 +48,7 @@ const learningPaths = [
   {
     id: '03',
     title: '论文冲刺',
-    description: 'AI 批改论文，提升写作能力',
+    description: '打磨一个项目，复用多个论文主题',
     icon: PenTool,
     path: 'https://www.yuque.com/jiangnan-3o7ge/psketn/crwg7ayq7zf5si6z',
     color: 'from-violet-500 to-violet-600',
