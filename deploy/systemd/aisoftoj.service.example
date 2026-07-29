@@ -1,0 +1,20 @@
+[Unit]
+Description=AisoftOJ Spring Boot Backend
+After=network-online.target mysql.service
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=aisoftoj
+Group=aisoftoj
+WorkingDirectory=/opt/aisoftoj
+EnvironmentFile=/etc/aisoftoj/aisoftoj.env
+ExecStart=/usr/bin/java -jar /opt/aisoftoj/aisoftoj-backend.jar
+Restart=on-failure
+RestartSec=5
+SuccessExitStatus=143
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
