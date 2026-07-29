@@ -1,11 +1,13 @@
 import React, { useEffect, useMemo, useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import {
   AlertCircle,
   BookOpen,
-  CalendarDays,
+  Calendar,
   FileText,
+  Filter,
   GraduationCap,
-  LogIn,
+  History,
   Play,
   RefreshCw,
   RotateCcw,
@@ -23,7 +25,6 @@ import {
 } from './ui/dialog';
 import { Progress } from './ui/progress';
 import { Skeleton } from './ui/skeleton';
-import { PapersWorkspaceHeader } from './PapersWorkspaceHeader';
 import {
   fetchPapers,
   fetchPracticeHistory,
@@ -51,23 +52,24 @@ const SUBJECT_ORDER = [
 const CATEGORY_ORDER = ['综合知识', '案例分析', '论文'] as const;
 
 function sortWithPreferredOrder(values: string[], preferred: readonly string[]) {
-  return [...values].sort((a, b) => {
-    const aIndex = preferred.indexOf(a);
-    const bIndex = preferred.indexOf(b);
-    if (aIndex !== -1 && bIndex !== -1) return aIndex - bIndex;
-    if (aIndex !== -1) return -1;
-    if (bIndex !== -1) return 1;
-    return a.localeCompare(b, 'zh-CN');
+  return [...values].sort((first, second) => {
+    const firstIndex = preferred.indexOf(first);
+    const secondIndex = preferred.indexOf(second);
+    if (firstIndex !== -1 && secondIndex !== -1) return firstIndex - secondIndex;
+    if (firstIndex !== -1) return -1;
+    if (secondIndex !== -1) return 1;
+    return first.localeCompare(second, 'zh-CN');
   });
 }
 
 function formatDate(dateValue: string) {
   if (!dateValue) return '待更新';
   const normalized = String(dateValue).trim();
-  const dateParts = normalized.match(/^(\d{4})(?:年|-)(\d{1,2})(?:月|-)(\d{1,2})/);
-  if (!dateParts) return normalized.slice(0, 10);
-  const [, year, month, day] = dateParts;
-  return `${year}/${month.padStart(2, '0')}/${day.padStart(2, '0')}`;
+  const dateParts = normalized.match(/^(\d{4})(?:年|\/|-)(\d{1,2})(?:月|\/|-)(\d{1,2})(.*)$/);
+  if (!dateParts) return normalized;
+  const [, year, month, day, suffix] = dateParts;
+  const timeSuffix = suffix.replace(/^\s*(\d{1,2})时(\d{1,2})分(\d{1,2})秒$/, ' $1:$2:$3');
+  return `${year}/${Number(month)}/${Number(day)}${timeSuffix}`;
 }
 
 function getPaperProgress(paper: ExamPaper) {
@@ -94,26 +96,30 @@ function PapersSkeleton() {
   return (
     <div className="space-y-8" aria-label="正在加载试卷数据" aria-busy="true">
       <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
-        <Skeleton className="h-6 w-28" />
-        <div className="mt-4 flex flex-wrap gap-3">
+        <Skeleton className="h-7 w-56" />
+        <Skeleton className="mt-3 h-5 w-80 max-w-full" />
+        <div className="mt-6 flex flex-wrap gap-3">
+          <Skeleton className="h-12 w-32 rounded-lg" />
+          <Skeleton className="h-12 w-32 rounded-lg" />
+        </div>
+      </div>
+      <div className="rounded-2xl border border-slate-200 bg-white p-6 shadow-sm">
+        <Skeleton className="h-5 w-24" />
+        <div className="mt-5 flex flex-wrap gap-3">
           {[120, 100, 112, 96].map((width) => (
-            <Skeleton key={width} className="h-10 rounded-xl" style={{ width }} />
+            <Skeleton key={width} className="h-10 rounded-lg" style={{ width }} />
           ))}
         </div>
-        <Skeleton className="mt-7 h-6 w-24" />
-        <div className="mt-4 flex gap-3">
+        <Skeleton className="mt-6 h-5 w-24" />
+        <div className="mt-5 flex gap-3">
           {[96, 88, 72].map((width) => (
-            <Skeleton key={width} className="h-10 rounded-xl" style={{ width }} />
+            <Skeleton key={width} className="h-10 rounded-lg" style={{ width }} />
           ))}
         </div>
       </div>
       <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
         {[0, 1, 2, 3, 4, 5].map((item) => (
-          <div
-            key={item}
-            className="flex flex-col rounded-2xl border border-slate-200 bg-white p-6 shadow-sm"
-            style={{ minHeight: 300 }}
-          >
+          <div key={item} className="rounded-xl border border-slate-200 bg-white p-6 shadow-sm" style={{ minHeight: 384 }}>
             <div className="flex justify-between gap-4">
               <div className="space-y-3">
                 <Skeleton className="h-6 w-36" />
@@ -121,7 +127,7 @@ function PapersSkeleton() {
               </div>
               <Skeleton className="h-6 w-16 rounded-lg" />
             </div>
-            <div className="mt-8 space-y-5">
+            <div className="mt-10 space-y-5">
               {[0, 1, 2].map((row) => (
                 <div key={row} className="flex items-center justify-between gap-4">
                   <Skeleton className="h-4 w-20" />
@@ -130,7 +136,7 @@ function PapersSkeleton() {
               ))}
               <Skeleton className="h-2 w-full rounded-full" />
             </div>
-            <div className="mt-auto flex items-center justify-between border-t border-slate-100 pt-5">
+            <div className="mt-12 flex items-center justify-between border-t border-slate-100 pt-5">
               <Skeleton className="h-4 w-28" />
               <Skeleton className="h-9 w-24 rounded-lg" />
             </div>
@@ -141,11 +147,7 @@ function PapersSkeleton() {
   );
 }
 
-export function PapersPage({
-  onStartPaper,
-  onShowProfile,
-  onShowAuth,
-}: PapersPageProps) {
+export function PapersPage({ onStartPaper, onShowProfile, onShowAuth }: PapersPageProps) {
   const {
     isAuthenticated,
     isAuthInitialized,
@@ -153,6 +155,7 @@ export function PapersPage({
     checkAuthStatus,
     clearAuth,
   } = useAuth();
+  const navigate = useNavigate();
   const [papers, setPapers] = useState<ExamPaper[]>([]);
   const [selectedSubject, setSelectedSubject] = useState('');
   const [selectedCategory, setSelectedCategory] = useState('');
@@ -163,7 +166,6 @@ export function PapersPage({
   const [reloadKey, setReloadKey] = useState(0);
   const [showModeDialog, setShowModeDialog] = useState(false);
   const [selectedPaper, setSelectedPaper] = useState<ExamPaper | null>(null);
-  const [sessionNotice, setSessionNotice] = useState<string | null>(null);
 
   useEffect(() => {
     if (!isAuthInitialized || authInitializationError) return;
@@ -175,11 +177,7 @@ export function PapersPage({
     setWrongCount(null);
 
     const requests = isAuthenticated
-      ? [
-          fetchPapers(),
-          fetchPracticeHistory({ pageSize: 1 }),
-          fetchWrongQuestions({ pageSize: 1 }),
-        ] as const
+      ? [fetchPapers(), fetchPracticeHistory({ pageSize: 1 }), fetchWrongQuestions({ pageSize: 1 })] as const
       : [fetchPapers()] as const;
 
     void Promise.allSettled(requests).then((results) => {
@@ -193,8 +191,6 @@ export function PapersPage({
         && isApiRequestError(papersResult.reason)
         && (papersResult.reason.status === 401 || papersResult.reason.code === 401)
       ) {
-        // Token 在初始化后失效时，清理本地状态；依赖变更会自动按游客身份重新加载目录。
-        setSessionNotice('登录已过期，已切换为游客浏览');
         clearAuth();
         setIsLoading(false);
         return;
@@ -253,7 +249,7 @@ export function PapersPage({
   const filteredPapers = useMemo(() => {
     return papers
       .filter((paper) => paper.subject === selectedSubject && paper.category === selectedCategory)
-      .sort((a, b) => (a.year === b.year ? b.month - a.month : b.year - a.year));
+      .sort((first, second) => (first.year === second.year ? second.month - first.month : second.year - first.year));
   }, [papers, selectedCategory, selectedSubject]);
 
   const openModeDialog = (paper: ExamPaper) => {
@@ -286,7 +282,7 @@ export function PapersPage({
           onClick={onShowAuth}
           className="h-9 rounded-lg border-slate-300 px-4 font-medium text-slate-800 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
         >
-          <Play className="mr-1.5 h-4 w-4" aria-hidden="true" />
+          <Play className="mr-1 h-4 w-4" aria-hidden="true" />
           开始刷题
         </Button>
       );
@@ -297,9 +293,9 @@ export function PapersPage({
         <Button
           size="sm"
           onClick={() => onStartPaper(paper, 'practice')}
-          className="h-9 rounded-lg bg-blue-600 px-4 font-medium shadow-sm shadow-blue-600/20 hover:bg-blue-700"
+          className="h-9 rounded-lg bg-blue-600 px-4 font-medium shadow-md shadow-blue-600/20 hover:bg-blue-700"
         >
-          <Play className="mr-1.5 h-4 w-4" aria-hidden="true" />
+          <Play className="mr-1 h-4 w-4" aria-hidden="true" />
           继续刷题
         </Button>
       );
@@ -311,9 +307,9 @@ export function PapersPage({
           size="sm"
           variant="outline"
           onClick={() => openModeDialog(paper)}
-          className="h-9 rounded-lg border-emerald-200 px-4 font-medium text-emerald-700 hover:bg-emerald-50"
+          className="h-9 rounded-lg border-emerald-200 px-4 font-medium text-emerald-600 hover:bg-emerald-50"
         >
-          <RotateCcw className="mr-1.5 h-4 w-4" aria-hidden="true" />
+          <RotateCcw className="mr-1 h-4 w-4" aria-hidden="true" />
           重新刷题
         </Button>
       );
@@ -324,38 +320,45 @@ export function PapersPage({
         size="sm"
         variant="outline"
         onClick={() => openModeDialog(paper)}
-        className="h-9 rounded-lg border-slate-300 px-4 font-medium text-slate-800 hover:border-blue-300 hover:bg-blue-50 hover:text-blue-700"
+        className="h-9 rounded-lg border-slate-200 px-4 font-medium text-slate-700 hover:bg-slate-50"
       >
-        <Play className="mr-1.5 h-4 w-4" aria-hidden="true" />
+        <Play className="mr-1 h-4 w-4" aria-hidden="true" />
         开始刷题
       </Button>
     );
   };
 
+  const handleHistoryClick = () => {
+    if (!isAuthenticated) {
+      onShowAuth();
+      return;
+    }
+    navigate('/practice-history');
+  };
+
+  const handleWrongClick = () => {
+    if (!isAuthenticated) {
+      onShowAuth();
+      return;
+    }
+    navigate('/wrong-questions');
+  };
+
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 via-slate-50 to-slate-50 text-slate-950">
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
       <AppHeader onShowAuth={onShowAuth} onShowProfile={onShowProfile} />
 
-      <main id="main-content" className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-12">
-        <PapersWorkspaceHeader activeTab="papers" historyCount={historyCount} wrongCount={wrongCount} />
-
-        {!isAuthInitialized && !authInitializationError && (
-          <div className="mt-8">
-            <PapersSkeleton />
-          </div>
-        )}
+      <main id="main-content" className="mx-auto max-w-7xl px-4 py-8 sm:px-6 lg:px-8">
+        {!isAuthInitialized && !authInitializationError && <PapersSkeleton />}
 
         {!isAuthInitialized && authInitializationError && (
-          <section className="mt-8 rounded-2xl border border-amber-200 bg-white p-8 text-center shadow-sm">
+          <section className="rounded-2xl border border-amber-200 bg-white p-8 text-center shadow-sm">
             <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-amber-50 text-amber-700">
               <AlertCircle className="h-6 w-6" aria-hidden="true" />
             </span>
             <h2 className="mt-5 text-xl font-semibold text-slate-950">登录状态校验失败</h2>
             <p className="mx-auto mt-2 max-w-lg text-base leading-7 text-slate-600">{authInitializationError}</p>
-            <Button
-              onClick={() => void checkAuthStatus()}
-              className="mt-6 h-11 rounded-xl bg-blue-600 px-5 hover:bg-blue-700"
-            >
+            <Button onClick={() => void checkAuthStatus()} className="mt-6 h-11 rounded-lg bg-blue-600 px-5 hover:bg-blue-700">
               <RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />
               重新校验
             </Button>
@@ -364,185 +367,191 @@ export function PapersPage({
 
         {isAuthInitialized && (
           <>
-            {sessionNotice && (
-              <div className="mt-6 flex items-center justify-between gap-4 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 text-sm font-medium text-amber-900" role="status">
-                <span>{sessionNotice}</span>
-                <button
-                  type="button"
-                  onClick={() => setSessionNotice(null)}
-                  className="shrink-0 rounded-md px-2 py-1 text-xs font-semibold text-amber-800 hover:bg-amber-100"
-                >
-                  知道了
-                </button>
-              </div>
+            {isLoading && <PapersSkeleton />}
+
+            {!isLoading && error && (
+              <section className="rounded-2xl border border-red-200 bg-white p-8 text-center shadow-sm">
+                <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-600">
+                  <AlertCircle className="h-6 w-6" aria-hidden="true" />
+                </span>
+                <h2 className="mt-5 text-xl font-semibold text-slate-950">试卷暂时加载失败</h2>
+                <p className="mx-auto mt-2 max-w-lg text-base leading-7 text-slate-600">{error}</p>
+                <Button onClick={() => setReloadKey((value) => value + 1)} className="mt-6 h-11 rounded-lg bg-blue-600 px-5 hover:bg-blue-700">
+                  <RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />
+                  重新加载
+                </Button>
+              </section>
             )}
 
-            {!isAuthenticated && (
-              <div className="mt-6 flex items-start gap-3 rounded-xl border border-blue-200 bg-blue-50 px-4 py-3 text-sm leading-6 text-blue-900">
-                <LogIn className="mt-0.5 h-4 w-4 shrink-0" aria-hidden="true" />
-                <span>你正在以游客身份浏览真实试卷目录；选择试卷开始刷题时再登录即可。</span>
-              </div>
+            {!isLoading && !error && papers.length === 0 && (
+              <section className="rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm">
+                <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
+                  <BookOpen className="h-7 w-7" aria-hidden="true" />
+                </span>
+                <h2 className="mt-5 text-xl font-semibold text-slate-950">暂时还没有可用试卷</h2>
+                <p className="mt-2 text-slate-600">题库正在持续整理，稍后再来看看。</p>
+              </section>
             )}
 
-            <div className="mt-8">
-              {isLoading && <PapersSkeleton />}
+            {!isLoading && !error && papers.length > 0 && (
+              <>
+                <section className="mb-8 flex flex-col items-start gap-6 rounded-2xl border border-slate-200/50 bg-white p-6 shadow-sm md:flex-row md:items-center">
+                  <div className="min-w-0 flex-1">
+                    <h1 className="mb-1 text-2xl font-medium text-slate-800">开始你的软考之旅</h1>
+                    <p className="mb-5 text-sm text-slate-500">精选历年真题，智能分析错题，助你高效备考软考</p>
+                    <div className="flex flex-wrap gap-3">
+                      <Button
+                        className="h-12 rounded-lg bg-blue-600 px-5 text-base font-medium shadow-md shadow-blue-600/20 hover:bg-blue-700"
+                        onClick={() => filteredPapers[0] && openModeDialog(filteredPapers[0])}
+                      >
+                        <Play className="mr-2 h-4 w-4" aria-hidden="true" />
+                        开始练习
+                      </Button>
+                      <Button
+                        variant="outline"
+                        className="h-12 rounded-lg border-slate-200 px-5 text-base font-medium text-slate-600 hover:bg-slate-50"
+                        onClick={handleHistoryClick}
+                      >
+                        <History className="mr-2 h-4 w-4" aria-hidden="true" />
+                        查看进度
+                      </Button>
+                    </div>
+                  </div>
 
-              {!isLoading && error && (
-                <section className="rounded-2xl border border-red-200 bg-white p-8 text-center shadow-sm">
-                  <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-full bg-red-50 text-red-600">
-                    <AlertCircle className="h-6 w-6" aria-hidden="true" />
-                  </span>
-                  <h2 className="mt-5 text-xl font-semibold text-slate-950">试卷暂时加载失败</h2>
-                  <p className="mx-auto mt-2 max-w-lg text-base leading-7 text-slate-600">{error}</p>
-                  <div className="mt-6 flex justify-center">
-                    <Button onClick={() => setReloadKey((value) => value + 1)} className="h-11 rounded-xl bg-blue-600 px-5 hover:bg-blue-700">
-                      <RefreshCw className="mr-2 h-4 w-4" aria-hidden="true" />
-                      重新加载
-                    </Button>
+                  <div className="flex w-full shrink-0 gap-4 md:w-auto">
+                    <button
+                      type="button"
+                      onClick={handleHistoryClick}
+                      className="flex-1 rounded-xl bg-blue-600 p-5 text-center text-white transition-colors hover:bg-blue-700 md:w-36 md:flex-none"
+                    >
+                      <History className="mx-auto mb-2 h-6 w-6 opacity-90" aria-hidden="true" />
+                      <div className="mb-1 text-sm">刷题记录</div>
+                      <div className="text-2xl font-semibold tabular-nums">{historyCount ?? 0}+</div>
+                    </button>
+                    <button
+                      type="button"
+                      onClick={handleWrongClick}
+                      className="flex-1 rounded-xl bg-emerald-500 p-5 text-center text-white transition-colors hover:bg-emerald-600 md:w-36 md:flex-none"
+                    >
+                      <AlertCircle className="mx-auto mb-2 h-6 w-6 opacity-90" aria-hidden="true" />
+                      <div className="mb-1 text-sm">错题记录</div>
+                      <div className="text-2xl font-semibold tabular-nums">{wrongCount ?? 0}%</div>
+                    </button>
                   </div>
                 </section>
-              )}
 
-              {!isLoading && !error && papers.length === 0 && (
-                <section className="rounded-2xl border border-slate-200 bg-white p-10 text-center shadow-sm">
-                  <span className="mx-auto flex h-14 w-14 items-center justify-center rounded-2xl bg-slate-100 text-slate-500">
-                    <BookOpen className="h-7 w-7" aria-hidden="true" />
-                  </span>
-                  <h2 className="mt-5 text-xl font-semibold text-slate-950">暂时还没有可用试卷</h2>
-                  <p className="mt-2 text-slate-600">题库正在持续整理，稍后再来看看。</p>
+                <section className="mb-8 rounded-xl border border-slate-200/50 bg-white p-6 shadow-sm">
+                  <h2 className="mb-4 flex items-center gap-2 text-sm text-slate-500">
+                    <Filter className="h-4 w-4" aria-hidden="true" />
+                    筛选条件
+                  </h2>
+                  <div className="mb-4 flex flex-wrap gap-2">
+                    {subjectOptions.map((subject) => {
+                      const active = selectedSubject === subject;
+                      return (
+                        <button
+                          key={subject}
+                          type="button"
+                          aria-pressed={active}
+                          onClick={() => setSelectedSubject(subject)}
+                          className={`rounded-lg px-4 py-2 text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 ${
+                            active ? 'bg-blue-600 font-medium text-white shadow-sm shadow-blue-600/20' : 'text-slate-600 hover:bg-slate-50'
+                          }`}
+                        >
+                          {subject}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="flex flex-wrap gap-2">
+                    {categoryOptions.map((category) => {
+                      const active = selectedCategory === category;
+                      return (
+                        <button
+                          key={category}
+                          type="button"
+                          aria-pressed={active}
+                          onClick={() => setSelectedCategory(category)}
+                          className={`rounded-lg px-4 py-2 text-sm transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-800 focus-visible:ring-offset-2 ${
+                            active ? 'bg-slate-800 font-medium text-white shadow-sm' : 'text-slate-600 hover:bg-slate-50'
+                          }`}
+                        >
+                          {category}
+                        </button>
+                      );
+                    })}
+                  </div>
                 </section>
-              )}
 
-              {!isLoading && !error && papers.length > 0 && (
-                <>
-                  <section className="rounded-2xl border border-slate-200 bg-white p-5 shadow-sm sm:p-6">
-                    <div>
-                      <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
-                        <BookOpen className="h-5 w-5 text-slate-700" aria-hidden="true" />
-                        科目筛选
-                      </h2>
-                      <div className="mt-4 flex flex-wrap gap-2.5">
-                        {subjectOptions.map((subject) => {
-                          const active = selectedSubject === subject;
-                          return (
-                            <button
-                              key={subject}
-                              type="button"
-                              aria-pressed={active}
-                              onClick={() => setSelectedSubject(subject)}
-                              className={`min-h-10 rounded-xl border px-4 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 ${
-                                active
-                                  ? 'border-blue-600 bg-blue-600 text-white shadow-sm shadow-blue-600/20'
-                                  : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900'
-                              }`}
-                            >
-                              {subject}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
+                <section>
+                  <div className="mb-5 flex items-center justify-between gap-4">
+                    <h2 className="flex min-w-0 items-center gap-2 text-xl font-medium text-slate-700">
+                      <Calendar className="h-5 w-5 shrink-0" aria-hidden="true" />
+                      <span className="truncate">{selectedSubject} - {selectedCategory}</span>
+                    </h2>
+                    <span className="shrink-0 text-sm text-slate-500">共 {filteredPapers.length} 套试卷</span>
+                  </div>
 
-                    <div className="mt-7 border-t border-slate-100 pt-6">
-                      <h2 className="flex items-center gap-2 text-lg font-semibold text-slate-900">
-                        <FileText className="h-5 w-5 text-slate-700" aria-hidden="true" />
-                        题型分类
-                      </h2>
-                      <div className="mt-4 flex flex-wrap gap-2.5">
-                        {categoryOptions.map((category) => {
-                          const active = selectedCategory === category;
-                          return (
-                            <button
-                              key={category}
-                              type="button"
-                              aria-pressed={active}
-                              onClick={() => setSelectedCategory(category)}
-                              className={`min-h-10 rounded-xl border px-4 text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 ${
-                                active
-                                  ? 'border-slate-900 bg-slate-900 text-white shadow-sm'
-                                  : 'border-slate-200 bg-white text-slate-600 hover:border-slate-300 hover:bg-slate-50 hover:text-slate-900'
-                              }`}
-                            >
-                              {category}
-                            </button>
-                          );
-                        })}
-                      </div>
-                    </div>
-                  </section>
-
-                  <section className="mt-9">
-                    <div className="mb-5 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
-                      <h2 className="flex min-w-0 items-center gap-2 text-xl font-semibold text-slate-950">
-                        <CalendarDays className="h-5 w-5 shrink-0 text-slate-700" aria-hidden="true" />
-                        <span className="truncate">{selectedSubject} · {selectedCategory}</span>
-                      </h2>
-                      <Badge variant="outline" className="w-fit rounded-lg border-slate-200 bg-white px-3 py-1 text-slate-600">
-                        共 {filteredPapers.length} 套试卷
-                      </Badge>
-                    </div>
-
-                    <div className="grid gap-6 md:grid-cols-2 xl:grid-cols-3">
-                      {filteredPapers.map((paper) => {
-                        const progress = getPaperProgress(paper);
-                        return (
-                          <Card
-                            key={paper.id}
-                            className="group flex flex-col rounded-2xl border-slate-200 bg-white shadow-sm transition-all duration-200 hover:-translate-y-0.5 hover:border-blue-200 hover:shadow-lg motion-reduce:transform-none"
-                            style={{ minHeight: 300 }}
-                          >
-                            <CardHeader className="pb-5">
-                              <div className="flex items-start justify-between gap-4">
-                                <div className="min-w-0">
-                                  <CardTitle className="text-lg font-semibold tracking-tight text-slate-950 transition-colors group-hover:text-blue-700">
-                                    {paper.year}年{paper.month}月真题
-                                  </CardTitle>
-                                  <p className="mt-2 truncate text-sm text-slate-500">{paper.subject}</p>
-                                </div>
-                                <Badge className="shrink-0 rounded-lg border border-blue-100 bg-blue-50 text-blue-700 hover:bg-blue-50">
-                                  {paper.category}
-                                </Badge>
+                  <div className="grid grid-cols-1 items-start gap-5 md:grid-cols-2 xl:grid-cols-3">
+                    {filteredPapers.map((paper) => {
+                      const progress = getPaperProgress(paper);
+                      return (
+                        <Card
+                          key={paper.id}
+                          className="group flex flex-col rounded-xl border-slate-200 bg-white transition-all duration-300 hover:border-blue-200 hover:shadow-lg"
+                        >
+                          <CardHeader className="pb-4">
+                            <div className="flex items-start justify-between gap-4">
+                              <div className="min-w-0">
+                                <CardTitle className="text-lg font-medium text-slate-800 transition-colors group-hover:text-blue-600">
+                                  {paper.year}年{paper.month}月真题
+                                </CardTitle>
+                                <p className="mt-1 truncate text-sm text-slate-500">{paper.subject}</p>
                               </div>
-                            </CardHeader>
-                            <CardContent className="flex flex-1 flex-col pt-0">
-                              <dl className="space-y-4 text-sm">
-                                <div className="flex items-center justify-between gap-4">
-                                  <dt className="text-slate-600">题目数量</dt>
-                                  <dd className="font-semibold tabular-nums text-slate-900">{progress.total} 题</dd>
-                                </div>
-                                <div className="flex items-center justify-between gap-4">
-                                  <dt className="text-slate-600">练习次数</dt>
-                                  <dd className="font-medium tabular-nums text-slate-900">{paper.practiceCount || 0}</dd>
-                                </div>
-                                <div className="space-y-2">
-                                  <div className="flex items-center justify-between gap-4">
-                                    <dt className="text-slate-600">练习进度</dt>
-                                    <dd className="font-medium tabular-nums text-slate-900">
-                                      {progress.completed}/{progress.total}
-                                    </dd>
-                                  </div>
-                                  <Progress
-                                    value={progress.percentage}
-                                    aria-label={`${paper.year}年${paper.month}月真题练习进度`}
-                                    aria-valuetext={`${progress.completed}/${progress.total}`}
-                                    className="h-2 bg-slate-100 [&>div]:bg-blue-600"
-                                  />
-                                </div>
-                              </dl>
+                              <Badge variant="secondary" className="shrink-0 border-blue-100 bg-blue-50 text-blue-700">
+                                {paper.category}
+                              </Badge>
+                            </div>
+                          </CardHeader>
+                          <CardContent className="pt-0">
+                            <div className="space-y-3">
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="text-slate-500">题目数量</span>
+                                <span className="text-slate-800">{progress.total} 题</span>
+                              </div>
+                              <div className="flex items-center justify-between text-sm">
+                                <span className="flex items-center gap-1 text-slate-500">
+                                  <History className="h-3 w-3" aria-hidden="true" />
+                                  刷题次数
+                                </span>
+                                <span className="text-slate-800">{paper.practiceCount || 0}</span>
+                              </div>
 
-                              <div className="mt-auto flex flex-col gap-4 border-t border-slate-100 pt-5 sm:flex-row sm:items-center sm:justify-between">
-                                <span className="text-xs text-slate-500">更新：{formatDate(paper.lastUpdated)}</span>
+                              <div className="space-y-1.5">
+                                <div className="flex justify-between text-xs text-slate-500">
+                                  <span>练习进度</span>
+                                  <span>{progress.completed}/{progress.total}</span>
+                                </div>
+                                <Progress value={progress.percentage} className="h-1.5 bg-slate-100" />
+                              </div>
+
+                              <div className="flex items-center justify-between border-t border-slate-100 pt-2">
+                                {paper.lastPracticeTime ? (
+                                  <span className="text-xs text-slate-400">上次刷题：{formatDate(paper.lastPracticeTime)}</span>
+                                ) : (
+                                  <span />
+                                )}
                                 {renderStatusAction(paper)}
                               </div>
-                            </CardContent>
-                          </Card>
-                        );
-                      })}
-                    </div>
-                  </section>
-                </>
-              )}
-            </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                      );
+                    })}
+                  </div>
+                </section>
+              </>
+            )}
           </>
         )}
       </main>
@@ -560,8 +569,7 @@ export function PapersPage({
             <button
               type="button"
               onClick={() => handleModeSelect('practice')}
-              className="group flex flex-col items-start rounded-2xl border border-blue-200 bg-blue-50 p-5 text-left outline-none transition-all hover:-translate-y-0.5 hover:border-blue-400 hover:shadow-lg focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 motion-reduce:transform-none"
-              style={{ minHeight: 176 }}
+              className="group flex min-h-44 flex-col items-start rounded-2xl border border-blue-200 bg-blue-50 p-5 text-left outline-none transition-all hover:-translate-y-0.5 hover:border-blue-400 hover:shadow-lg focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
             >
               <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm">
                 <FileText className="h-5 w-5" aria-hidden="true" />
@@ -573,8 +581,7 @@ export function PapersPage({
             <button
               type="button"
               onClick={() => handleModeSelect('exam')}
-              className="group flex flex-col items-start rounded-2xl border border-red-200 bg-red-50 p-5 text-left outline-none transition-all hover:-translate-y-0.5 hover:border-red-500 hover:shadow-lg focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2 motion-reduce:transform-none"
-              style={{ minHeight: 176 }}
+              className="group flex min-h-44 flex-col items-start rounded-2xl border border-red-200 bg-red-50 p-5 text-left outline-none transition-all hover:-translate-y-0.5 hover:border-red-500 hover:shadow-lg focus-visible:ring-2 focus-visible:ring-red-500 focus-visible:ring-offset-2"
             >
               <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-red-600 text-white shadow-sm">
                 <GraduationCap className="h-5 w-5" aria-hidden="true" />
