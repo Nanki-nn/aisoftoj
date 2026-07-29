@@ -51,6 +51,7 @@ Backend container -- bind mount --> /opt/aisoftoj/uploads
 - 两个服务均使用 `restart: unless-stopped`、日志大小限制、健康检查和资源约束。
 - 后端读取现有 `/etc/aisoftoj/aisoftoj.env`；该文件继续由 root 管理，不进入 GitHub 或镜像。
 - 上传文件继续使用 legacy systemd 已使用的宿主机目录 `/opt/aisoftoj/uploads`，挂载到容器 `/app/uploads`；Compose 使用宿主机 `aisoftoj` 用户的 UID/GID 运行后端，使新旧运行方式可读写同一批文件。
+- Compose 显式覆盖 `SERVER_ADDRESS=127.0.0.1`；host network 不依赖端口发布规则提供隔离。
 - 后端限制为 700 MiB、1.5 CPU，JVM 使用 `-Xms128m -Xmx512m`；前端限制为 128 MiB、0.5 CPU。
 - 后端 healthcheck 的启动宽限期为 60 秒，发布器最多等待 90 秒；前端最多等待 20 秒。
 - 发布前要求根分区至少剩余 5 GiB、可用内存至少 400 MiB、swap 至少 1 GiB，否则拒绝构建和切换。
@@ -84,9 +85,12 @@ release-<full-sha>.tar.gz
 └── release.env
 
 release-<full-sha>.tar.gz.sha256
+release-<full-sha>.tar.gz.sig
 ```
 
 Dockerfile、Compose、宿主机 Nginx 和发布器不接受 CI 上传版本，全部由 root 在首次 bootstrap 时从已审阅仓库版本安装到 `/usr/local/lib/aisoftoj-deploy`。服务器只基于 Release 中的 JAR 和前端静态文件组装运行镜像，不重新编译业务代码。内外两层 SHA-256 均校验，解包使用精确文件 allowlist 并拒绝绝对路径、`..`、符号链接、设备文件或额外成员。
+
+生产 environment 保存独立 RSA release signing private key，只有通过生产审批的工作流才能读取。工作流使用 OpenSSL 对最终 tar.gz 签名；服务器只保存 root-owned public key，必须先验证签名再解包。签名包内的 `release.env` 同时记录 repository、workflow path、完整 SHA、`refs/heads/main`、run ID 和构建时间，服务器逐项校验。具有普通 release-write 权限但没有生产签名密钥的主体不能生成可部署产物。
 
 ## GitHub Actions
 
@@ -100,7 +104,7 @@ Dockerfile、Compose、宿主机 Nginx 和发布器不接受 CI 上传版本，�
 6. 仅允许从 `refs/heads/main` 手工 `workflow_dispatch`，并再次验证完整 SHA 等于远端 main。
 7. 进入要求审批且仅允许受保护 main 的 `production` environment。
 8. `concurrency: production` 防止并发发布。
-9. 创建指向该完整 SHA 的 `deploy-<full-sha>` prerelease tag，上传发布包和外层校验和；同一 tag/资产不得覆盖。
+9. 使用 production environment 中的签名私钥对最终发布包签名；创建指向该完整 SHA 的 `deploy-<full-sha>` prerelease tag，上传发布包、外层校验和与签名；同一 tag/资产不得覆盖。
 10. 使用独立 SSH Key 发送唯一允许的命令 `<full-sha>`，不通过 SSH 上传文件。
 11. 服务器验证请求 SHA 等于 GitHub 当前 main、tag 指向同一 SHA，再从公开 GitHub Release 下载并校验资产。
 12. 公网冒烟测试通过后结束部署。
@@ -118,6 +122,8 @@ Dockerfile、Compose、宿主机 Nginx 和发布器不接受 CI 上传版本，�
 /var/backups/aisoftoj/<timestamp-sha>/
 /usr/local/sbin/aisoftoj-deploy
 /usr/local/sbin/aisoftoj-rollback
+/usr/local/sbin/aisoftoj-deploy-recover
+/var/lib/aisoftoj-deploy/state.env
 ```
 
 - 新建无密码、无交互登录的 `deploy` 用户，仅允许 SSH Key。
@@ -125,26 +131,37 @@ Dockerfile、Compose、宿主机 Nginx 和发布器不接受 CI 上传版本，�
 - `authorized_keys` 使用 `restrict` 和 root-owned forced-command wrapper；wrapper 只接受 40 位十六进制 SHA，并调用固定 sudo 命令。
 - sudoers 只允许 forced-command wrapper 调用 root 拥有且不可修改的部署脚本；脚本重新验证 SHA、main、tag、Release URL 和校验和。
 - 部署脚本使用 `flock`，同一时间只允许一个生产发布。
+- root-owned release signing public key 位于 `/usr/local/lib/aisoftoj-deploy/release-signing-public.pem`；签名验证失败时不创建发布目录、不构建镜像。
 
 ## 首次迁移
 
 1. 保持当前 Nginx、systemd 后端和静态前端在线。
 2. 安装 Docker Engine 与 Compose plugin并启用 Docker 服务。
 3. 创建 deploy 用户、目录、SSH Key、sudoers 和固定 root 发布脚本。
-4. 盘点 `/opt/aisoftoj/uploads` 的文件数量、字节数、UID/GID 和可读写性；保持原路径不移动，容器沿用同一目录和宿主机 `aisoftoj` UID/GID。
+4. 盘点 `/opt/aisoftoj/uploads` 的文件数量、字节数、UID/GID 和可读写性；保持原路径不移动，容器沿用同一目录和宿主机 `aisoftoj` UID/GID。切换前以该 UID/GID 实际执行创建、写入、rename、读取和删除测试，任一步失败都中止。
 5. 构建并启动前端容器，先在 `127.0.0.1:8081` 验证。
 6. 备份数据库、当前 JAR、静态前端、上传目录清单和 Nginx 配置，并执行数据库恢复演练。
-7. 短暂停止 legacy systemd 后端，启动 Compose 后端并等待 readiness。
+7. 在停止 legacy 前先持久化 `PREPARED` 状态；随后 disable legacy unit、持久化 `LEGACY_DISABLED`，再启动 Compose 后端并等待 readiness。Compose 容器创建前 legacy 已不会在重启后自动抢占 8080。
 8. 新后端失败时停止容器并立即恢复 legacy systemd 服务；上传目录无需复制，因此 legacy 可继续读取新旧文件。
 9. 两个容器健康后备份并切换宿主机 Nginx 配置；`/api/` 使用带尾斜杠的 `proxy_pass http://127.0.0.1:8080/` 剥离 `/api`，`/uploads/` 使用 `proxy_pass http://127.0.0.1:8080/uploads/` 保留上传路径，`/api` 与 `/uploads` 分别返回 308 到尾斜杠路径。
-10. `nginx -t`、reload 或公网验收任一步失败时，trap 恢复旧 Nginx、停止新 Compose、恢复旧 `current`、重新启动 legacy 后端，并继续使用未移动的静态前端目录。
+10. `nginx -t`、reload 或公网验收任一步失败时，trap 恢复旧 Nginx、停止新 Compose、恢复旧 `current`、重新 enable/start legacy 后端，并继续使用未移动的静态前端目录。
 11. 公网验收通过后 disable legacy `aisoftoj.service`，但保留 unit、旧静态目录和备份用于紧急回滚。
+
+首次 bootstrap 同时安装并启用 `aisoftoj-deploy-recover.service`。发布器在每个不可逆动作前后，以临时文件 + `fsync` + rename 原子更新 root-only 状态日志，至少包含 `IDLE`、`PREPARED`、`LEGACY_DISABLED`、`BACKEND_HEALTHY`、`NGINX_SWITCHED`、`COMMITTED` 和 `ROLLING_BACK`。开机恢复器在 Docker/Nginx/MySQL 之后读取状态：
+
+- `PREPARED`：legacy 未切换，保持或恢复 legacy；
+- `LEGACY_DISABLED`、`BACKEND_HEALTHY`：停止未提交 Compose，恢复旧 Nginx和 legacy；
+- `NGINX_SWITCHED`：新服务全部健康时完成 commit，否则回滚；
+- `COMMITTED`、`IDLE`：确保 legacy disabled、current Compose 健康；
+- 状态文件损坏或引用目录缺失：使用记录的备份恢复旧 Nginx，并优先恢复 legacy，不猜测完成发布。
+
+这样即使 shell 收到 SIGKILL、宿主机重启或断电，也不会依赖 trap，且 legacy unit 与 restartable Compose backend 在所有持久状态下只有一个被允许占用 8080。
 
 ## 后续发布和回滚
 
 - 后续发布将新包放入新的 SHA 目录，构建 SHA 标签镜像并执行 `docker compose up -d`。
 - 新容器健康后再更新 `current` 软链接与发布记录。
-- 发布器使用显式阶段状态和 `ERR`、`INT`、`TERM` trap；失败时恢复上一 Nginx 配置、Compose 版本、`current` 链接以及首次迁移期间的 legacy 服务/静态前端。
+- 发布器使用显式阶段状态、持久化 journal 和 `ERR`、`INT`、`TERM` trap；正常异常立即回滚，SIGKILL/重启/断电由开机恢复 unit 根据 journal 恢复上一 Nginx、Compose、`current` 以及首次迁移期间的 legacy 服务/静态前端。
 - rerun 同一 SHA 必须幂等：健康且已是 current 时只重新验收，不重复创建 Release、基线或破坏备份。
 - 手工回滚命令只接受已存在的完整 SHA；数据库不做 destructive down migration。
 - 默认保留最近 3 个发布目录和最近 7 份备份，清理前确认 current 与 previous 不受影响；Docker 只清理不被 current/previous 引用的镜像。
@@ -154,9 +171,11 @@ Dockerfile、Compose、宿主机 Nginx 和发布器不接受 CI 上传版本，�
 - 生产 secret 不写入 Git、Actions artifact、Docker build context 或日志。
 - GitHub Secrets 至少包括主机、用户、私钥和 known_hosts；私钥只属于 deploy 用户。
 - GitHub production environment 必须要求仓库所有者审批并限制 main；工作流中的官方 Actions 固定到完整 commit SHA。
+- 生产签名私钥只存在 GitHub production environment，公钥由 root bootstrap 预装；日志、Release 和 Actions artifact 均不得包含私钥。
 - Docker socket 只由 root 使用。
 - 容器不使用 privileged，不挂载 Docker socket，不开放数据库或应用端口到公网。
 - deploy key 即使泄露也只能请求部署当前受保护 main 上已有、tag 和校验和均匹配的 GitHub Release，不能上传或指定 Docker/Compose/Nginx 输入。
+- Release 资产还必须通过生产签名公钥验证，且包内 repository、workflow、main ref 和 SHA 元数据一致；只有 release-write 权限不能伪造可部署产物。
 - 部署脚本在任何切换前完成校验和备份；失败日志不输出数据库密码、JWT、SMTP 或 OSS 凭据。
 
 ## 验收标准
