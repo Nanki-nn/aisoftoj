@@ -44,6 +44,10 @@ export function useExamSession() {
 
     const session: ExamSession = {
       id: `paper_${paper.id}_${Date.now()}`,
+      paperId: paper.id,
+      paperName: `${paper.year}年${paper.month}月${paper.subject}${paper.category}`,
+      paperYear: paper.year,
+      paperMonth: paper.month,
       subject: paper.subject,
       category: paper.category,
       questions,

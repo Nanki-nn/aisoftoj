@@ -10,6 +10,18 @@ import {
 
 const PAGE_SIZE = 10;
 
+function formatDateTime(value: string | number | null | undefined, emptyLabel = '—'): string {
+  if (value === null || value === undefined || value === '') return emptyLabel;
+
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) return '—';
+
+  const pad = (part: number) => String(part).padStart(2, '0');
+  return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(
+    date.getHours()
+  )}:${pad(date.getMinutes())}`;
+}
+
 type EditState = {
   userId: number;
   loginName: string;
@@ -160,14 +172,16 @@ export function AdminUsers() {
       )}
 
       {/* Table */}
-      <div className="bg-white rounded-xl border border-slate-200 overflow-hidden">
-        <table className="w-full text-sm">
+      <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto">
+        <table className="w-full text-sm" style={{ minWidth: 1180 }}>
           <thead>
             <tr className="border-b border-slate-200 bg-slate-50">
               <th className="text-left px-4 py-3 text-slate-600 font-medium">ID</th>
               <th className="text-left px-4 py-3 text-slate-600 font-medium">用户名</th>
               <th className="text-left px-4 py-3 text-slate-600 font-medium">昵称</th>
               <th className="text-left px-4 py-3 text-slate-600 font-medium">邮箱</th>
+              <th className="text-left px-4 py-3 text-slate-600 font-medium whitespace-nowrap">注册时间</th>
+              <th className="text-left px-4 py-3 text-slate-600 font-medium whitespace-nowrap">上次登录</th>
               <th className="text-left px-4 py-3 text-slate-600 font-medium">刷题次数</th>
               <th className="text-left px-4 py-3 text-slate-600 font-medium">错题数</th>
               <th className="text-left px-4 py-3 text-slate-600 font-medium">状态</th>
@@ -177,13 +191,13 @@ export function AdminUsers() {
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={8} className="text-center py-10 text-slate-400">
+                <td colSpan={10} className="text-center py-10 text-slate-400">
                   加载中...
                 </td>
               </tr>
             ) : users.length === 0 ? (
               <tr>
-                <td colSpan={8} className="text-center py-10 text-slate-400">
+                <td colSpan={10} className="text-center py-10 text-slate-400">
                   暂无数据
                 </td>
               </tr>
@@ -194,6 +208,12 @@ export function AdminUsers() {
                   <td className="px-4 py-3 text-slate-800">{user.loginName || '—'}</td>
                   <td className="px-4 py-3 text-slate-600">{user.nickName || '—'}</td>
                   <td className="px-4 py-3 text-slate-600">{user.email || '—'}</td>
+                  <td className="px-4 py-3 text-slate-600 whitespace-nowrap">
+                    {formatDateTime(user.createTime)}
+                  </td>
+                  <td className="px-4 py-3 text-slate-600 whitespace-nowrap">
+                    {formatDateTime(user.lastLoginTime, '从未登录')}
+                  </td>
                   <td className="px-4 py-3 text-slate-600">{user.sessionCount}</td>
                   <td className="px-4 py-3 text-slate-600">{user.wrongQuestionCount}</td>
                   <td className="px-4 py-3">

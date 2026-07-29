@@ -137,6 +137,9 @@ export function ExamSession({
     : shouldRevealAnswer
     ? 'bg-blue-100 text-blue-700 border border-blue-200'
     : 'bg-amber-100 text-amber-800 border border-amber-200';
+  const paperDateLabel = session.paperYear
+    ? `${session.paperYear}年${session.paperMonth ? `${session.paperMonth}月` : ''}`
+    : '';
   const answeredCount = session.questions.filter((question) => {
     const answer = session.answers[question.id];
     if (Array.isArray(answer)) return answer.length > 0;
@@ -553,6 +556,7 @@ export function ExamSession({
             </Button>
             <div className="flex flex-col gap-1 sm:items-center">
               <h1 className="text-lg text-slate-800">
+                {paperDateLabel && `${paperDateLabel} · `}
                 {session.subject} - {session.category}
               </h1>
               <Badge className={modeBadgeClass}>

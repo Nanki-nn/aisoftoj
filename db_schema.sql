@@ -26,6 +26,7 @@ CREATE TABLE `user` (
   `is_deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT '删除状态：0-未删除，1-已删除',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
+  `last_login_time` datetime DEFAULT NULL COMMENT '最近一次成功登录时间',
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_wx_open_id` (`wx_open_id`),
   UNIQUE KEY `uk_phone` (`phone`),
