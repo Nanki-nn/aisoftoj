@@ -435,7 +435,7 @@ export function PapersPage({ onStartPaper, onShowProfile, onShowAuth }: PapersPa
                     >
                       <AlertCircle className="mx-auto mb-2 h-6 w-6 opacity-90" aria-hidden="true" />
                       <div className="mb-1 text-sm">错题记录</div>
-                      <div className="text-2xl font-semibold tabular-nums">{wrongCount ?? 0}%</div>
+                      <div className="text-2xl font-semibold tabular-nums">{wrongCount ?? 0}</div>
                     </button>
                   </div>
                 </section>
