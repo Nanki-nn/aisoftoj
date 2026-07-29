@@ -8,6 +8,7 @@ export interface ExamPaper {
   category: '综合知识' | '案例分析' | '论文';
   questionCount: number;
   lastUpdated: string;
+  lastPracticeTime?: string | null;
   practiceCount: number;
   status: 'not_started' | 'in_progress' | 'completed';
   completedCount?: number;

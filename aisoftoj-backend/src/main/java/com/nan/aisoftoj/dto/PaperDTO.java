@@ -29,6 +29,10 @@ public class PaperDTO {
     /** 当前用户在该试卷下创建过的会话数。 */
     private Integer readCt;
 
+    /** 当前用户最近一次刷该试卷的时间。 */
+    @JsonFormat(pattern = "yyyy年MM月dd日 HH时mm分ss秒", timezone = "GMT+8")
+    private Date lastPracticeTime;
+
     /** 当前用户在该试卷中的已完成题数。 */
     private Integer completedCount;
 

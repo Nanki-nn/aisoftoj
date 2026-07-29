@@ -1,17 +1,17 @@
 import React, { useEffect, useState } from 'react';
-import { BarChart3, Clock3, Eye, Play } from 'lucide-react';
+import { ArrowLeft, BarChart3, Clock3, Eye, History, Play } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 import { Badge } from './ui/badge';
 import { Button } from './ui/button';
 import { Progress } from './ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from './ui/select';
 import { Skeleton } from './ui/skeleton';
 import {
-  PapersWorkspaceHeader,
   WorkspaceStats,
   historyStatIcons,
   type WorkspaceStat,
 } from './PapersWorkspaceHeader';
-import { fetchPracticeHistory, fetchWrongQuestions } from '../lib/api';
+import { fetchPracticeHistory } from '../lib/api';
 import type { PracticeHistorySummary, PracticeSessionRecord } from '../types/record';
 
 interface PracticeHistoryProps {
@@ -58,7 +58,6 @@ function HistoryRowsSkeleton() {
 export function PracticeHistory({ onContinue, onViewResult }: PracticeHistoryProps) {
   const [records, setRecords] = useState<PracticeSessionRecord[]>([]);
   const [summary, setSummary] = useState<PracticeHistorySummary | null>(null);
-  const [wrongCount, setWrongCount] = useState<number | null>(null);
   const [page, setPage] = useState(1);
   const [pageSize, setPageSize] = useState(10);
   const [total, setTotal] = useState(0);
@@ -67,20 +66,7 @@ export function PracticeHistory({ onContinue, onViewResult }: PracticeHistoryPro
   const totalPages = Math.max(1, Math.ceil(total / pageSize));
   const startRecord = total === 0 ? 0 : (page - 1) * pageSize + 1;
   const endRecord = Math.min(page * pageSize, total);
-
-  useEffect(() => {
-    let isMounted = true;
-    fetchWrongQuestions({ pageSize: 1 })
-      .then((data) => {
-        if (isMounted) setWrongCount(data.total);
-      })
-      .catch(() => {
-        if (isMounted) setWrongCount(null);
-      });
-    return () => {
-      isMounted = false;
-    };
-  }, []);
+  const navigate = useNavigate();
 
   useEffect(() => {
     let isMounted = true;
@@ -122,11 +108,25 @@ export function PracticeHistory({ onContinue, onViewResult }: PracticeHistoryPro
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 via-slate-50 to-slate-50 text-slate-950">
-      <main className="mx-auto max-w-7xl px-4 py-10 sm:px-6 lg:px-8 lg:py-12">
-        <PapersWorkspaceHeader activeTab="history" historyCount={total} wrongCount={wrongCount} />
+    <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 text-slate-950">
+      <main className="mx-auto max-w-5xl px-4 py-8 sm:px-6 lg:px-8">
+        <button
+          type="button"
+          onClick={() => navigate('/papers')}
+          className="mb-6 inline-flex items-center gap-2 text-sm text-slate-500 transition-colors hover:text-blue-600 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-4"
+        >
+          <ArrowLeft className="h-4 w-4" aria-hidden="true" />
+          返回试卷列表
+        </button>
 
-        <section className="mt-10" aria-label="刷题统计">
+        <div className="mb-8 flex items-center gap-3">
+          <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-600 text-white shadow-lg shadow-blue-600/20">
+            <History className="h-6 w-6" aria-hidden="true" />
+          </span>
+          <h1 className="text-2xl font-medium text-slate-800">刷题记录</h1>
+        </div>
+
+        <section aria-label="刷题统计">
           <WorkspaceStats items={stats} isLoading={isLoading && records.length === 0} />
         </section>
 

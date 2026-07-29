@@ -197,6 +197,11 @@ definitions:
       readCt:
         type: integer
         format: int32
+        description: 当前用户在该试卷下创建的刷题会话数
+      lastPracticeTime:
+        type: string
+        format: date-time
+        description: 当前用户最近一次刷该试卷的时间
       status:
         type: boolean
       deleted:

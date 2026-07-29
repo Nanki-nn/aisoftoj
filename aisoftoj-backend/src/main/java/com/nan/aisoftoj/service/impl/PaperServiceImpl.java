@@ -14,6 +14,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.util.Collections;
+import java.util.Date;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -58,6 +60,19 @@ public class PaperServiceImpl implements PaperService {
 
         Map<Integer, Long> sessionCountByPaperId = sessions.stream()
                 .collect(Collectors.groupingBy(PracticeSession::getPaperId, Collectors.counting()));
+        Map<Integer, Date> lastPracticeTimeByPaperId = new HashMap<>();
+        for (PracticeSession session : sessions) {
+            Date activityTime = session.getUpdateTime() != null
+                    ? session.getUpdateTime()
+                    : session.getEndTime() != null ? session.getEndTime() : session.getCreateTime();
+            if (activityTime == null) {
+                continue;
+            }
+            Date currentTime = lastPracticeTimeByPaperId.get(session.getPaperId());
+            if (currentTime == null || activityTime.after(currentTime)) {
+                lastPracticeTimeByPaperId.put(session.getPaperId(), activityTime);
+            }
+        }
         Map<Integer, PracticeSession> doingSessionByPaperId = sessions.stream()
                 .filter(this::isDoing)
                 .collect(Collectors.toMap(
@@ -74,6 +89,7 @@ public class PaperServiceImpl implements PaperService {
                         paper,
                         userId,
                         sessionCountByPaperId,
+                        lastPracticeTimeByPaperId,
                         doingSessionByPaperId,
                         finishedPaperIds))
                 .collect(Collectors.toList());
@@ -83,6 +99,7 @@ public class PaperServiceImpl implements PaperService {
             Paper paper,
             Integer userId,
             Map<Integer, Long> sessionCountByPaperId,
+            Map<Integer, Date> lastPracticeTimeByPaperId,
             Map<Integer, PracticeSession> doingSessionByPaperId,
             Set<Integer> finishedPaperIds) {
         PaperDTO dto = new PaperDTO();
@@ -98,6 +115,7 @@ public class PaperServiceImpl implements PaperService {
         if (userId != null) {
             PracticeSession doingSession = doingSessionByPaperId.get(paper.getId());
             dto.setReadCt(sessionCountByPaperId.getOrDefault(paper.getId(), 0L).intValue());
+            dto.setLastPracticeTime(lastPracticeTimeByPaperId.get(paper.getId()));
             if (doingSession != null) {
                 dto.setDoingSessionId(doingSession.getId());
                 dto.setPaperStatus(PaperStatus.IN_PROGRESS);

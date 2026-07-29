@@ -463,6 +463,7 @@ export async function fetchPapers(): Promise<ExamPaper[]> {
     category: mapPaperCate(paper.paperCateId),
     questionCount: paper.questionTotal || 0,
     lastUpdated: paper.updateTime || '',
+    lastPracticeTime: paper.lastPracticeTime || null,
     practiceCount: paper.readCt || 0,
     status: paper.paperStatus || 'not_started',
     completedCount: paper.completedCount ?? paper.progress ?? 0,

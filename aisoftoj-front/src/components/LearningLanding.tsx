@@ -1,17 +1,23 @@
 import React from 'react';
 import { Link } from 'react-router-dom';
 import {
-  ArrowRight,
+  Award,
   BookOpen,
-  CircleCheck,
+  Brain,
+  Briefcase,
+  CheckCircle,
+  Clock,
   ExternalLink,
   FileText,
+  MapPin,
   PenTool,
   Quote,
-  Sparkles,
+  Target,
+  TrendingUp,
   Zap,
 } from 'lucide-react';
 import { AppHeader } from './AppHeader';
+import { Badge } from './ui/badge';
 
 interface LearningLandingProps {
   onShowAuth: () => void;
@@ -22,136 +28,115 @@ const learningPaths = [
   {
     id: '01',
     title: '打基础',
-    description: '系统梳理核心知识点，先搭起完整的知识框架。',
+    description: '系统学习基础知识，构建知识体系',
     icon: BookOpen,
     path: '/foundation',
+    color: 'from-blue-500 to-blue-600',
     enabled: false,
-    iconClass: 'bg-slate-300',
   },
   {
     id: '02',
     title: '刷真题',
-    description: '用历年真题检验掌握程度，边做边完成查漏补缺。',
+    description: '历年真题实战，查漏补缺',
     icon: FileText,
     path: '/papers',
+    color: 'from-emerald-500 to-emerald-600',
     enabled: true,
-    iconClass: 'bg-emerald-600 shadow-emerald-600/20',
   },
   {
     id: '03',
     title: '论文冲刺',
-    description: '围绕真实题目集中练习写作，沉淀稳定的论文表达。',
+    description: 'AI 批改论文，提升写作能力',
     icon: PenTool,
     path: '/essay-sprint',
+    color: 'from-violet-500 to-violet-600',
     enabled: false,
-    iconClass: 'bg-slate-300',
   },
+] as const;
+
+const features = [
+  { icon: Target, text: '2 个月冲刺节奏' },
+  { icon: TrendingUp, text: '真题优先' },
+  { icon: Brain, text: '错题复盘' },
+  { icon: Award, text: 'AI 论文批改' },
 ] as const;
 
 const methodSteps = [
   {
     step: '01',
-    title: '按科目筛选真题',
-    description: '从真实、已发布的历年试卷中按科目与题型筛选，快速确定当前练习范围。',
+    title: '打基础',
+    description: '系统整理的备考笔记，按模块分类，快速建立知识框架',
   },
   {
     step: '02',
-    title: '选择合适的模式',
-    description: '练习模式用于逐题理解，考试模式用于完整模拟，根据当前目标随时切换。',
+    title: '刷真题',
+    description: '历年真题精选，支持练习模式和考试模式，即时反馈',
   },
   {
     step: '03',
-    title: '回到错题持续复盘',
-    description: '完成练习后沉淀刷题记录与错题，集中复盘薄弱知识点，让每次练习都有反馈。',
+    title: '论文冲刺',
+    description: 'AI 智能批改，六维评分，针对性改进建议',
   },
 ] as const;
 
-const experienceHighlights = ['综合知识通过', '案例分析通过', '论文写作通过'] as const;
-
-const capabilities = [
-  { value: '历年', label: '真题目录' },
-  { value: '2 种', label: '双模式刷题' },
-  { value: '持续', label: '错题沉淀' },
-] as const;
+const outcomes = ['综合知识通过', '案例分析通过', '论文写作通过'] as const;
 
 export function LearningLanding({ onShowAuth, onShowProfile }: LearningLandingProps) {
   return (
-    <div className="min-h-screen bg-white text-slate-950">
+    <div className="min-h-screen text-slate-950">
       <AppHeader onShowAuth={onShowAuth} onShowProfile={onShowProfile} />
 
-      <main id="main-content">
-        <section className="relative overflow-hidden border-b border-blue-100 bg-blue-50/70 px-4 pb-14 pt-16 sm:px-6 sm:pb-16 sm:pt-20 lg:px-8 lg:pt-28">
-          <div className="relative z-10 mx-auto max-w-6xl text-center">
-            <h1 className="text-4xl font-semibold leading-tight text-slate-950 sm:text-6xl lg:text-7xl">
+      <main id="main-content" className="bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+        <section className="mx-auto max-w-7xl px-4 py-16 sm:px-6 lg:px-8">
+          <div className="mb-16 text-center">
+            <h1 className="mb-6 text-5xl font-medium leading-tight text-slate-800 md:text-6xl">
               软考备考，从路径开始。
             </h1>
-            <p className="mx-auto mt-7 max-w-5xl text-base leading-8 text-slate-600 sm:mt-9 sm:text-xl sm:leading-9 lg:text-2xl lg:leading-10">
-              不靠玄学，靠路径。把 2 个月备考拆成三条清晰路线，每条路线有对应工具支撑，专为
-              <br className="hidden lg:block" />
-              碎片时间设计
+            <p className="mx-auto mb-8 max-w-3xl text-xl leading-8 text-slate-600">
+              不靠玄学，靠路径。把 2 个月备考拆成三条清晰路线，每条路线有对应工具支撑，专为碎片时间设计
             </p>
-            <div className="mt-10 flex flex-col items-stretch justify-center gap-4 sm:mt-12 sm:flex-row sm:items-center">
+            <div className="flex flex-wrap justify-center gap-4">
               <Link
                 to="/papers"
-                className="inline-flex min-h-14 items-center justify-center gap-2.5 rounded-lg bg-blue-600 px-7 text-lg font-semibold text-white no-underline shadow-lg shadow-blue-600/20 outline-none transition-transform duration-200 hover:-translate-y-0.5 hover:bg-blue-700 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-4 motion-reduce:transform-none sm:min-h-16 sm:px-8 sm:text-xl"
+                className="inline-flex h-14 items-center justify-center gap-2 rounded-lg bg-blue-600 px-8 text-lg font-medium text-white no-underline shadow-lg shadow-blue-600/20 transition-all hover:bg-blue-700 hover:shadow-xl focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
               >
                 <Zap className="h-5 w-5" aria-hidden="true" />
                 直接刷真题
               </Link>
               <a
-                href="#learning-paths"
-                className="inline-flex min-h-14 items-center justify-center gap-2.5 rounded-lg border border-slate-300 bg-white px-7 text-lg font-semibold text-slate-900 no-underline shadow-sm outline-none transition-colors hover:border-slate-400 hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-4 sm:min-h-16 sm:px-8 sm:text-xl"
+                href="#exam-experience"
+                className="inline-flex h-14 items-center justify-center gap-2 rounded-lg border border-slate-300 bg-white px-8 text-lg font-medium text-slate-800 no-underline shadow-sm transition-colors hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2"
               >
                 <BookOpen className="h-5 w-5" aria-hidden="true" />
                 先看备考路径
               </a>
             </div>
           </div>
-        </section>
 
-        <section id="learning-paths" className="scroll-mt-24 px-4 pb-12 sm:px-6 lg:px-8">
-          <div className="mx-auto grid max-w-7xl grid-cols-1 gap-4 md:grid-cols-3 lg:gap-6">
+          <div className="mb-16 grid grid-cols-1 gap-6 md:grid-cols-3">
             {learningPaths.map((path) => {
               const Icon = path.icon;
-              const content = (
-                <>
-                  <div className="flex items-start justify-between gap-4">
-                    <span className={`flex h-14 w-14 items-center justify-center rounded-2xl text-white shadow-lg ${path.iconClass}`}>
-                      <Icon className="h-7 w-7" aria-hidden="true" />
-                    </span>
-                    {!path.enabled && (
-                      <span className="rounded-lg bg-slate-100 px-2.5 py-1 text-xs font-semibold text-slate-500">
-                        暂未开放
-                      </span>
-                    )}
+              const cardClassName = `group rounded-xl border-2 border-transparent bg-white text-left no-underline shadow-sm outline-none transition-all duration-300 ${
+                path.enabled
+                  ? 'cursor-pointer hover:border-slate-200 hover:shadow-2xl focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-4'
+                  : 'cursor-not-allowed'
+              }`;
+              const cardContent = (
+                <div className="p-8">
+                  <div className={`mb-6 flex h-16 w-16 items-center justify-center rounded-2xl bg-gradient-to-br ${path.color} transition-transform duration-300 ${path.enabled ? 'group-hover:scale-110' : ''}`}>
+                    <Icon className="h-8 w-8 text-white" aria-hidden="true" />
                   </div>
-                  <h2 className={`mt-7 text-2xl font-semibold tracking-tight ${path.enabled ? 'text-slate-900' : 'text-slate-500'}`}>
-                    <span className="mr-2 text-slate-400">{path.id}</span>
-                    {path.title}
+                  <h2 className="mb-4 text-2xl font-medium text-slate-800">
+                    {path.id} {path.title}
                   </h2>
-                  <p className={`mt-3 max-w-sm text-base leading-7 ${path.enabled ? 'text-slate-600' : 'text-slate-400'}`}>
-                    {path.description}
-                  </p>
-                  {path.enabled ? (
-                    <span className="mt-auto inline-flex items-center gap-2 pt-6 text-sm font-semibold text-emerald-700">
-                      查看历年真题
-                      <ArrowRight className="h-4 w-4 transition-transform duration-200 group-hover:translate-x-1 motion-reduce:transform-none" aria-hidden="true" />
-                    </span>
-                  ) : (
-                    <span className="mt-auto pt-6 text-sm font-medium text-slate-400">功能筹备中</span>
-                  )}
-                </>
+                  <p className="mb-6 text-slate-600">{path.description}</p>
+                </div>
               );
 
               if (!path.enabled) {
                 return (
-                  <article
-                    key={path.id}
-                    aria-disabled="true"
-                    className="flex cursor-not-allowed flex-col rounded-2xl border border-slate-200 bg-slate-50/80 p-6 text-left shadow-sm sm:p-7"
-                    style={{ minHeight: 256 }}
-                  >
-                    {content}
+                  <article key={path.id} aria-disabled="true" className={cardClassName}>
+                    {cardContent}
                   </article>
                 );
               }
@@ -160,93 +145,134 @@ export function LearningLanding({ onShowAuth, onShowProfile }: LearningLandingPr
                 <Link
                   key={path.id}
                   to={path.path}
-                  className="group flex flex-col rounded-2xl border border-slate-200 bg-white p-6 text-left no-underline shadow-sm outline-none transition-all duration-200 hover:-translate-y-1 hover:border-emerald-200 hover:shadow-xl focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-4 motion-reduce:transform-none sm:p-7"
-                  style={{ minHeight: 256 }}
+                  className={cardClassName}
                 >
-                  {content}
+                  {cardContent}
                 </Link>
               );
             })}
           </div>
-        </section>
 
-        <section id="exam-experience" className="scroll-mt-24 px-4 py-12 sm:px-6 lg:px-8">
-          <div className="mx-auto grid max-w-7xl overflow-hidden rounded-2xl border border-amber-200 bg-white shadow-sm lg:grid-cols-3">
-            <div className="relative bg-amber-50 p-7 sm:p-10 lg:col-span-1 lg:p-12">
-              <Quote className="h-10 w-10 text-amber-600" aria-hidden="true" />
-              <p className="mt-8 text-sm font-semibold uppercase tracking-widest text-amber-800">作者经历</p>
-              <h2 className="mt-3 text-3xl font-semibold leading-tight tracking-tight text-slate-950">真实走过，才整理成这条路径。</h2>
-              <p className="mt-5 text-base leading-7 text-amber-800">23 届计算机 · 后端开发<br />目标：杭州 E 类人才</p>
-            </div>
+          <section id="exam-experience" className="mb-16 scroll-mt-24">
+            <article className="overflow-hidden rounded-xl border-2 border-amber-200/50 bg-gradient-to-br from-amber-50 via-orange-50 to-amber-50 shadow-xl">
+              <div className="relative p-8 md:p-12">
+                <div className="pointer-events-none absolute left-8 top-8 opacity-10">
+                  <Quote className="h-24 w-24 text-amber-600" aria-hidden="true" />
+                </div>
 
-            <div className="p-7 sm:p-10 lg:col-span-2 lg:p-12">
-              <div className="max-w-3xl space-y-5 text-base leading-8 text-slate-700 sm:text-lg">
-                <p className="font-medium text-slate-900">工作一年后备考系统架构设计师。</p>
-                <p>
-                  两个月分三个阶段：前四周快速过知识点，第五、六周只刷近五年真题，最后两周准备一个可以覆盖多个主题的项目素材。
-                </p>
-                <p>最终综合知识、案例分析、论文写作全部通过。现在先把最有效的真题筛选与复盘方式做进平台。</p>
-              </div>
-
-              <a
-                href="https://github.com/Nanki-nn/aisoftoj/blob/main/guides/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84%E5%B8%88%E5%A4%87%E8%80%83%E7%BB%8F%E9%AA%8C.md"
-                target="_blank"
-                rel="noreferrer"
-                className="group mt-7 inline-flex items-center gap-2 border-b border-amber-300 pb-1 text-sm font-semibold text-amber-800 no-underline outline-none transition-colors hover:border-amber-600 hover:text-amber-950 focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-4"
-              >
-                阅读完整备考经验
-                <ExternalLink
-                  className="h-4 w-4 transition-transform duration-200 group-hover:-translate-y-0.5 group-hover:translate-x-0.5 motion-reduce:transform-none"
-                  aria-hidden="true"
-                />
-                <span className="sr-only">（在新标签页打开）</span>
-              </a>
-
-              <div className="mt-9 grid gap-3 sm:grid-cols-3">
-                {experienceHighlights.map((item) => (
-                  <div key={item} className="flex items-center gap-2 rounded-xl bg-amber-50 px-4 py-4 text-sm font-semibold text-amber-800">
-                    <CircleCheck className="h-5 w-5 shrink-0 text-amber-700" aria-hidden="true" />
-                    {item}
+                <div className="relative">
+                  <div className="mb-6 flex flex-wrap items-center gap-3">
+                    <Badge className="bg-amber-600 px-4 py-1.5 text-white hover:bg-amber-700">作者经历</Badge>
+                    <Badge variant="outline" className="border-amber-300 px-4 py-1.5 text-amber-700">真实备考路径</Badge>
                   </div>
-                ))}
-              </div>
-            </div>
-          </div>
-        </section>
 
-        <section className="border-y border-slate-200 bg-white px-4 py-20 sm:px-6 lg:px-8">
-          <div className="mx-auto max-w-7xl">
-            <div className="max-w-2xl">
-              <div className="inline-flex items-center gap-2 text-sm font-semibold text-blue-700">
-                <Sparkles className="h-4 w-4" aria-hidden="true" />
-                刷题方式
+                  <div className="mb-6 flex flex-wrap items-center gap-4 text-slate-700">
+                    <div className="flex items-center gap-2">
+                      <Briefcase className="h-4 w-4 text-amber-600" aria-hidden="true" />
+                      <span>23 届计算机 · 后端开发</span>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <MapPin className="h-4 w-4 text-amber-600" aria-hidden="true" />
+                      <span>目标：杭州 E 类人才</span>
+                    </div>
+                  </div>
+
+                  <div className="rounded-xl border border-amber-200/50 bg-white/60 p-6 backdrop-blur-sm md:p-8">
+                    <p className="mb-4 text-lg leading-relaxed text-slate-700 md:text-xl">工作一年后备考架构师。</p>
+                    <p className="mb-4 text-lg leading-relaxed text-slate-700 md:text-xl">
+                      两个月，分三个阶段：<span className="font-medium text-amber-700">前四周快速过知识点，第五六周只刷近五年真题，最后两周准备一个万金油项目覆盖几个论文主题。</span>
+                    </p>
+                    <p className="mb-6 text-lg leading-relaxed text-slate-700 md:text-xl">
+                      最终<span className="font-medium text-amber-700">综合知识、案例、论文全部通过。</span>
+                    </p>
+                    <div className="border-t border-amber-200 pt-4">
+                      <p className="text-base italic text-slate-600">这套路径直接做进了平台里。</p>
+                    </div>
+                    <a
+                      href="https://github.com/Nanki-nn/aisoftoj/blob/main/guides/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84%E5%B8%88%E5%A4%87%E7%BB%8F%E9%AA%8C.md"
+                      target="_blank"
+                      rel="noreferrer"
+                      className="mt-6 inline-flex items-center gap-2 border-b border-amber-300 pb-1 text-sm font-semibold text-amber-800 no-underline transition-colors hover:border-amber-600 hover:text-amber-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-4"
+                    >
+                      阅读完整备考经验
+                      <ExternalLink className="h-4 w-4" aria-hidden="true" />
+                      <span className="sr-only">（在新标签页打开）</span>
+                    </a>
+                  </div>
+
+                  <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-3">
+                    {outcomes.map((outcome) => (
+                      <div key={outcome} className="rounded-lg border border-amber-200/50 bg-white/60 p-4 text-center backdrop-blur-sm">
+                        <p className="mb-1 text-2xl text-amber-700">✓</p>
+                        <p className="text-sm text-slate-600">{outcome}</p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
               </div>
-              <h2 className="mt-4 text-3xl font-semibold tracking-tight text-slate-950 sm:text-4xl">怎样把真题刷出效果？</h2>
-              <p className="mt-4 text-base leading-7 text-slate-600 sm:text-lg">
-                先选对试卷，再用合适模式完成练习，最后回到错题集中复盘，让有限时间花在真正影响通过率的事情上。
-              </p>
+            </article>
+          </section>
+
+          <section className="mb-16 rounded-2xl border border-slate-200/50 bg-white p-8 shadow-lg md:p-12">
+            <div className="mb-12 text-center">
+              <h2 className="mb-4 text-3xl font-medium text-slate-800">为什么这样排？</h2>
+              <p className="mx-auto max-w-2xl text-lg text-slate-600">基于实战经验总结的备考路径，帮助在职工程师在碎片时间高效备考</p>
             </div>
 
-            <div className="mt-12 grid gap-8 border-t border-slate-200 pt-10 md:grid-cols-3">
-              {methodSteps.map((item) => (
-                <article key={item.step} className="relative pr-5">
-                  <span className="text-sm font-semibold tracking-widest text-blue-600">{item.step}</span>
-                  <h3 className="mt-4 text-xl font-semibold text-slate-900">{item.title}</h3>
-                  <p className="mt-3 text-base leading-7 text-slate-600">{item.description}</p>
-                </article>
+            <div className="grid grid-cols-1 gap-8 md:grid-cols-3">
+              {methodSteps.map((methodStep, index) => (
+                <div key={methodStep.step} className="relative">
+                  <div className="flex items-start gap-4">
+                    <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-blue-100 text-lg text-blue-600">
+                      {methodStep.step}
+                    </div>
+                    <div>
+                      <h3 className="mb-2 text-xl font-medium text-slate-800">{methodStep.title}</h3>
+                      <p className="text-slate-600">{methodStep.description}</p>
+                    </div>
+                  </div>
+                  {index < methodSteps.length - 1 && (
+                    <div className="absolute left-full top-6 hidden h-0.5 w-full -translate-x-4 bg-gradient-to-r from-blue-200 to-transparent md:block" />
+                  )}
+                </div>
               ))}
             </div>
-          </div>
-        </section>
+          </section>
 
-        <section className="px-4 py-16 sm:px-6 lg:px-8">
-          <div className="mx-auto grid max-w-6xl grid-cols-1 gap-8 sm:grid-cols-3 sm:gap-0">
-            {capabilities.map((item, index) => (
-              <div key={item.label} className={`text-center ${index > 0 ? 'sm:border-l sm:border-slate-200' : ''}`}>
-                <div className="text-3xl font-semibold tracking-tight text-slate-950">{item.value}</div>
-                <div className="mt-2 text-sm font-medium text-slate-500">{item.label}</div>
+          <div className="mb-16 flex flex-wrap justify-center gap-4">
+            {features.map((feature) => {
+              const Icon = feature.icon;
+              return (
+                <Badge key={feature.text} variant="outline" className="bg-white px-6 py-3 text-base text-slate-700 transition-colors hover:bg-slate-50">
+                  <Icon className="mr-2 h-4 w-4" aria-hidden="true" />
+                  {feature.text}
+                </Badge>
+              );
+            })}
+          </div>
+
+          <div className="grid grid-cols-1 gap-6 md:grid-cols-3">
+            <div className="rounded-xl bg-gradient-to-br from-blue-500 to-blue-600 text-white">
+              <div className="p-8 text-center">
+                <CheckCircle className="mx-auto mb-4 h-12 w-12" aria-hidden="true" />
+                <p className="mb-2 text-3xl font-medium">85%</p>
+                <p className="text-blue-100">学员通过率</p>
               </div>
-            ))}
+            </div>
+            <div className="rounded-xl bg-gradient-to-br from-emerald-500 to-emerald-600 text-white">
+              <div className="p-8 text-center">
+                <FileText className="mx-auto mb-4 h-12 w-12" aria-hidden="true" />
+                <p className="mb-2 text-3xl font-medium">5,000+</p>
+                <p className="text-emerald-100">历年真题</p>
+              </div>
+            </div>
+            <div className="rounded-xl bg-gradient-to-br from-violet-500 to-violet-600 text-white">
+              <div className="p-8 text-center">
+                <Clock className="mx-auto mb-4 h-12 w-12" aria-hidden="true" />
+                <p className="mb-2 text-3xl font-medium">2 个月</p>
+                <p className="text-violet-100">冲刺周期</p>
+              </div>
+            </div>
           </div>
         </section>
       </main>
