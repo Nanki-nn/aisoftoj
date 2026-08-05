@@ -14,6 +14,11 @@ import java.util.List;
 
 public interface  PracticeSessionMapper extends BaseMapper<PracticeSession> {
 
+    @Select("SELECT * FROM practice_session " +
+            "WHERE id = #{sessionId} AND is_deleted = 0 " +
+            "LIMIT 1 FOR UPDATE")
+    PracticeSession selectByIdForUpdate(@Param("sessionId") Integer sessionId);
+
     @Select("SELECT " +
             "ps.id AS id, " +
             "ps.id AS sessionId, " +

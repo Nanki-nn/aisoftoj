@@ -277,7 +277,7 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
     @Override
     @Transactional(rollbackFor = Exception.class)
     public PaperSubmitResponse submitPracticeSession(Integer userId, Integer practiceSessionId, PaperSubmitRequest request) {
-        PracticeSession practiceSession = getOwnedSession(userId, practiceSessionId);
+        PracticeSession practiceSession = getOwnedSessionForUpdate(userId, practiceSessionId);
         if (practiceSession == null) {
             throw new IllegalArgumentException("试卷会话记录不存在");
         }
@@ -432,7 +432,14 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
     }
 
     private PracticeSession getOwnedSession(Integer userId, Integer practiceSessionId) {
-        PracticeSession practiceSession = practiceSessionMapper.selectById(practiceSessionId);
+        return validateOwnedSession(userId, practiceSessionMapper.selectById(practiceSessionId));
+    }
+
+    private PracticeSession getOwnedSessionForUpdate(Integer userId, Integer practiceSessionId) {
+        return validateOwnedSession(userId, practiceSessionMapper.selectByIdForUpdate(practiceSessionId));
+    }
+
+    private PracticeSession validateOwnedSession(Integer userId, PracticeSession practiceSession) {
         if (practiceSession == null || practiceSession.getIsDeleted() != null && practiceSession.getIsDeleted() == 1) {
             return null;
         }
