@@ -29,6 +29,7 @@ import static org.mockito.ArgumentMatchers.anyInt;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -141,6 +142,60 @@ class EmailCodeServiceImplTest {
                 any(LocalDateTime.class));
     }
 
+    @Test
+    void bindingCodeIsDeliverableForNewOrVerifiedRegularUser() {
+        doAnswer(invocation -> {
+            AuthEmailCode record = invocation.getArgument(0);
+            record.setId(11L);
+            return 1;
+        }).when(codeMapper).insert(any(AuthEmailCode.class));
+
+        service.requestBindingCode("new@example.com", "127.0.0.1", 7);
+
+        com.nan.aisoftoj.entity.User existing = activeUser(com.nan.aisoftoj.common.UserRole.USER.name());
+        existing.setEmailVerifiedAt(new java.util.Date());
+        when(userMapper.selectAnyByNormalizedEmail("user@example.com")).thenReturn(existing);
+        service.requestBindingCode("user@example.com", "127.0.0.1", 7);
+
+        ArgumentCaptor<AuthEmailCode> captor = ArgumentCaptor.forClass(AuthEmailCode.class);
+        verify(codeMapper, times(2)).insert(captor.capture());
+        assertEquals(EmailCodeStatus.PENDING, captor.getAllValues().get(0).getStatus());
+        assertEquals(EmailCodeStatus.PENDING, captor.getAllValues().get(1).getStatus());
+        verify(outboxMapper, times(2)).insert(any(AuthEmailOutbox.class));
+    }
+
+    @Test
+    void bindingCodeSuppressesUnsafeExistingAccountsWithoutOutbox() {
+        com.nan.aisoftoj.entity.User admin = activeUser(com.nan.aisoftoj.common.UserRole.ADMIN.name());
+        admin.setEmailVerifiedAt(new java.util.Date());
+        when(userMapper.selectAnyByNormalizedEmail("admin@example.com")).thenReturn(admin);
+        service.requestBindingCode("admin@example.com", "127.0.0.1", 7);
+
+        com.nan.aisoftoj.entity.User disabled = activeUser(com.nan.aisoftoj.common.UserRole.USER.name());
+        disabled.setIsEnabled(false);
+        disabled.setEmailVerifiedAt(new java.util.Date());
+        when(userMapper.selectAnyByNormalizedEmail("disabled@example.com")).thenReturn(disabled);
+        service.requestBindingCode("disabled@example.com", "127.0.0.1", 7);
+
+        com.nan.aisoftoj.entity.User deleted = activeUser(com.nan.aisoftoj.common.UserRole.USER.name());
+        deleted.setIsDeleted(true);
+        deleted.setEmailVerifiedAt(new java.util.Date());
+        when(userMapper.selectAnyByNormalizedEmail("deleted@example.com")).thenReturn(deleted);
+        service.requestBindingCode("deleted@example.com", "127.0.0.1", 7);
+
+        com.nan.aisoftoj.entity.User unverified = activeUser(com.nan.aisoftoj.common.UserRole.USER.name());
+        when(userMapper.selectAnyByNormalizedEmail("unverified@example.com")).thenReturn(unverified);
+        service.requestBindingCode("unverified@example.com", "127.0.0.1", 7);
+
+        ArgumentCaptor<AuthEmailCode> captor = ArgumentCaptor.forClass(AuthEmailCode.class);
+        verify(codeMapper, times(4)).insert(captor.capture());
+        for (AuthEmailCode record : captor.getAllValues()) {
+            assertEquals(EmailCodeStatus.SUPPRESSED, record.getStatus());
+            assertEquals(EmailCodeScene.BIND_EMAIL.name(), record.getScene());
+        }
+        verify(outboxMapper, never()).insert(any(AuthEmailOutbox.class));
+    }
+
     private AuthEmailCode activeCode(String hash, String salt) {
         AuthEmailCode record = new AuthEmailCode();
         record.setId(7L);
@@ -148,5 +203,13 @@ class EmailCodeServiceImplTest {
         record.setCodeSalt(salt);
         record.setStatus(EmailCodeStatus.ACTIVE);
         return record;
+    }
+
+    private com.nan.aisoftoj.entity.User activeUser(String role) {
+        com.nan.aisoftoj.entity.User user = new com.nan.aisoftoj.entity.User();
+        user.setRole(role);
+        user.setIsEnabled(true);
+        user.setIsDeleted(false);
+        return user;
     }
 }

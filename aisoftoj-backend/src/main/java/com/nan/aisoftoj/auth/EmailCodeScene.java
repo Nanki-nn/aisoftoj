@@ -3,7 +3,8 @@ package com.nan.aisoftoj.auth;
 public enum EmailCodeScene {
     REGISTER("注册账号"),
     PASSWORD_RESET("重置密码"),
-    LOGIN("登录账号");
+    LOGIN("登录账号"),
+    BIND_EMAIL("绑定邮箱");
 
     private final String description;
 

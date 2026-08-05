@@ -20,6 +20,8 @@ public interface AuthService {
 
     AuthResponse loginByWechat(WeChatLoginRequest request, String requestIp);
 
+    void sendEmailBindingCode(String token, String email, String requestIp);
+
     void resetPassword(PasswordResetRequest request);
 
     AuthUserDTO getCurrentUser(String token);
