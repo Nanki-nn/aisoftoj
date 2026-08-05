@@ -112,7 +112,7 @@ class PracticeSessionServiceImplTest {
         session.setStatus(PracticeSessionState.FINISHED.getCode());
         session.setScore(new BigDecimal("62.00"));
         session.setTotalScore(new BigDecimal("75.00"));
-        when(practiceSessionMapper.selectById(12)).thenReturn(session);
+        when(practiceSessionMapper.selectByIdForUpdate(12)).thenReturn(session);
 
         PaperSubmitResponse result = practiceSessionService.submitPracticeSession(7, 12, null);
 
@@ -120,6 +120,8 @@ class PracticeSessionServiceImplTest {
         assertEquals(new BigDecimal("62.00"), result.getScore());
         assertEquals(new BigDecimal("75.00"), result.getTotalScore());
         assertEquals(PracticeSessionState.FINISHED.getCode(), result.getStatus());
+        verify(practiceSessionMapper).selectByIdForUpdate(12);
+        verify(practiceSessionMapper, never()).selectById(12);
         verify(practiceSessionMapper, never()).updateById(any());
         verifyNoInteractions(questionService, practiceSessionQuestionRecordMapper, userWrongQuestionStatMapper);
     }
