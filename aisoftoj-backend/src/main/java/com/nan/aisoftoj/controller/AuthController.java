@@ -9,6 +9,7 @@ import com.nan.aisoftoj.dto.AuthUserDTO;
 import com.nan.aisoftoj.dto.EmailCodeRequest;
 import com.nan.aisoftoj.dto.PasswordResetRequest;
 import com.nan.aisoftoj.dto.ResultDTO;
+import com.nan.aisoftoj.dto.WeChatLoginRequest;
 import com.nan.aisoftoj.service.AuthService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.validation.annotation.Validated;
@@ -50,6 +51,13 @@ public class AuthController {
     public ResultDTO<AuthResponse> loginByEmailCode(
             @Validated @RequestBody AuthEmailCodeLoginRequest request) {
         return ResultDTO.success(authService.loginByEmailCode(request));
+    }
+
+    @PostMapping("/wechat/login")
+    public ResultDTO<AuthResponse> loginByWechat(
+            @Validated @RequestBody WeChatLoginRequest request,
+            HttpServletRequest servletRequest) {
+        return ResultDTO.success(authService.loginByWechat(request, clientIp(servletRequest)));
     }
 
     @PostMapping("/password/reset")

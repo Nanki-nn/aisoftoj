@@ -6,4 +6,8 @@ public interface AuthRateLimitService {
     void acquireEmailCodeLimits(String normalizedEmail, EmailCodeScene scene, String requestIp);
 
     void acquirePasswordLoginLimits(String normalizedEmail, String requestIp);
+
+    void acquireWechatCodeExchangeLimit(String requestIp);
+
+    void acquireWechatOpenIdLoginLimit(String openId);
 }
