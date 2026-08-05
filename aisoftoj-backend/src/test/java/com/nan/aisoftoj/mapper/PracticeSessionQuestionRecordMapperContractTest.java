@@ -13,6 +13,18 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class PracticeSessionQuestionRecordMapperContractTest {
 
     @Test
+    void sessionRecordsAreReadInTheirSnapshottedOrder() throws Exception {
+        Method method = PracticeSessionQuestionRecordMapper.class
+                .getMethod("selectBySessionIdOrdered", Integer.class);
+        Select select = method.getAnnotation(Select.class);
+        assertNotNull(select);
+
+        String sql = normalize(select.value());
+        assertTrue(sql.contains("WHERE SESSION_ID = #{SESSIONID}"));
+        assertTrue(sql.contains("ORDER BY QUESTION_ORDER, ID"));
+    }
+
+    @Test
     void revisionWriteLocksTheRecordAndUsesAnAtomicRevisionPredicate() throws Exception {
         Method lockMethod = PracticeSessionQuestionRecordMapper.class
                 .getMethod("selectByIdForUpdate", Integer.class);

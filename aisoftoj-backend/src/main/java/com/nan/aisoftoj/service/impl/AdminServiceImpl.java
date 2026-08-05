@@ -1,11 +1,13 @@
 package com.nan.aisoftoj.service.impl;
 
 import cn.hutool.core.util.StrUtil;
-import com.nan.aisoftoj.auth.EmailNormalizer;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.metadata.IPage;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import com.nan.aisoftoj.auth.EmailNormalizer;
+import com.nan.aisoftoj.common.ConflictException;
+import com.nan.aisoftoj.consts.GradingStrategy;
 import com.nan.aisoftoj.dto.PageDTO;
 import com.nan.aisoftoj.dto.admin.AdminDashboardDTO;
 import com.nan.aisoftoj.dto.admin.AdminQuestionDTO;
@@ -28,8 +30,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
-import java.util.List;
 import java.util.Date;
+import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
@@ -211,6 +213,7 @@ public class AdminServiceImpl implements AdminService {
         if (question == null || Integer.valueOf(1).equals(question.getIsDeleted())) {
             throw new IllegalArgumentException("题目不存在");
         }
+        assertQuestionMutable(questionId);
         fillQuestion(question, request);
         questionMapper.updateById(question);
         return toAdminQuestionDTO(questionMapper.selectById(questionId));
@@ -222,6 +225,7 @@ public class AdminServiceImpl implements AdminService {
         if (question == null || Integer.valueOf(1).equals(question.getIsDeleted())) {
             throw new IllegalArgumentException("题目不存在");
         }
+        assertQuestionMutable(questionId);
         question.setIsDeleted(1);
         questionMapper.updateById(question);
     }
@@ -253,7 +257,15 @@ public class AdminServiceImpl implements AdminService {
         question.setAnswer(request.getAnswer().trim());
         question.setAnalysis(StrUtil.blankToDefault(request.getAnalysis(), ""));
         question.setQuestionType(request.getQuestionType());
+        question.setGradingStrategy(GradingStrategy.fromQuestionType(request.getQuestionType()).name());
         question.setDifficulty(request.getDifficulty());
+    }
+
+    private void assertQuestionMutable(Integer questionId) {
+        if (questionMapper.countPublishedPaperRelations(questionId) > 0
+                || questionMapper.countSessionQuestionRecords(questionId) > 0) {
+            throw new ConflictException("已发布或已有会话引用的题目不可直接修改，请创建新版本");
+        }
     }
 
     private void validateQuestionField(String fieldName, String value, int maxBytes) {

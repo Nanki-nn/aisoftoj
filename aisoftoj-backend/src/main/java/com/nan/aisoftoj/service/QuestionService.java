@@ -3,6 +3,7 @@ package com.nan.aisoftoj.service;
 import com.baomidou.mybatisplus.extension.service.IService;
 import com.nan.aisoftoj.dto.GetQuestionDetailDTO;
 import com.nan.aisoftoj.dto.QuestionRecordRequest;
+import com.nan.aisoftoj.dto.SessionQuestionSnapshot;
 import com.nan.aisoftoj.entity.Question;
 
 import java.util.List;
@@ -16,6 +17,10 @@ public interface QuestionService {
     boolean updateQuestionRecord(QuestionRecordRequest request);
 
     List<Question> listByPaperId(Integer paperId);
+
+    List<SessionQuestionSnapshot> listSessionQuestionSnapshotsByPaperId(Integer paperId);
+
+    List<SessionQuestionSnapshot> listSessionQuestionSnapshotsBySessionId(Integer sessionId);
 
     Question getById(Integer questionId);
 

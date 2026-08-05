@@ -2,11 +2,14 @@ package com.nan.aisoftoj.service.impl;
 
 import com.nan.aisoftoj.consts.PracticeSessionState;
 import com.nan.aisoftoj.dto.GETPracticeSessionRes;
+import com.nan.aisoftoj.dto.PaperSubmitRequest;
 import com.nan.aisoftoj.dto.PaperSubmitResponse;
+import com.nan.aisoftoj.dto.SessionQuestionSnapshot;
 import com.nan.aisoftoj.dto.StartPracticeSessionReq;
 import com.nan.aisoftoj.dto.StartPracticeSessionRes;
 import com.nan.aisoftoj.entity.Paper;
 import com.nan.aisoftoj.entity.PracticeSession;
+import com.nan.aisoftoj.entity.PracticeSessionQuestionRecord;
 import com.nan.aisoftoj.mapper.PracticeSessionMapper;
 import com.nan.aisoftoj.mapper.PracticeSessionQuestionRecordMapper;
 import com.nan.aisoftoj.mapper.UserWrongQuestionStatMapper;
@@ -22,8 +25,10 @@ import org.springframework.dao.DuplicateKeyException;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.Collections;
 import java.util.Date;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -31,6 +36,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
@@ -95,8 +101,7 @@ class PracticeSessionServiceImplTest {
         paper.setId(3);
         paper.setName("测试试卷");
         when(paperService.getById(3)).thenReturn(paper);
-        when(questionService.listByPaperId(3)).thenReturn(Collections.emptyList());
-        when(practiceSessionQuestionRecordMapper.selectList(any())).thenReturn(Collections.emptyList());
+        when(questionService.listSessionQuestionSnapshotsBySessionId(12)).thenReturn(Collections.emptyList());
 
         GETPracticeSessionRes result = practiceSessionService.getPracticeSessionDetail(7, 12);
 
@@ -108,6 +113,119 @@ class PracticeSessionServiceImplTest {
         verify(practiceSessionMapper).updateById(updateCaptor.capture());
         assertEquals(result.getStartTime(), updateCaptor.getValue().getStartTime());
         assertEquals(0L, updateCaptor.getValue().getEndTime().getTime());
+    }
+
+    @Test
+    void newSessionPersistsDeterministicQuestionScoreAndStrategySnapshots() {
+        Paper paper = publishedPaper();
+        when(paperService.getById(3)).thenReturn(paper);
+        when(practiceSessionMapper.selectOne(any())).thenReturn(null);
+        doAnswer(invocation -> {
+            PracticeSession inserted = invocation.getArgument(0);
+            inserted.setId(41);
+            return 1;
+        }).when(practiceSessionMapper).insert(any());
+
+        List<SessionQuestionSnapshot> snapshots = Arrays.asList(
+                snapshot(101, 9, 1, "2.50", "EXACT_CHOICE"),
+                snapshot(102, 10, 2, "5.00", "MANUAL"));
+        when(questionService.listSessionQuestionSnapshotsByPaperId(3)).thenReturn(snapshots);
+        when(questionService.listSessionQuestionSnapshotsBySessionId(41))
+                .thenReturn(Collections.emptyList());
+
+        StartPracticeSessionReq request = new StartPracticeSessionReq();
+        request.setPaperId(3);
+        request.setMode(1);
+
+        practiceSessionService.startPracticeSession(7, request);
+
+        ArgumentCaptor<PracticeSession> sessionCaptor = ArgumentCaptor.forClass(PracticeSession.class);
+        verify(practiceSessionMapper).insert(sessionCaptor.capture());
+        assertEquals(new BigDecimal("2.50"), sessionCaptor.getValue().getTotalScore());
+
+        ArgumentCaptor<PracticeSessionQuestionRecord> recordCaptor =
+                ArgumentCaptor.forClass(PracticeSessionQuestionRecord.class);
+        verify(practiceSessionQuestionRecordMapper, times(2)).insert(recordCaptor.capture());
+        List<PracticeSessionQuestionRecord> records = recordCaptor.getAllValues();
+        assertEquals(101, records.get(0).getPaperQuestionRelationId());
+        assertEquals(1, records.get(0).getQuestionOrder());
+        assertEquals(new BigDecimal("2.50"), records.get(0).getScoreSnapshot());
+        assertEquals("EXACT_CHOICE", records.get(0).getGradingStrategySnapshot());
+        assertEquals(102, records.get(1).getPaperQuestionRelationId());
+        assertEquals(2, records.get(1).getQuestionOrder());
+    }
+
+    @Test
+    void submitUsesSessionRecordScoresInsteadOfCurrentPaperEnumeration() {
+        PracticeSession session = doingSession();
+        when(practiceSessionMapper.selectByIdForUpdate(12)).thenReturn(session);
+
+        PracticeSessionQuestionRecord record = new PracticeSessionQuestionRecord();
+        record.setId(30);
+        record.setSessionId(12);
+        record.setQuestionId(9);
+        record.setQuestionOrder(1);
+        record.setScoreSnapshot(new BigDecimal("2.50"));
+        record.setGradingStrategySnapshot("EXACT_CHOICE");
+        when(practiceSessionQuestionRecordMapper.selectBySessionIdOrdered(12))
+                .thenReturn(Collections.singletonList(record));
+
+        when(questionService.listSessionQuestionSnapshotsBySessionId(12))
+                .thenReturn(Collections.singletonList(snapshot(101, 9, 1, "2.50", "EXACT_CHOICE")));
+        when(paperService.getById(3)).thenReturn(publishedPaper());
+
+        PaperSubmitRequest.QuestionAnswer answer = new PaperSubmitRequest.QuestionAnswer();
+        answer.setQuestionId(9);
+        answer.setUserAnswer("A");
+        answer.setSpendTime(8);
+        PaperSubmitRequest request = new PaperSubmitRequest();
+        request.setAnswers(Collections.singletonList(answer));
+
+        PaperSubmitResponse result = practiceSessionService.submitPracticeSession(7, 12, request);
+
+        assertEquals(new BigDecimal("2.50"), result.getScore());
+        assertEquals(new BigDecimal("2.50"), result.getTotalScore());
+        verify(questionService, never()).listByPaperId(any());
+        verify(questionService, never()).listSessionQuestionSnapshotsByPaperId(any());
+    }
+
+    @Test
+    void manualSnapshotIsAnsweredButNotAutoGradedOrRecordedAsWrong() {
+        PracticeSession session = doingSession();
+        when(practiceSessionMapper.selectByIdForUpdate(12)).thenReturn(session);
+
+        PracticeSessionQuestionRecord record = new PracticeSessionQuestionRecord();
+        record.setId(30);
+        record.setSessionId(12);
+        record.setQuestionId(9);
+        record.setQuestionOrder(1);
+        record.setScoreSnapshot(new BigDecimal("15.00"));
+        record.setGradingStrategySnapshot("MANUAL");
+        when(practiceSessionQuestionRecordMapper.selectBySessionIdOrdered(12))
+                .thenReturn(Collections.singletonList(record));
+
+        SessionQuestionSnapshot manualSnapshot = snapshot(101, 9, 1, "15.00", "MANUAL");
+        manualSnapshot.setAnswer("参考答案");
+        when(questionService.listSessionQuestionSnapshotsBySessionId(12))
+                .thenReturn(Collections.singletonList(manualSnapshot));
+        when(paperService.getById(3)).thenReturn(publishedPaper());
+
+        PaperSubmitRequest.QuestionAnswer answer = new PaperSubmitRequest.QuestionAnswer();
+        answer.setQuestionId(9);
+        answer.setUserAnswer("学生案例答案");
+        PaperSubmitRequest request = new PaperSubmitRequest();
+        request.setAnswers(Collections.singletonList(answer));
+
+        PaperSubmitResponse result = practiceSessionService.submitPracticeSession(7, 12, request);
+
+        assertEquals(BigDecimal.ZERO, result.getScore());
+        assertEquals(BigDecimal.ZERO, result.getTotalScore());
+        ArgumentCaptor<PracticeSessionQuestionRecord> updateCaptor =
+                ArgumentCaptor.forClass(PracticeSessionQuestionRecord.class);
+        verify(practiceSessionQuestionRecordMapper).updateById(updateCaptor.capture());
+        assertEquals(null, updateCaptor.getValue().getIsCorrect());
+        assertEquals(true, updateCaptor.getValue().getIsSubmitted());
+        verifyNoInteractions(userWrongQuestionStatMapper);
     }
 
     @Test
@@ -132,18 +250,15 @@ class PracticeSessionServiceImplTest {
 
     @Test
     void concurrentStartReturnsTheWinningActiveSessionWithoutReinitializingQuestions() {
-        Paper paper = new Paper();
-        paper.setId(3);
-        paper.setName("测试试卷");
-        paper.setPublishStatus(true);
-        paper.setIsDeleted(false);
+        Paper paper = publishedPaper();
         when(paperService.getById(3)).thenReturn(paper);
 
         PracticeSession winningSession = doingSession();
         when(practiceSessionMapper.selectOne(any())).thenReturn(null, winningSession);
         when(practiceSessionMapper.insert(any())).thenThrow(new DuplicateKeyException("active session"));
-        when(questionService.listByPaperId(3)).thenReturn(Collections.emptyList());
-        when(practiceSessionQuestionRecordMapper.selectList(any())).thenReturn(Collections.emptyList());
+        when(questionService.listSessionQuestionSnapshotsByPaperId(3))
+                .thenReturn(Collections.singletonList(snapshot(101, 9, 1, "1.00", "EXACT_CHOICE")));
+        when(questionService.listSessionQuestionSnapshotsBySessionId(12)).thenReturn(Collections.emptyList());
 
         StartPracticeSessionReq request = new StartPracticeSessionReq();
         request.setPaperId(3);
@@ -165,5 +280,32 @@ class PracticeSessionServiceImplTest {
         session.setStatus(PracticeSessionState.DOING.getCode());
         session.setStartTime(new Date());
         return session;
+    }
+
+    private Paper publishedPaper() {
+        Paper paper = new Paper();
+        paper.setId(3);
+        paper.setName("测试试卷");
+        paper.setPublishStatus(true);
+        paper.setIsDeleted(false);
+        return paper;
+    }
+
+    private SessionQuestionSnapshot snapshot(
+            Integer relationId,
+            Integer questionId,
+            Integer questionOrder,
+            String score,
+            String gradingStrategy) {
+        SessionQuestionSnapshot snapshot = new SessionQuestionSnapshot();
+        snapshot.setPaperQuestionRelationId(relationId);
+        snapshot.setQuestionId(questionId);
+        snapshot.setQuestionOrder(questionOrder);
+        snapshot.setScoreSnapshot(new BigDecimal(score));
+        snapshot.setGradingStrategySnapshot(gradingStrategy);
+        snapshot.setName("题目" + questionId);
+        snapshot.setAnswer("A");
+        snapshot.setQuestionType("MANUAL".equals(gradingStrategy) ? 5 : 1);
+        return snapshot;
     }
 }

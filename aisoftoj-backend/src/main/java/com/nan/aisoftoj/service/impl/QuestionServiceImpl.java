@@ -5,6 +5,7 @@ import com.nan.aisoftoj.common.ResourceNotFoundException;
 import com.nan.aisoftoj.crypto.ContentCryptoPayloadTooLargeException;
 import com.nan.aisoftoj.dto.GetQuestionDetailDTO;
 import com.nan.aisoftoj.dto.QuestionRecordRequest;
+import com.nan.aisoftoj.dto.SessionQuestionSnapshot;
 import com.nan.aisoftoj.entity.Question;
 import com.nan.aisoftoj.mapper.QuestionMapper;
 import com.nan.aisoftoj.service.QuestionService;
@@ -65,6 +66,23 @@ public class QuestionServiceImpl implements QuestionService {
     @Override
     public List<Question> listByPaperId(Integer paperId) {
         return enforceQuestionCount(questionMapper.selectQuestionsByPaperId(paperId));
+    }
+
+    @Override
+    public List<SessionQuestionSnapshot> listSessionQuestionSnapshotsByPaperId(Integer paperId) {
+        return enforceSnapshotCount(questionMapper.selectSessionQuestionSnapshotsByPaperId(paperId));
+    }
+
+    @Override
+    public List<SessionQuestionSnapshot> listSessionQuestionSnapshotsBySessionId(Integer sessionId) {
+        return enforceSnapshotCount(questionMapper.selectSessionQuestionSnapshotsBySessionId(sessionId));
+    }
+
+    private List<SessionQuestionSnapshot> enforceSnapshotCount(List<SessionQuestionSnapshot> snapshots) {
+        if (snapshots.size() > MAX_QUESTIONS_PER_PAPER) {
+            throw new ContentCryptoPayloadTooLargeException("单张试卷题目数量超过 200 道");
+        }
+        return snapshots;
     }
 
     @Override
