@@ -11,6 +11,7 @@ import com.nan.aisoftoj.entity.PracticeSession;
 import com.nan.aisoftoj.entity.PracticeSessionQuestionRecord;
 import com.nan.aisoftoj.mapper.PracticeSessionMapper;
 import com.nan.aisoftoj.mapper.PracticeSessionQuestionRecordMapper;
+import com.nan.aisoftoj.service.GradingService;
 import com.nan.aisoftoj.service.PracticeSessionQuestionRecordService;
 import com.nan.aisoftoj.service.QuestionService;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +32,9 @@ public class PracticeSessionQuestionRecordServiceImpl implements PracticeSession
     // Reserved for the following confirmation/grading slice.
     @Autowired
     private QuestionService questionService;
+
+    @Autowired
+    private GradingService gradingService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -72,6 +76,7 @@ public class PracticeSessionQuestionRecordServiceImpl implements PracticeSession
         }
 
         String userAnswer = request.getUserAnswer() == null ? "" : request.getUserAnswer();
+        gradingService.validateUserAnswer(userAnswer);
         int spendTime = request.getSpendTime() == null ? 0 : request.getSpendTime();
         int updated = practiceSessionQuestionRecordMapper.updateDraftWithRevision(
                 questionRecordId,

@@ -1,5 +1,6 @@
 package com.nan.aisoftoj.service.impl;
 
+import com.nan.aisoftoj.common.UnprocessableEntityException;
 import com.nan.aisoftoj.consts.PracticeSessionState;
 import com.nan.aisoftoj.dto.GETPracticeSessionRes;
 import com.nan.aisoftoj.dto.PaperSubmitRequest;
@@ -31,6 +32,7 @@ import java.util.Date;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
@@ -70,6 +72,7 @@ class PracticeSessionServiceImplTest {
                 practiceSessionService,
                 "userWrongQuestionStatMapper",
                 userWrongQuestionStatMapper);
+        ReflectionTestUtils.setField(practiceSessionService, "gradingService", new GradingServiceImpl());
     }
 
     @Test
@@ -229,6 +232,38 @@ class PracticeSessionServiceImplTest {
     }
 
     @Test
+    void submitRejectsOverlongAnswerBeforePersistingAnyRecordOrSessionResult() {
+        PracticeSession session = doingSession();
+        when(practiceSessionMapper.selectByIdForUpdate(12)).thenReturn(session);
+
+        PracticeSessionQuestionRecord record = new PracticeSessionQuestionRecord();
+        record.setId(30);
+        record.setSessionId(12);
+        record.setQuestionId(9);
+        record.setScoreSnapshot(BigDecimal.ONE);
+        record.setGradingStrategySnapshot("EXACT_CHOICE");
+        when(practiceSessionQuestionRecordMapper.selectBySessionIdOrdered(12))
+                .thenReturn(Collections.singletonList(record));
+        when(questionService.listSessionQuestionSnapshotsBySessionId(12))
+                .thenReturn(Collections.singletonList(snapshot(101, 9, 1, "1.00", "EXACT_CHOICE")));
+        when(paperService.getById(3)).thenReturn(publishedPaper());
+
+        PaperSubmitRequest.QuestionAnswer answer = new PaperSubmitRequest.QuestionAnswer();
+        answer.setQuestionId(9);
+        answer.setUserAnswer(repeat("答", 10_001));
+        PaperSubmitRequest request = new PaperSubmitRequest();
+        request.setAnswers(Collections.singletonList(answer));
+
+        assertThrows(
+                UnprocessableEntityException.class,
+                () -> practiceSessionService.submitPracticeSession(7, 12, request));
+
+        verify(practiceSessionQuestionRecordMapper, never()).updateById(any());
+        verify(practiceSessionMapper, never()).updateById(any());
+        verifyNoInteractions(userWrongQuestionStatMapper);
+    }
+
+    @Test
     void resubmittingFinishedSessionReturnsPersistedResultWithoutMutatingRecords() {
         PracticeSession session = doingSession();
         session.setStatus(PracticeSessionState.FINISHED.getCode());
@@ -307,5 +342,13 @@ class PracticeSessionServiceImplTest {
         snapshot.setAnswer("A");
         snapshot.setQuestionType("MANUAL".equals(gradingStrategy) ? 5 : 1);
         return snapshot;
+    }
+
+    private String repeat(String value, int count) {
+        StringBuilder builder = new StringBuilder(value.length() * count);
+        for (int i = 0; i < count; i++) {
+            builder.append(value);
+        }
+        return builder.toString();
     }
 }

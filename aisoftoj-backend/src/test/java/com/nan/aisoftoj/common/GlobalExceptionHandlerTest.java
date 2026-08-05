@@ -41,4 +41,16 @@ class GlobalExceptionHandlerTest {
         assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
         assertEquals(currentState, response.getBody().getData());
     }
+
+    @Test
+    void mapsUnprocessableAnswerToHttp422() {
+        MockHttpServletRequest request = new MockHttpServletRequest("PATCH", "/question-record/30");
+
+        ResponseEntity<ErrorResponse> response = handler.handleUnprocessableEntityException(
+                request,
+                new UnprocessableEntityException("单题答案不能超过 10000 个字符"));
+
+        assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, response.getStatusCode());
+        assertEquals(422, response.getBody().getCode());
+    }
 }
