@@ -6,6 +6,8 @@
 .idea/sqldialects.xml
 .vscode/
 .claude/
+.loopx/
+.codex/goals/
 
 # Local environment secrets
 .env
