@@ -8,6 +8,7 @@ import com.nan.aisoftoj.dto.QuestionRecordUpdateResponse;
 import com.nan.aisoftoj.dto.UpdateQuestionRecordDTO;
 import com.nan.aisoftoj.entity.PracticeSession;
 import com.nan.aisoftoj.entity.PracticeSessionQuestionRecord;
+import com.nan.aisoftoj.entity.Question;
 import com.nan.aisoftoj.mapper.PracticeSessionMapper;
 import com.nan.aisoftoj.mapper.PracticeSessionQuestionRecordMapper;
 import com.nan.aisoftoj.service.QuestionService;
@@ -18,9 +19,15 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.math.BigDecimal;
+import java.util.Date;
+
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -158,11 +165,124 @@ class PracticeSessionQuestionRecordServiceImplTest {
         verify(practiceSessionMapper, never()).updateById(any());
     }
 
+    @Test
+    void practiceConfirmationGradesFromTheSnapshotAndClosesTheRecord() {
+        PracticeSessionQuestionRecord record = questionRecord(2L, "mutation-old", "A");
+        record.setGradingStrategySnapshot("EXACT_CHOICE");
+        record.setScoreSnapshot(new BigDecimal("2.00"));
+        when(questionRecordMapper.selectById(30)).thenReturn(record);
+        when(practiceSessionMapper.selectByIdForUpdate(12)).thenReturn(doingSession());
+        when(questionRecordMapper.selectByIdForUpdate(30)).thenReturn(record);
+
+        Question question = new Question();
+        question.setId(5);
+        question.setAnswer("A");
+        question.setQuestionType(1);
+        when(questionService.getById(5)).thenReturn(question);
+        when(questionRecordMapper.confirmWithRevision(
+                eq(30),
+                eq("a"),
+                eq(10),
+                eq(2L),
+                eq("mutation-confirm"),
+                eq(true),
+                any(Date.class)))
+                .thenReturn(1);
+        when(questionRecordMapper.selectCount(any())).thenReturn(1L);
+
+        UpdateQuestionRecordDTO request = updateRequest(2L, "mutation-confirm", "a");
+        request.setConfirm(true);
+        QuestionRecordUpdateResponse result = service.updatePracticeSessionQuestionRecord(7, 30, request);
+
+        assertEquals(3L, result.getAnswerRevision());
+        assertEquals(true, result.getIsSubmitted());
+        assertEquals(true, result.getIsCorrect());
+        assertNotNull(result.getConfirmedAt());
+        assertEquals(0L, result.getConfirmedAt().getTime() % 1000L);
+        verify(questionRecordMapper, never()).updateDraftWithRevision(any(), any(), any(), any(), any());
+    }
+
+    @Test
+    void examModeRejectsSingleQuestionConfirmation() {
+        PracticeSessionQuestionRecord record = questionRecord(2L, "mutation-old", "A");
+        when(questionRecordMapper.selectById(30)).thenReturn(record);
+        PracticeSession session = doingSession();
+        session.setExamMode("exam");
+        when(practiceSessionMapper.selectByIdForUpdate(12)).thenReturn(session);
+        when(questionRecordMapper.selectByIdForUpdate(30)).thenReturn(record);
+
+        UpdateQuestionRecordDTO request = updateRequest(2L, "mutation-confirm", "A");
+        request.setConfirm(true);
+
+        assertThrows(
+                ConflictException.class,
+                () -> service.updatePracticeSessionQuestionRecord(7, 30, request));
+        verify(questionRecordMapper, never()).confirmWithRevision(any(), any(), any(), any(), any(), any(), any());
+        verify(questionRecordMapper, never()).updateDraftWithRevision(any(), any(), any(), any(), any());
+        verifyNoInteractions(questionService);
+    }
+
+    @Test
+    void manualConfirmationRemainsUngradedWithoutAStandardAnswer() {
+        PracticeSessionQuestionRecord record = questionRecord(2L, "mutation-old", "初稿");
+        record.setGradingStrategySnapshot("MANUAL");
+        record.setScoreSnapshot(new BigDecimal("15.00"));
+        when(questionRecordMapper.selectById(30)).thenReturn(record);
+        when(practiceSessionMapper.selectByIdForUpdate(12)).thenReturn(doingSession());
+        when(questionRecordMapper.selectByIdForUpdate(30)).thenReturn(record);
+
+        Question question = new Question();
+        question.setId(5);
+        question.setQuestionType(5);
+        when(questionService.getById(5)).thenReturn(question);
+        when(questionRecordMapper.confirmWithRevision(
+                eq(30),
+                eq("案例作答"),
+                eq(10),
+                eq(2L),
+                eq("mutation-manual"),
+                isNull(),
+                any(Date.class)))
+                .thenReturn(1);
+        when(questionRecordMapper.selectCount(any())).thenReturn(1L);
+
+        UpdateQuestionRecordDTO request = updateRequest(2L, "mutation-manual", "案例作答");
+        request.setConfirm(true);
+        QuestionRecordUpdateResponse result = service.updatePracticeSessionQuestionRecord(7, 30, request);
+
+        assertEquals(true, result.getIsSubmitted());
+        assertEquals(null, result.getIsCorrect());
+        assertNotNull(result.getConfirmedAt());
+    }
+
+    @Test
+    void repeatedConfirmationMutationReturnsTheConfirmedRecordIdempotently() {
+        PracticeSessionQuestionRecord record = questionRecord(3L, "mutation-confirm", "A");
+        record.setConfirmedAt(new Date());
+        record.setIsSubmitted(true);
+        record.setIsCorrect(true);
+        when(questionRecordMapper.selectById(30)).thenReturn(record);
+        when(practiceSessionMapper.selectByIdForUpdate(12)).thenReturn(doingSession());
+        when(questionRecordMapper.selectByIdForUpdate(30)).thenReturn(record);
+
+        UpdateQuestionRecordDTO request = updateRequest(2L, "mutation-confirm", "A");
+        request.setConfirm(true);
+        QuestionRecordUpdateResponse result = service.updatePracticeSessionQuestionRecord(7, 30, request);
+
+        assertEquals(3L, result.getAnswerRevision());
+        assertEquals(true, result.getIsSubmitted());
+        assertNotNull(result.getConfirmedAt());
+        verify(questionRecordMapper, never()).confirmWithRevision(any(), any(), any(), any(), any(), any(), any());
+        verify(questionRecordMapper, never()).updateDraftWithRevision(any(), any(), any(), any(), any());
+        verifyNoInteractions(questionService);
+    }
+
     private PracticeSession doingSession() {
         PracticeSession session = new PracticeSession();
         session.setId(12);
         session.setUserId(7);
         session.setStatus(PracticeSessionState.DOING.getCode());
+        session.setExamMode("practice");
         return session;
     }
 

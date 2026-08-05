@@ -4,11 +4,14 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nan.aisoftoj.common.AnswerRevisionConflictException;
 import com.nan.aisoftoj.common.ConflictException;
 import com.nan.aisoftoj.common.ForbiddenException;
+import com.nan.aisoftoj.consts.GradingStrategy;
 import com.nan.aisoftoj.consts.PracticeSessionState;
+import com.nan.aisoftoj.dto.GradingResult;
 import com.nan.aisoftoj.dto.QuestionRecordUpdateResponse;
 import com.nan.aisoftoj.dto.UpdateQuestionRecordDTO;
 import com.nan.aisoftoj.entity.PracticeSession;
 import com.nan.aisoftoj.entity.PracticeSessionQuestionRecord;
+import com.nan.aisoftoj.entity.Question;
 import com.nan.aisoftoj.mapper.PracticeSessionMapper;
 import com.nan.aisoftoj.mapper.PracticeSessionQuestionRecordMapper;
 import com.nan.aisoftoj.service.GradingService;
@@ -18,6 +21,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.util.Date;
 import java.util.Objects;
 
 @Service
@@ -29,7 +34,6 @@ public class PracticeSessionQuestionRecordServiceImpl implements PracticeSession
     @Autowired
     private PracticeSessionMapper practiceSessionMapper;
 
-    // Reserved for the following confirmation/grading slice.
     @Autowired
     private QuestionService questionService;
 
@@ -63,13 +67,12 @@ public class PracticeSessionQuestionRecordServiceImpl implements PracticeSession
         if (lockedRecord == null || !initialRecord.getSessionId().equals(lockedRecord.getSessionId())) {
             throw new ConflictException("题目记录状态已变化，请刷新后重试");
         }
-        if (lockedRecord.getConfirmedAt() != null) {
-            throw new ConflictException("已确认的题目不能再次修改");
-        }
-
         Long currentRevision = lockedRecord.getAnswerRevision() == null ? 0L : lockedRecord.getAnswerRevision();
         if (Objects.equals(request.getMutationId(), lockedRecord.getLastMutationId())) {
             return toResponse(lockedRecord);
+        }
+        if (lockedRecord.getConfirmedAt() != null) {
+            throw new ConflictException("已确认的题目不能再次修改");
         }
         if (!Objects.equals(request.getExpectedRevision(), currentRevision)) {
             throw revisionConflict(lockedRecord);
@@ -78,12 +81,26 @@ public class PracticeSessionQuestionRecordServiceImpl implements PracticeSession
         String userAnswer = request.getUserAnswer() == null ? "" : request.getUserAnswer();
         gradingService.validateUserAnswer(userAnswer);
         int spendTime = request.getSpendTime() == null ? 0 : request.getSpendTime();
-        int updated = practiceSessionQuestionRecordMapper.updateDraftWithRevision(
-                questionRecordId,
-                userAnswer,
-                spendTime,
-                currentRevision,
-                request.getMutationId());
+        boolean confirm = Boolean.TRUE.equals(request.getConfirm());
+        int updated;
+        if (confirm) {
+            if (!"practice".equalsIgnoreCase(session.getExamMode())) {
+                throw new ConflictException("考试模式不支持单题确认");
+            }
+            updated = confirmRecord(
+                    lockedRecord,
+                    userAnswer,
+                    spendTime,
+                    currentRevision,
+                    request.getMutationId());
+        } else {
+            updated = practiceSessionQuestionRecordMapper.updateDraftWithRevision(
+                    questionRecordId,
+                    userAnswer,
+                    spendTime,
+                    currentRevision,
+                    request.getMutationId());
+        }
         if (updated != 1) {
             PracticeSessionQuestionRecord currentRecord = practiceSessionQuestionRecordMapper
                     .selectByIdForUpdate(questionRecordId);
@@ -94,8 +111,10 @@ public class PracticeSessionQuestionRecordServiceImpl implements PracticeSession
         lockedRecord.setSpendTime(spendTime);
         lockedRecord.setAnswerRevision(currentRevision + 1);
         lockedRecord.setLastMutationId(request.getMutationId());
-        lockedRecord.setIsSubmitted(false);
-        lockedRecord.setIsCorrect(null);
+        if (!confirm) {
+            lockedRecord.setIsSubmitted(false);
+            lockedRecord.setIsCorrect(null);
+        }
 
         Long answeredCount = practiceSessionQuestionRecordMapper.selectCount(
                 new LambdaQueryWrapper<PracticeSessionQuestionRecord>()
@@ -109,6 +128,44 @@ public class PracticeSessionQuestionRecordServiceImpl implements PracticeSession
         practiceSessionMapper.updateById(sessionUpdate);
 
         return toResponse(lockedRecord);
+    }
+
+    private int confirmRecord(
+            PracticeSessionQuestionRecord record,
+            String userAnswer,
+            int spendTime,
+            Long currentRevision,
+            String mutationId) {
+        Question question = questionService.getById(record.getQuestionId());
+        if (question == null) {
+            throw new ConflictException("题目不可用，暂时无法确认");
+        }
+        GradingStrategy strategy = record.getGradingStrategySnapshot() == null
+                ? GradingStrategy.fromQuestionType(question.getQuestionType())
+                : GradingStrategy.valueOf(record.getGradingStrategySnapshot());
+        BigDecimal scoreSnapshot = record.getScoreSnapshot() == null
+                ? BigDecimal.ONE
+                : record.getScoreSnapshot();
+        GradingResult gradingResult = gradingService.grade(
+                strategy,
+                question.getAnswer(),
+                userAnswer,
+                scoreSnapshot);
+        Date confirmedAt = new Date((System.currentTimeMillis() / 1000L) * 1000L);
+        int updated = practiceSessionQuestionRecordMapper.confirmWithRevision(
+                record.getId(),
+                userAnswer,
+                spendTime,
+                currentRevision,
+                mutationId,
+                gradingResult.getIsCorrect(),
+                confirmedAt);
+        if (updated == 1) {
+            record.setIsSubmitted(true);
+            record.setIsCorrect(gradingResult.getIsCorrect());
+            record.setConfirmedAt(confirmedAt);
+        }
+        return updated;
     }
 
     private AnswerRevisionConflictException revisionConflict(PracticeSessionQuestionRecord record) {

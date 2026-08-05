@@ -38,6 +38,7 @@ export interface Question {
   isSubmitted?: boolean;
   isCorrect?: boolean | null;
   spendTime?: number;
+  confirmedAt?: Date;
 }
 
 export interface ExamSession {
