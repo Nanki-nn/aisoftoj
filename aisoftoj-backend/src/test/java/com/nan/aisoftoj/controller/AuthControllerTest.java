@@ -47,4 +47,22 @@ class AuthControllerTest {
         verify(authService).sendEmailBindingCode(
                 "Bearer token", "user@example.com", "203.0.113.8");
     }
+
+    @Test
+    void emailBindingForwardsTokenAndRequest() {
+        AuthService authService = mock(AuthService.class);
+        AuthController controller = new AuthController();
+        ReflectionTestUtils.setField(controller, "authService", authService);
+        com.nan.aisoftoj.dto.EmailBindRequest request =
+                new com.nan.aisoftoj.dto.EmailBindRequest();
+        request.setEmail("user@example.com");
+        request.setCode("123456");
+        MockHttpServletRequest servletRequest = new MockHttpServletRequest();
+        servletRequest.addHeader("Authorization", "Bearer token");
+        when(authService.bindEmail("Bearer token", request)).thenReturn(new AuthResponse());
+
+        controller.bindEmail(request, servletRequest);
+
+        verify(authService).bindEmail("Bearer token", request);
+    }
 }

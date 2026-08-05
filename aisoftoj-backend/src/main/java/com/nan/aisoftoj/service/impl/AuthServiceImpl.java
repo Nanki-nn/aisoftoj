@@ -18,6 +18,7 @@ import com.nan.aisoftoj.dto.AuthLoginRequest;
 import com.nan.aisoftoj.dto.AuthRegisterRequest;
 import com.nan.aisoftoj.dto.AuthResponse;
 import com.nan.aisoftoj.dto.AuthUserDTO;
+import com.nan.aisoftoj.dto.EmailBindRequest;
 import com.nan.aisoftoj.dto.PasswordResetRequest;
 import com.nan.aisoftoj.dto.WeChatLoginRequest;
 import com.nan.aisoftoj.entity.User;
@@ -62,6 +63,8 @@ public class AuthServiceImpl implements AuthService {
     private WeChatCodeExchangeClient weChatCodeExchangeClient;
     @Autowired
     private WeChatUserService weChatUserService;
+    @Autowired
+    private EmailBindingService emailBindingService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -159,6 +162,14 @@ public class AuthServiceImpl implements AuthService {
             throw new IllegalArgumentException("当前账号不支持邮箱绑定");
         }
         emailCodeService.requestBindingCode(email, requestIp, user.getId());
+    }
+
+    @Override
+    public AuthResponse bindEmail(String token, EmailBindRequest request) {
+        Integer currentUserId = getCurrentUserId(token);
+        User boundUser = emailBindingService.bind(
+                currentUserId, request.getEmail(), request.getCode());
+        return buildAuthResponse(boundUser);
     }
 
     @Override
