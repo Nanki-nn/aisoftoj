@@ -12,7 +12,11 @@ public enum PracticeSessionState {
 	/**
 	 * 已完成
 	 */
-	FINISHED(1, "已完成");
+	FINISHED(1, "已完成"),
+	/**
+	 * 已合并，不再出现在用户历史与活动会话中
+	 */
+	MERGED(2, "已合并");
 
 	/**
 	 * 状态码

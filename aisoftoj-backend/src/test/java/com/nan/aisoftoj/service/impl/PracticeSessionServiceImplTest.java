@@ -13,9 +13,11 @@ import com.nan.aisoftoj.entity.Paper;
 import com.nan.aisoftoj.entity.PracticeSession;
 import com.nan.aisoftoj.entity.PracticeSessionQuestionRecord;
 import com.nan.aisoftoj.entity.UserWrongQuestionStat;
+import com.nan.aisoftoj.entity.User;
 import com.nan.aisoftoj.mapper.PracticeSessionMapper;
 import com.nan.aisoftoj.mapper.PracticeSessionQuestionRecordMapper;
 import com.nan.aisoftoj.mapper.UserWrongQuestionStatMapper;
+import com.nan.aisoftoj.mapper.UserMapper;
 import com.nan.aisoftoj.service.PaperService;
 import com.nan.aisoftoj.service.QuestionService;
 import org.junit.jupiter.api.BeforeEach;
@@ -44,6 +46,8 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 class PracticeSessionServiceImplTest {
@@ -58,6 +62,8 @@ class PracticeSessionServiceImplTest {
     private PracticeSessionQuestionRecordMapper practiceSessionQuestionRecordMapper;
     @Mock
     private UserWrongQuestionStatMapper userWrongQuestionStatMapper;
+    @Mock
+    private UserMapper userMapper;
 
     private PracticeSessionServiceImpl practiceSessionService;
 
@@ -76,6 +82,14 @@ class PracticeSessionServiceImplTest {
                 "userWrongQuestionStatMapper",
                 userWrongQuestionStatMapper);
         ReflectionTestUtils.setField(practiceSessionService, "gradingService", new GradingServiceImpl());
+        ReflectionTestUtils.setField(practiceSessionService, "userMapper", userMapper);
+        User activeUser = new User();
+        activeUser.setId(7);
+        activeUser.setRole("USER");
+        activeUser.setIsEnabled(true);
+        activeUser.setIsDeleted(false);
+        activeUser.setTokenVersion(0);
+        lenient().when(userMapper.selectByIdForUpdate(7)).thenReturn(activeUser);
     }
 
     @Test
@@ -159,6 +173,49 @@ class PracticeSessionServiceImplTest {
         assertEquals("EXACT_CHOICE", records.get(0).getGradingStrategySnapshot());
         assertEquals(102, records.get(1).getPaperQuestionRelationId());
         assertEquals(2, records.get(1).getQuestionOrder());
+    }
+
+    @Test
+    void startSessionLocksUserBeforeReadingPaper() {
+        Paper paper = publishedPaper();
+        when(paperService.getById(3)).thenReturn(paper);
+        when(practiceSessionMapper.selectOne(any())).thenReturn(null);
+        when(questionService.listSessionQuestionSnapshotsByPaperId(3))
+                .thenReturn(Collections.singletonList(
+                        snapshot(101, 9, 1, "1.00", "EXACT_CHOICE")));
+        doAnswer(invocation -> {
+            PracticeSession inserted = invocation.getArgument(0);
+            inserted.setId(41);
+            return 1;
+        }).when(practiceSessionMapper).insert(any());
+        when(questionService.listSessionQuestionSnapshotsBySessionId(41))
+                .thenReturn(Collections.emptyList());
+
+        StartPracticeSessionReq request = new StartPracticeSessionReq();
+        request.setPaperId(3);
+        request.setMode(1);
+        practiceSessionService.startPracticeSession(7, request);
+
+        org.mockito.InOrder order = inOrder(userMapper, paperService);
+        order.verify(userMapper).selectByIdForUpdate(7);
+        order.verify(paperService).getById(3);
+    }
+
+    @Test
+    void startSessionRejectsDeletedUserAfterLock() {
+        User deleted = new User();
+        deleted.setId(7);
+        deleted.setRole("USER");
+        deleted.setIsEnabled(true);
+        deleted.setIsDeleted(true);
+        when(userMapper.selectByIdForUpdate(7)).thenReturn(deleted);
+
+        StartPracticeSessionReq request = new StartPracticeSessionReq();
+        request.setPaperId(3);
+
+        assertThrows(com.nan.aisoftoj.common.UnauthorizedException.class,
+                () -> practiceSessionService.startPracticeSession(7, request));
+        verifyNoInteractions(paperService);
     }
 
     @Test

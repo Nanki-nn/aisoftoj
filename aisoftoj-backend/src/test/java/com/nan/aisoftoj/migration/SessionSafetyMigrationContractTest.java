@@ -81,4 +81,19 @@ class SessionSafetyMigrationContractTest {
         assertTrue(sql.contains("unique key `uk_wrong_question_active` (`user_id`, `question_id`, `active_marker`)"));
         assertTrue(sql.contains("set `last_session_id` = ("));
     }
+
+    @Test
+    void v9AddsAuditableMergedSessionState() throws Exception {
+        InputStream stream = getClass().getClassLoader().getResourceAsStream(
+                "db/migration/V9__add_merged_session_state.sql");
+
+        assertNotNull(stream);
+        String sql = StreamUtils.copyToString(stream, StandardCharsets.UTF_8)
+                .replaceAll("\\s+", " ")
+                .toLowerCase();
+
+        assertTrue(sql.contains("`merged_into_session_id` bigint unsigned default null"));
+        assertTrue(sql.contains("0-进行中, 1-已完成, 2-已合并"));
+        assertTrue(sql.contains("key `idx_practice_session_merged_into` (`merged_into_session_id`)"));
+    }
 }

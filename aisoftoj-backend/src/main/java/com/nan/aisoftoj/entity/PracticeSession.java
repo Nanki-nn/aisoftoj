@@ -56,9 +56,14 @@ public class PracticeSession {
     private BigDecimal totalScore;
     
     /**
-     * 状态: 0-未完成, 1-已完成
+     * 状态: 0-进行中, 1-已完成, 2-已合并
      */
     private Integer status;
+
+    /**
+     * 账号合并时指向保留的活动会话。
+     */
+    private Integer mergedIntoSessionId;
     
     /**
      * 创建时间
