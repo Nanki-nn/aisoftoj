@@ -35,7 +35,7 @@ public interface  PracticeSessionMapper extends BaseMapper<PracticeSession> {
             "CASE ps.status WHEN 1 THEN 'completed' ELSE 'inProgress' END AS status " +
             "FROM practice_session ps " +
             "JOIN paper p ON p.id = ps.paper_id " +
-            "WHERE ps.user_id = #{userId} AND ps.is_deleted = 0 " +
+            "WHERE ps.user_id = #{userId} AND ps.is_deleted = 0 AND ps.status IN (0, 1) " +
             "ORDER BY ps.create_time DESC, ps.id DESC " +
             "LIMIT #{pageSize} OFFSET #{offset}")
     List<PracticeHistoryDTO> selectPracticeHistoryByUserId(
@@ -45,7 +45,7 @@ public interface  PracticeSessionMapper extends BaseMapper<PracticeSession> {
 
     @Select("SELECT COUNT(1) " +
             "FROM practice_session ps " +
-            "WHERE ps.user_id = #{userId} AND ps.is_deleted = 0")
+            "WHERE ps.user_id = #{userId} AND ps.is_deleted = 0 AND ps.status IN (0, 1)")
     Long countPracticeHistoryByUserId(@Param("userId") Integer userId);
 
     @Select("SELECT " +
@@ -54,6 +54,6 @@ public interface  PracticeSessionMapper extends BaseMapper<PracticeSession> {
             "COALESCE(SUM(CASE WHEN ps.status = 1 THEN 1 ELSE 0 END), 0) AS completedCount, " +
             "COALESCE(SUM(COALESCE(ps.answered_count, 0)), 0) AS answeredCount " +
             "FROM practice_session ps " +
-            "WHERE ps.user_id = #{userId} AND ps.is_deleted = 0")
+            "WHERE ps.user_id = #{userId} AND ps.is_deleted = 0 AND ps.status IN (0, 1)")
     PracticeHistorySummaryDTO selectPracticeHistorySummaryByUserId(@Param("userId") Integer userId);
 }

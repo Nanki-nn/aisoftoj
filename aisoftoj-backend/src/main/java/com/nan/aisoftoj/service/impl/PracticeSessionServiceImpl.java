@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nan.aisoftoj.common.ConflictException;
 import com.nan.aisoftoj.common.ForbiddenException;
 import com.nan.aisoftoj.common.ResourceNotFoundException;
+import com.nan.aisoftoj.common.UnauthorizedException;
 import com.nan.aisoftoj.consts.GradingStrategy;
 import com.nan.aisoftoj.consts.PracticeSessionState;
 import com.nan.aisoftoj.dto.*;
@@ -12,9 +13,11 @@ import com.nan.aisoftoj.entity.PracticeSession;
 import com.nan.aisoftoj.entity.PracticeSessionQuestionRecord;
 import com.nan.aisoftoj.entity.Question;
 import com.nan.aisoftoj.entity.UserWrongQuestionStat;
+import com.nan.aisoftoj.entity.User;
 import com.nan.aisoftoj.mapper.PracticeSessionMapper;
 import com.nan.aisoftoj.mapper.PracticeSessionQuestionRecordMapper;
 import com.nan.aisoftoj.mapper.UserWrongQuestionStatMapper;
+import com.nan.aisoftoj.mapper.UserMapper;
 import com.nan.aisoftoj.service.GradingService;
 import com.nan.aisoftoj.service.PaperService;
 import com.nan.aisoftoj.service.PracticeSessionService;
@@ -50,11 +53,15 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
     private UserWrongQuestionStatMapper userWrongQuestionStatMapper;
     @Autowired
     private GradingService gradingService;
+    @Autowired
+    private UserMapper userMapper;
 
 
     @Override
     @Transactional(rollbackFor = Exception.class)
     public StartPracticeSessionRes startPracticeSession(Integer userId, StartPracticeSessionReq startPracticeSessionReq) {
+
+        lockActiveUser(userId);
 
         // 从请求中获取试卷ID
         Integer paperId =  startPracticeSessionReq.getPaperId();
@@ -123,6 +130,15 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
                         .eq(PracticeSession::getIsDeleted, 0)
                         .last("LIMIT 1")
         );
+    }
+
+    private void lockActiveUser(Integer userId) {
+        User user = userMapper.selectByIdForUpdate(userId);
+        if (user == null
+                || Boolean.TRUE.equals(user.getIsDeleted())
+                || !Boolean.TRUE.equals(user.getIsEnabled())) {
+            throw new UnauthorizedException("未登录或登录已过期");
+        }
     }
 
 

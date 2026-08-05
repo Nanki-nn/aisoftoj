@@ -153,7 +153,8 @@ CREATE TABLE `practice_session` (
   `end_time` datetime NOT NULL DEFAULT '1970-01-01 00:00:00' COMMENT '完成时为结束时间；进行中暂停时为暂停时间，活动时为默认值',
   `score` decimal(5,2) NOT NULL DEFAULT 0.00 COMMENT '用户得分',
   `total_score` decimal(5,2) NOT NULL COMMENT '试卷总分',
-  `status` tinyint(3) unsigned NOT NULL DEFAULT 0 COMMENT '状态: 0-进行中, 1-已完成',
+  `status` tinyint(3) unsigned NOT NULL DEFAULT 0 COMMENT '状态: 0-进行中, 1-已完成, 2-已合并',
+  `merged_into_session_id` bigint(20) unsigned DEFAULT NULL COMMENT '账号合并时指向保留的活动会话',
   `source_type` varchar(32) DEFAULT 'mock' COMMENT '数据来源：mock/manual/import',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
@@ -161,7 +162,8 @@ CREATE TABLE `practice_session` (
   `active_marker` tinyint(1) GENERATED ALWAYS AS (IF(`status` = 0 AND `is_deleted` = 0, 1, NULL)) STORED,
   PRIMARY KEY (`id`),
   UNIQUE KEY `uk_session_front_mock_id` (`front_mock_id`),
-  UNIQUE KEY `uk_practice_session_active` (`user_id`, `paper_id`, `exam_mode`, `active_marker`)
+  UNIQUE KEY `uk_practice_session_active` (`user_id`, `paper_id`, `exam_mode`, `active_marker`),
+  KEY `idx_practice_session_merged_into` (`merged_into_session_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户刷题会话表';
 
 CREATE TABLE `practice_session_question_record` (
