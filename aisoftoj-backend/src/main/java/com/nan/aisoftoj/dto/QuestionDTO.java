@@ -95,4 +95,9 @@ public class QuestionDTO {
 	 * 当前会话中本题耗时（秒）
 	 */
 	private Integer spendTime;
+
+	/**
+	 * 当前会话答题记录的服务端版本号。
+	 */
+	private Long answerRevision;
 }

@@ -30,17 +30,20 @@ type ApiError = {
   message?: string;
   path?: string;
   timestamp?: number;
+  data?: unknown;
 };
 
 export class ApiRequestError extends Error {
   readonly status: number;
   readonly code?: number;
+  readonly data?: unknown;
 
-  constructor(message: string, status: number, code?: number) {
+  constructor(message: string, status: number, code?: number, data?: unknown) {
     super(message);
     this.name = 'ApiRequestError';
     this.status = status;
     this.code = code;
+    this.data = data;
   }
 }
 
@@ -92,7 +95,19 @@ type BackendQuestionDTO = {
   isSubmitted?: boolean | null;
   isCorrect?: boolean | null;
   spendTime?: number | null;
+  answerRevision?: number | null;
 };
+
+type QuestionRecordUpdateResponse = {
+  recordId: number;
+  userAnswer: string;
+  spendTime?: number | null;
+  answerRevision: number;
+  mutationId: string;
+};
+
+const questionRecordRevisions = new Map<string, number>();
+const questionRecordUpdateQueues = new Map<string, Promise<void>>();
 
 type StartSessionRes = {
   practiceSessionId: number;
@@ -230,6 +245,10 @@ function mapQuestion(question: BackendQuestionDTO, paperCateId = 1): Question {
   const isMarkdown = paperCateId === 2 || paperCateId === 3;
   const type = isMarkdown ? 'essay' : mapQuestionType(question.questionType);
   const userAnswer = parseUserAnswer(question.userAnswer, type);
+  const questionRecordId = question.questionRecordId ? String(question.questionRecordId) : undefined;
+  if (questionRecordId) {
+    questionRecordRevisions.set(questionRecordId, question.answerRevision ?? 0);
+  }
   return {
     id: String(question.id),
     type,
@@ -241,7 +260,7 @@ function mapQuestion(question: BackendQuestionDTO, paperCateId = 1): Question {
     options: question.options?.map(mapOption) ?? [],
     correctAnswer: parseCorrectAnswer(question.answer, type),
     explanation: question.analysis || '',
-    questionRecordId: question.questionRecordId ? String(question.questionRecordId) : undefined,
+    questionRecordId,
     userAnswer,
     isSubmitted: question.isSubmitted ?? undefined,
     isCorrect: question.isCorrect ?? undefined,
@@ -378,7 +397,8 @@ async function executeRequest<T>(
     throw new ApiRequestError(
       errorPayload?.message || `请求失败: ${response.status}`,
       response.status,
-      errorPayload?.code
+      errorPayload?.code,
+      errorPayload?.data
     );
   }
 
@@ -554,15 +574,57 @@ export async function updatePracticeQuestionRecord(
   userAnswer: string | string[],
   spendTime = 0
 ): Promise<void> {
-  await request(`/practice/session/question/record/${questionRecordId}`, {
-    method: 'PATCH',
-    body: JSON.stringify({
-      userAnswer: Array.isArray(userAnswer)
-        ? userAnswer.map(normalizeAnswerValue).join(',')
-        : normalizeAnswerValue(userAnswer),
-      spendTime,
-    }),
+  const previousUpdate = questionRecordUpdateQueues.get(questionRecordId) ?? Promise.resolve();
+  const mutationId = createMutationId();
+  const update = previousUpdate.then(async () => {
+    const expectedRevision = questionRecordRevisions.get(questionRecordId) ?? 0;
+    try {
+      const response = await request<QuestionRecordUpdateResponse>(
+        `/practice/session/question/record/${questionRecordId}`,
+        {
+          method: 'PATCH',
+          body: JSON.stringify({
+            userAnswer: Array.isArray(userAnswer)
+              ? userAnswer.map(normalizeAnswerValue).join(',')
+              : normalizeAnswerValue(userAnswer),
+            spendTime,
+            expectedRevision,
+            mutationId,
+          }),
+        }
+      );
+      questionRecordRevisions.set(questionRecordId, response.answerRevision);
+    } catch (error) {
+      if (isApiRequestError(error) && error.status === 409 && isQuestionRecordUpdateResponse(error.data)) {
+        questionRecordRevisions.set(questionRecordId, error.data.answerRevision);
+      }
+      throw error;
+    }
   });
+
+  let trackedUpdate: Promise<void>;
+  trackedUpdate = update.finally(() => {
+    if (questionRecordUpdateQueues.get(questionRecordId) === trackedUpdate) {
+      questionRecordUpdateQueues.delete(questionRecordId);
+    }
+  });
+  questionRecordUpdateQueues.set(questionRecordId, trackedUpdate);
+  return trackedUpdate;
+}
+
+function createMutationId(): string {
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(16).slice(2)}`;
+}
+
+function isQuestionRecordUpdateResponse(value: unknown): value is QuestionRecordUpdateResponse {
+  return Boolean(
+    value
+      && typeof value === 'object'
+      && typeof (value as QuestionRecordUpdateResponse).answerRevision === 'number'
+  );
 }
 
 export async function submitPracticeSession(

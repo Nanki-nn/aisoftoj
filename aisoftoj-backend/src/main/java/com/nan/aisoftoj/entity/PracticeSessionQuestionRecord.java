@@ -30,6 +30,21 @@ public class PracticeSessionQuestionRecord {
     private String userAnswer;
 
     /**
+     * 答案乐观版本号。
+     */
+    private Long answerRevision;
+
+    /**
+     * 最近一次成功写入的客户端变更标识。
+     */
+    private String lastMutationId;
+
+    /**
+     * 练题模式确认时间；确认后不可再修改草稿。
+     */
+    private Date confirmedAt;
+
+    /**
      * 是否已提交
      */
     private Boolean isSubmitted;

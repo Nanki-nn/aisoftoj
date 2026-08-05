@@ -41,6 +41,17 @@ public class GlobalExceptionHandler {
         return error(HttpStatus.FORBIDDEN, ex.getMessage(), request);
     }
 
+    @ExceptionHandler(AnswerRevisionConflictException.class)
+    public ResponseEntity<ErrorResponse> handleAnswerRevisionConflictException(
+            HttpServletRequest request, AnswerRevisionConflictException ex) {
+        return ResponseEntity.status(HttpStatus.CONFLICT)
+                .body(new ErrorResponse(
+                        HttpStatus.CONFLICT.value(),
+                        ex.getMessage(),
+                        request.getRequestURI(),
+                        ex.getCurrentState()));
+    }
+
     @ExceptionHandler(ConflictException.class)
     public ResponseEntity<ErrorResponse> handleConflictException(
             HttpServletRequest request, ConflictException ex) {
