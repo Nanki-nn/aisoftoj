@@ -18,6 +18,7 @@ import com.nan.aisoftoj.service.PaperService;
 import com.nan.aisoftoj.service.PracticeSessionService;
 import com.nan.aisoftoj.service.QuestionService;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -66,13 +67,7 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
         }
 
         //检查用户是否已创建该试卷的会话记录
-        PracticeSession practiceSession = practiceSessionMapper.selectOne(
-                new LambdaQueryWrapper<PracticeSession>()
-                        .eq(PracticeSession::getPaperId, paperId)
-                        .eq(PracticeSession::getUserId, userId)
-                        .eq(PracticeSession::getExamMode, sessionMode)
-                        .eq(PracticeSession::getStatus, PracticeSessionState.DOING.getCode())
-        );
+        PracticeSession practiceSession = findActiveSession(userId, paperId, sessionMode);
         if (practiceSession != null) {
            // 如果存在未完成的记录，返回该记录ID
 			resumeSessionIfPaused(practiceSession);
@@ -89,7 +84,16 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
         insertPracticeSession.setStatus(PracticeSessionState.DOING.getCode());
         insertPracticeSession.setTotalScore(BigDecimal.valueOf(75));
         // 插入记录到数据库
-        practiceSessionMapper.insert(insertPracticeSession);
+        try {
+            practiceSessionMapper.insert(insertPracticeSession);
+        } catch (DuplicateKeyException duplicateKeyException) {
+            PracticeSession winningSession = findActiveSession(userId, paperId, sessionMode);
+            if (winningSession == null) {
+                throw duplicateKeyException;
+            }
+            resumeSessionIfPaused(winningSession);
+            return getStatPracticeSessionRes(winningSession, paperId, paper);
+        }
 
 
         //初始化会话题目记录PracticeSessionQuestionRecord
@@ -97,6 +101,18 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
 
         // 返回新创建的会话记录
 		return getStatPracticeSessionRes(insertPracticeSession, paperId, paper);
+    }
+
+    private PracticeSession findActiveSession(Integer userId, Integer paperId, String sessionMode) {
+        return practiceSessionMapper.selectOne(
+                new LambdaQueryWrapper<PracticeSession>()
+                        .eq(PracticeSession::getPaperId, paperId)
+                        .eq(PracticeSession::getUserId, userId)
+                        .eq(PracticeSession::getExamMode, sessionMode)
+                        .eq(PracticeSession::getStatus, PracticeSessionState.DOING.getCode())
+                        .eq(PracticeSession::getIsDeleted, 0)
+                        .last("LIMIT 1")
+        );
     }
 
 

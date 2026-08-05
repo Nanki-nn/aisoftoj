@@ -145,7 +145,7 @@ CREATE TABLE `practice_session` (
   `front_mock_id` varchar(64) DEFAULT NULL COMMENT '前端mock数据ID',
   `user_id` int(11) unsigned NOT NULL COMMENT '用户ID',
   `paper_id` int(11) NOT NULL COMMENT '试卷ID',
-  `exam_mode` varchar(16) DEFAULT 'practice' COMMENT '练习模式：practice/exam',
+  `exam_mode` varchar(16) NOT NULL DEFAULT 'practice' COMMENT '练习模式：practice/exam',
   `answered_count` int(11) NOT NULL DEFAULT 0 COMMENT '已答题数',
   `start_time` datetime NOT NULL COMMENT '开始答题时间',
   `end_time` datetime NOT NULL DEFAULT '1970-01-01 00:00:00' COMMENT '完成时为结束时间；进行中暂停时为暂停时间，活动时为默认值',
@@ -156,8 +156,10 @@ CREATE TABLE `practice_session` (
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `is_deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT '删除状态：0-未删除，1-已删除',
+  `active_marker` tinyint(1) GENERATED ALWAYS AS (IF(`status` = 0 AND `is_deleted` = 0, 1, NULL)) STORED,
   PRIMARY KEY (`id`),
-  UNIQUE KEY `uk_session_front_mock_id` (`front_mock_id`)
+  UNIQUE KEY `uk_session_front_mock_id` (`front_mock_id`),
+  UNIQUE KEY `uk_practice_session_active` (`user_id`, `paper_id`, `exam_mode`, `active_marker`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户刷题会话表';
 
 CREATE TABLE `practice_session_question_record` (
@@ -171,7 +173,8 @@ CREATE TABLE `practice_session_question_record` (
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `is_deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT '删除状态：0-未删除，1-已删除',
-  PRIMARY KEY (`id`)
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_session_question` (`session_id`, `question_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='用户刷题会话-题目答题详情表';
 
 CREATE TABLE `user_wrong_question_stat` (
