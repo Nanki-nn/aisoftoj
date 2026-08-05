@@ -29,7 +29,12 @@ public class QuestionController {
     public ResultDTO<GetQuestionDetailDTO> getQuestionDetail(@PathVariable Integer questionId,
                                                              @RequestParam(defaultValue = "false") Boolean withAnswer,
                                                              HttpServletRequest request) {
-        authService.getCurrentUserId(request.getHeader("Authorization"));
+        String authorization = request.getHeader("Authorization");
+        if (Boolean.TRUE.equals(withAnswer)) {
+            authService.requireAdmin(authorization);
+        } else {
+            authService.getCurrentUserId(authorization);
+        }
         GetQuestionDetailDTO questionDetailDTO = questionService.getQuestionById(questionId, withAnswer);
         return ResultDTO.success(questionDetailDTO);
     }

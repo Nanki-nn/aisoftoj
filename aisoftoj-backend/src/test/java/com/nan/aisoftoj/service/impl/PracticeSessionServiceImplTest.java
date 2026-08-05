@@ -1,5 +1,6 @@
 package com.nan.aisoftoj.service.impl;
 
+import com.nan.aisoftoj.common.ConflictException;
 import com.nan.aisoftoj.common.UnprocessableEntityException;
 import com.nan.aisoftoj.consts.PracticeSessionState;
 import com.nan.aisoftoj.dto.GETPracticeSessionRes;
@@ -33,6 +34,7 @@ import java.util.Date;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
@@ -345,6 +347,106 @@ class PracticeSessionServiceImplTest {
         assertEquals(PracticeSessionState.DOING.getCode(), result.getStatus());
         verify(practiceSessionMapper, times(2)).selectOne(any());
         verify(practiceSessionQuestionRecordMapper, never()).insert(any());
+    }
+
+    @Test
+    void ongoingExamHidesAnswerAnalysisAndCorrectness() {
+        PracticeSession session = doingSession();
+        session.setExamMode("exam");
+        when(practiceSessionMapper.selectById(12)).thenReturn(session);
+        when(paperService.getById(3)).thenReturn(publishedPaper());
+
+        SessionQuestionSnapshot snapshot = snapshot(101, 9, 1, "1.00", "EXACT_CHOICE");
+        snapshot.setAnalysis("答案解析");
+        snapshot.setIsCorrect(true);
+        snapshot.setConfirmedAt(new Date());
+        when(questionService.listSessionQuestionSnapshotsBySessionId(12))
+                .thenReturn(Collections.singletonList(snapshot));
+
+        GETPracticeSessionRes result = practiceSessionService.getPracticeSessionDetail(7, 12);
+
+        assertNull(result.getQuestionList().get(0).getAnswer());
+        assertNull(result.getQuestionList().get(0).getAnalysis());
+        assertNull(result.getQuestionList().get(0).getIsCorrect());
+    }
+
+    @Test
+    void ongoingPracticeRevealsAnswerOnlyAfterQuestionConfirmation() {
+        PracticeSession session = doingSession();
+        session.setExamMode("practice");
+        when(practiceSessionMapper.selectById(12)).thenReturn(session);
+        when(paperService.getById(3)).thenReturn(publishedPaper());
+
+        SessionQuestionSnapshot draft = snapshot(101, 9, 1, "1.00", "EXACT_CHOICE");
+        draft.setAnalysis("未确认解析");
+        draft.setIsCorrect(false);
+        SessionQuestionSnapshot confirmed = snapshot(102, 10, 2, "1.00", "EXACT_CHOICE");
+        confirmed.setAnalysis("已确认解析");
+        confirmed.setIsCorrect(true);
+        confirmed.setConfirmedAt(new Date());
+        when(questionService.listSessionQuestionSnapshotsBySessionId(12))
+                .thenReturn(Arrays.asList(draft, confirmed));
+
+        GETPracticeSessionRes result = practiceSessionService.getPracticeSessionDetail(7, 12);
+
+        assertNull(result.getQuestionList().get(0).getAnswer());
+        assertNull(result.getQuestionList().get(0).getAnalysis());
+        assertNull(result.getQuestionList().get(0).getIsCorrect());
+        assertEquals("A", result.getQuestionList().get(1).getAnswer());
+        assertEquals("已确认解析", result.getQuestionList().get(1).getAnalysis());
+        assertEquals(true, result.getQuestionList().get(1).getIsCorrect());
+    }
+
+    @Test
+    void completedSessionDetailStaysRedactedUntilResultEndpoint() {
+        PracticeSession session = doingSession();
+        session.setExamMode("exam");
+        session.setStatus(PracticeSessionState.FINISHED.getCode());
+        when(practiceSessionMapper.selectById(12)).thenReturn(session);
+        when(paperService.getById(3)).thenReturn(publishedPaper());
+
+        SessionQuestionSnapshot snapshot = snapshot(101, 9, 1, "1.00", "EXACT_CHOICE");
+        snapshot.setAnalysis("完成解析");
+        snapshot.setIsCorrect(true);
+        when(questionService.listSessionQuestionSnapshotsBySessionId(12))
+                .thenReturn(Collections.singletonList(snapshot));
+
+        GETPracticeSessionRes detail = practiceSessionService.getPracticeSessionDetail(7, 12);
+
+        assertNull(detail.getQuestionList().get(0).getAnswer());
+        assertNull(detail.getQuestionList().get(0).getAnalysis());
+        assertNull(detail.getQuestionList().get(0).getIsCorrect());
+    }
+
+    @Test
+    void completedSessionResultReturnsFullReview() {
+        PracticeSession session = doingSession();
+        session.setExamMode("exam");
+        session.setStatus(PracticeSessionState.FINISHED.getCode());
+        when(practiceSessionMapper.selectById(12)).thenReturn(session);
+        when(paperService.getById(3)).thenReturn(publishedPaper());
+
+        SessionQuestionSnapshot snapshot = snapshot(101, 9, 1, "1.00", "EXACT_CHOICE");
+        snapshot.setAnalysis("完成解析");
+        snapshot.setIsCorrect(true);
+        when(questionService.listSessionQuestionSnapshotsBySessionId(12))
+                .thenReturn(Collections.singletonList(snapshot));
+
+        GETPracticeSessionRes result = practiceSessionService.getPracticeSessionResult(7, 12);
+
+        assertEquals("A", result.getQuestionList().get(0).getAnswer());
+        assertEquals("完成解析", result.getQuestionList().get(0).getAnalysis());
+        assertEquals(true, result.getQuestionList().get(0).getIsCorrect());
+    }
+
+    @Test
+    void ongoingSessionHasNoResultReview() {
+        when(practiceSessionMapper.selectById(12)).thenReturn(doingSession());
+
+        assertThrows(ConflictException.class,
+                () -> practiceSessionService.getPracticeSessionResult(7, 12));
+
+        verifyNoInteractions(questionService, paperService);
     }
 
     private PracticeSession doingSession() {

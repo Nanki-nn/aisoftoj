@@ -134,15 +134,17 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
         res.setStatus(practiceSession.getStatus());
         res.setStartTime(practiceSession.getStartTime());
         res.setPaper(paper);
-        res.setQuestionList(getSessionQuestionDTOs(practiceSession.getId()));
+        res.setQuestionList(getSessionQuestionDTOs(practiceSession, false));
         return res;
     }
 
 
 
-    private List<QuestionDTO> getSessionQuestionDTOs(Integer practiceSessionId) {
+    private List<QuestionDTO> getSessionQuestionDTOs(
+            PracticeSession practiceSession,
+            boolean includeCompletedReview) {
         List<SessionQuestionSnapshot> snapshots =
-                questionService.listSessionQuestionSnapshotsBySessionId(practiceSessionId);
+                questionService.listSessionQuestionSnapshotsBySessionId(practiceSession.getId());
         List<QuestionDTO> questionDTOs = new ArrayList<>();
         for (SessionQuestionSnapshot snapshot : snapshots) {
             QuestionDTO questionDTO = new QuestionDTO();
@@ -150,23 +152,39 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
             questionDTO.setName(snapshot.getName());
             questionDTO.setIntro(snapshot.getIntro());
             questionDTO.setOptions(parseOptions(snapshot.getOptions()));
-            questionDTO.setAnswer(snapshot.getAnswer());
-            questionDTO.setAnalysis(snapshot.getAnalysis());
             questionDTO.setQuestionType(snapshot.getQuestionType());
             questionDTO.setDifficulty(snapshot.getDifficulty());
             questionDTO.setQuestionRecordId(snapshot.getQuestionRecordId());
             questionDTO.setUserAnswer(snapshot.getUserAnswer());
             questionDTO.setIsSubmitted(snapshot.getIsSubmitted());
-            questionDTO.setIsCorrect(snapshot.getIsCorrect());
             questionDTO.setSpendTime(snapshot.getSpendTime());
             questionDTO.setAnswerRevision(snapshot.getAnswerRevision());
             questionDTO.setQuestionOrder(snapshot.getQuestionOrder());
             questionDTO.setScoreSnapshot(snapshot.getScoreSnapshot());
             questionDTO.setGradingStrategySnapshot(snapshot.getGradingStrategySnapshot());
             questionDTO.setConfirmedAt(snapshot.getConfirmedAt());
+            if (canRevealAnswer(practiceSession, snapshot, includeCompletedReview)) {
+                questionDTO.setAnswer(snapshot.getAnswer());
+                questionDTO.setAnalysis(snapshot.getAnalysis());
+                questionDTO.setIsCorrect(snapshot.getIsCorrect());
+            }
             questionDTOs.add(questionDTO);
         }
         return questionDTOs;
+    }
+
+    private boolean canRevealAnswer(
+            PracticeSession practiceSession,
+            SessionQuestionSnapshot snapshot,
+            boolean includeCompletedReview) {
+        if (includeCompletedReview
+                && practiceSession.getStatus() != null
+                && practiceSession.getStatus() == PracticeSessionState.FINISHED.getCode()) {
+            return true;
+        }
+        return isDoing(practiceSession)
+                && "practice".equals(practiceSession.getExamMode())
+                && snapshot.getConfirmedAt() != null;
     }
 
     private List<Option> parseOptions(String rawOptions) {
@@ -237,21 +255,44 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
         }
 
 
-        //返回试卷和题目信息
-        GETPracticeSessionRes resDTO = new GETPracticeSessionRes();
-        resDTO.setId(practiceSession.getId());
-        resDTO.setUserId(practiceSession.getUserId());
-        resDTO.setPaperId(practiceSession.getPaperId());
-        resDTO.setExamMode(practiceSession.getExamMode());
-        resDTO.setStatus(practiceSession.getStatus());
-        resDTO.setStartTime(practiceSession.getStartTime());
-        resDTO.setEndTime(practiceSession.getEndTime());
-        resDTO.setPaperName(paper.getName());
-        resDTO.setPaper(paper);
+        return buildSessionResponse(practiceSession, paper, false);
 
-        resDTO.setQuestionList(getSessionQuestionDTOs(practiceSessionId));
-        return resDTO;
+    }
 
+    @Override
+    public GETPracticeSessionRes getPracticeSessionResult(Integer userId, Integer practiceSessionId) {
+        PracticeSession practiceSession = getOwnedSession(userId, practiceSessionId);
+        if (practiceSession == null) {
+            throw new IllegalArgumentException("试卷会话记录不存在");
+        }
+        if (practiceSession.getStatus() == null
+                || practiceSession.getStatus() != PracticeSessionState.FINISHED.getCode()) {
+            throw new ConflictException("会话尚未完成，不能查看完整复盘");
+        }
+        Paper paper = paperService.getById(practiceSession.getPaperId());
+        if (paper == null) {
+            throw new IllegalArgumentException("试卷不存在");
+        }
+
+        return buildSessionResponse(practiceSession, paper, true);
+    }
+
+    private GETPracticeSessionRes buildSessionResponse(
+            PracticeSession practiceSession,
+            Paper paper,
+            boolean includeCompletedReview) {
+        GETPracticeSessionRes result = new GETPracticeSessionRes();
+        result.setId(practiceSession.getId());
+        result.setUserId(practiceSession.getUserId());
+        result.setPaperId(practiceSession.getPaperId());
+        result.setExamMode(practiceSession.getExamMode());
+        result.setStatus(practiceSession.getStatus());
+        result.setStartTime(practiceSession.getStartTime());
+        result.setEndTime(practiceSession.getEndTime());
+        result.setPaperName(paper.getName());
+        result.setPaper(paper);
+        result.setQuestionList(getSessionQuestionDTOs(practiceSession, includeCompletedReview));
+        return result;
     }
 
     @Override
