@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
 import { LearningLanding } from './components/LearningLanding';
 import { FoundationPage } from './components/FoundationPage';
 import { EssaySprintPage } from './components/EssaySprintPage';
@@ -30,6 +30,7 @@ import { PracticeRecord, PracticeSessionRecord } from './types/record';
 import {
   cachePracticeSessionAnswers,
   continuePracticeSession,
+  fetchPracticeSessionResult,
   pausePracticeSession,
   startPaperSession,
   submitPracticeSession,
@@ -59,12 +60,14 @@ function SessionRoute({
   currentSession,
   setSession,
   updateAnswer,
+  onConfirmAnswer,
   onCompleteExam,
   onBackToConfig,
 }: {
   currentSession: ReturnType<typeof useExamSession>['currentSession'];
   setSession: ReturnType<typeof useExamSession>['setSession'];
   updateAnswer: ReturnType<typeof useExamSession>['updateAnswer'];
+  onConfirmAnswer: (questionId: string, answer: string | string[]) => Promise<void>;
   onCompleteExam: () => void;
   onBackToConfig: () => void | Promise<void>;
 }) {
@@ -119,6 +122,7 @@ function SessionRoute({
     <ExamSession
       session={currentSession}
       onUpdateAnswer={updateAnswer}
+      onConfirmAnswer={onConfirmAnswer}
       onCompleteExam={onCompleteExam}
       onBackToConfig={onBackToConfig}
     />
@@ -129,17 +133,61 @@ type UpdateAnswerFn = ReturnType<typeof useExamSession>['updateAnswer'];
 
 function ResultRoute({
   currentSession,
+  setSession,
   onViewAnswerRecord,
   onBackToPapers,
 }: {
   currentSession: ReturnType<typeof useExamSession>['currentSession'];
+  setSession: ReturnType<typeof useExamSession>['setSession'];
   onViewAnswerRecord: () => void;
   onBackToPapers: () => void | Promise<void>;
 }) {
   const { sessionId } = useParams();
+  const [isLoading, setIsLoading] = useState(false);
+  const [loadError, setLoadError] = useState<string | null>(null);
+
+  useEffect(() => {
+    if (!sessionId || (currentSession?.id === sessionId && currentSession.isCompleted)) {
+      return;
+    }
+
+    let isMounted = true;
+    setIsLoading(true);
+    setLoadError(null);
+    fetchPracticeSessionResult(sessionId)
+      .then((session) => {
+        if (isMounted) {
+          setSession(session);
+        }
+      })
+      .catch((error) => {
+        if (isMounted) {
+          setLoadError((error as Error).message || '考试结果加载失败');
+        }
+      })
+      .finally(() => {
+        if (isMounted) {
+          setIsLoading(false);
+        }
+      });
+
+    return () => {
+      isMounted = false;
+    };
+  }, [currentSession?.id, currentSession?.isCompleted, sessionId, setSession]);
+
+  if (loadError) {
+    return <div className="min-h-screen bg-background p-6 text-red-600">{loadError}</div>;
+  }
+
+  if (isLoading) {
+    return <div className="min-h-screen bg-background p-6 text-slate-500">正在加载考试结果...</div>;
+  }
 
   if (!currentSession || !sessionId || currentSession.id !== sessionId) {
-    return <Navigate to={ROUTES.home} replace />;
+    return sessionId
+      ? <div className="min-h-screen bg-background p-6 text-slate-500">正在加载考试结果...</div>
+      : <Navigate to={ROUTES.home} replace />;
   }
 
   return (
@@ -180,20 +228,11 @@ export default function App() {
   } = useExamSession();
   const { checkAuthStatus } = useAuth();
   const navigate = useNavigate();
-  const location = useLocation();
 
   // 检查用户登录状态
   useEffect(() => {
     checkAuthStatus();
   }, [checkAuthStatus]);
-
-  useEffect(() => {
-    const isResultRoute = location.pathname.startsWith(ROUTES.examResultBase);
-
-    if (isResultRoute && !currentSession) {
-      navigate(ROUTES.home, { replace: true });
-    }
-  }, [location.pathname, currentSession, navigate]);
 
   const handleStartPaper = async (paper: ExamPaper, mode: 'practice' | 'exam') => {
     try {
@@ -223,6 +262,10 @@ export default function App() {
     if (currentSession && !String(currentSession.id).startsWith('exam_')) {
       try {
         await submitPracticeSession(currentSession.id, currentSession.answers);
+        const completedSession = await fetchPracticeSessionResult(currentSession.id);
+        setSession(completedSession);
+        navigate(`${ROUTES.examResultBase}/${completedSession.id}`);
+        return;
       } catch (error) {
         alert('交卷失败：' + (error as Error).message);
         return;
@@ -252,6 +295,33 @@ export default function App() {
     void updatePracticeQuestionRecord(question.questionRecordId, answer).catch((error) => {
       console.error('保存答题记录失败', error);
     });
+  };
+
+  const handleConfirmAnswer = async (questionId: string, answer: string | string[]) => {
+    if (!currentSession) {
+      return;
+    }
+    const question = currentSession.questions.find(item => item.id === questionId);
+    const answers = {
+      ...currentSession.answers,
+      [questionId]: answer,
+    };
+    updateAnswer(questionId, answer);
+    cachePracticeSessionAnswers(currentSession.id, answers);
+
+    if (!question?.questionRecordId || String(currentSession.id).startsWith('exam_')) {
+      setSession({
+        ...currentSession,
+        answers,
+        questions: currentSession.questions.map(item => item.id === questionId
+          ? { ...item, userAnswer: answer, confirmedAt: new Date() }
+          : item),
+      });
+      return;
+    }
+
+    await updatePracticeQuestionRecord(question.questionRecordId, answer, 0, true);
+    setSession(await continuePracticeSession(currentSession.id));
   };
 
   const handleBackToHome = () => {
@@ -296,7 +366,9 @@ export default function App() {
 
   const handleContinuePracticeFromHistory = async (recordId: string, status: PracticeSessionRecord['status']) => {
     try {
-      const session = await continuePracticeSession(recordId);
+      const session = status === 'completed'
+        ? await fetchPracticeSessionResult(recordId)
+        : await continuePracticeSession(recordId);
       setSession(session);
       navigate(`${ROUTES.examSessionBase}/${session.id}`);
     } catch (error) {
@@ -306,12 +378,8 @@ export default function App() {
 
   const handleViewPracticeResultFromHistory = async (recordId: string) => {
     try {
-      const session = await continuePracticeSession(recordId);
-      setSession({
-        ...session,
-        isCompleted: true,
-        endTime: session.endTime || new Date(),
-      });
+      const session = await fetchPracticeSessionResult(recordId);
+      setSession(session);
       navigate(`${ROUTES.examResultBase}/${session.id}`);
     } catch (error) {
       alert('查看考试结果失败：' + (error as Error).message);
@@ -325,12 +393,8 @@ export default function App() {
     }
 
     try {
-      const session = await continuePracticeSession(String(record.sessionId));
-      setSession({
-        ...session,
-        isCompleted: true,
-        endTime: session.endTime || new Date(),
-      });
+      const session = await fetchPracticeSessionResult(String(record.sessionId));
+      setSession(session);
       navigate(`${ROUTES.examSessionBase}/${session.id}?questionId=${record.questionId}`);
     } catch (error) {
       alert('查看错题失败：' + (error as Error).message);
@@ -401,6 +465,7 @@ export default function App() {
                 currentSession={currentSession}
                 setSession={setSession}
                 updateAnswer={handleUpdateAnswer}
+                onConfirmAnswer={handleConfirmAnswer}
                 onCompleteExam={handleCompleteExam}
                 onBackToConfig={handleBackToConfig}
               />
@@ -412,6 +477,7 @@ export default function App() {
           element={
             <ResultRoute
               currentSession={currentSession}
+              setSession={setSession}
               onViewAnswerRecord={handleBackToExam}
               onBackToPapers={handleBackToPapers}
             />

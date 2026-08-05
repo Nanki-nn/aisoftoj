@@ -25,10 +25,9 @@ public class QuestionServiceImpl implements QuestionService {
 
     @Override
     public List<Question> getQuestionsByPaperId(Integer paperId) {
-        // 这里应该查询试卷关联的题目列表
-
-
-        return enforceQuestionCount(questionMapper.selectQuestionsByPaperId(paperId));
+        List<Question> questions = enforceQuestionCount(questionMapper.selectQuestionsByPaperId(paperId));
+        questions.forEach(this::redactAnswerContent);
+        return questions;
     }
 
     @Override
@@ -43,6 +42,7 @@ public class QuestionServiceImpl implements QuestionService {
         // 如果不包含答案，则清空答案字段
         if (!Boolean.TRUE.equals(withAnswer)) {
             question.setAnswer(null);
+            question.setAnalysis(null);
         }
 
         GetQuestionDetailDTO questionDetailDTO = new GetQuestionDetailDTO();
@@ -95,6 +95,11 @@ public class QuestionServiceImpl implements QuestionService {
             throw new ContentCryptoPayloadTooLargeException("单张试卷题目数量超过 200 道");
         }
         return questions;
+    }
+
+    private void redactAnswerContent(Question question) {
+        question.setAnswer(null);
+        question.setAnalysis(null);
     }
 
 

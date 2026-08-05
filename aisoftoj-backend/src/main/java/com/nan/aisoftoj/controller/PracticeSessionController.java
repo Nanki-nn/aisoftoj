@@ -55,6 +55,17 @@ public class PracticeSessionController {
      }
 
     /**
+     * 获取已完成会话的完整复盘。进行中会话不能通过该端点读取答案。
+     */
+    @EncryptedQuestionResponse
+    @GetMapping("/session/{sessionId}/result")
+    public ResultDTO<GETPracticeSessionRes> getPracticeSessionResult(@PathVariable Integer sessionId,
+                                                                     HttpServletRequest request) {
+        Integer userId = authService.getCurrentUserId(request.getHeader("Authorization"));
+        return ResultDTO.success(practiceSessionService.getPracticeSessionResult(userId, sessionId));
+    }
+
+    /**
      * 暂停进行中的刷题会话，退出页面后的时间不再计入答题用时。
      */
     @PatchMapping("/session/{sessionId}/pause")

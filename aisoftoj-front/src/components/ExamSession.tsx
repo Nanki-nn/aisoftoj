@@ -103,6 +103,7 @@ function normalizeAnswerValue(answer: string): string {
 interface ExamSessionProps {
   session: ExamSessionType;
   onUpdateAnswer: (questionId: string, answer: string | string[]) => void;
+  onConfirmAnswer: (questionId: string, answer: string | string[]) => Promise<void>;
   onCompleteExam: () => void;
   onBackToConfig: () => void | Promise<void>;
 }
@@ -110,6 +111,7 @@ interface ExamSessionProps {
 export function ExamSession({ 
   session, 
   onUpdateAnswer, 
+  onConfirmAnswer,
   onCompleteExam, 
   onBackToConfig 
 }: ExamSessionProps) {
@@ -127,14 +129,16 @@ export function ExamSession({
   const [multipleDraft, setMultipleDraft] = useState<string[]>([]);
   const [fillDraft, setFillDraft] = useState('');
   const [showAnswer, setShowAnswer] = useState(false);
+  const [isConfirming, setIsConfirming] = useState(false);
 
   const currentQuestion = session.questions[currentQuestionIndex];
   const isReadOnly = session.isCompleted;
-  const shouldRevealAnswer = isReadOnly || session.examMode === 'practice';
-  const modeLabel = isReadOnly ? '已完成' : (shouldRevealAnswer ? '练习模式' : '考试模式');
+  const isCurrentQuestionLocked = isReadOnly || Boolean(currentQuestion.confirmedAt);
+  const shouldRevealAnswer = isReadOnly || Boolean(currentQuestion.confirmedAt);
+  const modeLabel = isReadOnly ? '已完成' : (session.examMode === 'practice' ? '练习模式' : '考试模式');
   const modeBadgeClass = isReadOnly
     ? 'bg-emerald-100 text-emerald-700 border border-emerald-200'
-    : shouldRevealAnswer
+    : session.examMode === 'practice'
     ? 'bg-blue-100 text-blue-700 border border-blue-200'
     : 'bg-amber-100 text-amber-800 border border-amber-200';
   const paperDateLabel = session.paperYear
@@ -145,6 +149,7 @@ export function ExamSession({
     if (Array.isArray(answer)) return answer.length > 0;
     return !!answer;
   }).length;
+  const hasRevealedAnswers = isReadOnly || session.questions.some(question => Boolean(question.confirmedAt));
 
   // 答题卡分页常量 - 5列3行
   const ITEMS_PER_PAGE = 15;
@@ -237,8 +242,8 @@ export function ExamSession({
     }
     
     // 查看已完成记录时默认展示解析；正常刷题切题时收起“查看答案”状态
-    setShowAnswer(isReadOnly);
-  }, [currentQuestion.id, currentQuestion.type, isReadOnly, session.answers]);
+    setShowAnswer(shouldRevealAnswer);
+  }, [currentQuestion.id, currentQuestion.type, shouldRevealAnswer, session.answers]);
 
   useEffect(() => {
     if (!hasMountedRef.current) {
@@ -262,18 +267,26 @@ export function ExamSession({
   };
 
   const handleAnswerChange = (answer: string | string[]) => {
-    if (isReadOnly) {
+    if (isCurrentQuestionLocked) {
       return;
     }
     onUpdateAnswer(currentQuestion.id, answer);
   };
 
-  const handleConfirmMultipleAnswer = () => {
-    if (multipleDraft.length === 0) {
+  const handleConfirmCurrentAnswer = async (answerOverride?: string | string[]) => {
+    const answer = answerOverride ?? session.answers[currentQuestion.id];
+    if (!answer || (Array.isArray(answer) && answer.length === 0)) {
       alert('请至少选择一个选项后再确认');
       return;
     }
-    handleAnswerChange(multipleDraft);
+    setIsConfirming(true);
+    try {
+      await onConfirmAnswer(currentQuestion.id, answer);
+    } catch (error) {
+      alert('确认答案失败：' + (error as Error).message);
+    } finally {
+      setIsConfirming(false);
+    }
   };
 
   const handlePrevious = () => {
@@ -383,10 +396,15 @@ export function ExamSession({
     return normalizeAnswerValue(answer);
   };
 
+  const isQuestionCorrect = (question: Question, answer: string | string[]): boolean =>
+    question.isCorrect ?? isAnswerCorrect(answer, question.correctAnswer);
+
   const renderQuestionContent = () => {
     const currentAnswer = session.answers[currentQuestion.id];
     const isAnswered = !!currentAnswer;
-    const isCorrect = shouldRevealAnswer && isAnswered ? isAnswerCorrect(currentAnswer, currentQuestion.correctAnswer) : false;
+    const isCorrect = shouldRevealAnswer && isAnswered
+      ? isQuestionCorrect(currentQuestion, currentAnswer)
+      : false;
 
     switch (currentQuestion.type) {
       case 'single':
@@ -395,7 +413,7 @@ export function ExamSession({
                   <RadioGroup
                     value={normalizeAnswerValue(currentAnswer as string || '')}
                     onValueChange={handleAnswerChange}
-                    disabled={isReadOnly}
+                    disabled={isCurrentQuestionLocked}
                     className="!grid !gap-4"
                   >
             {currentQuestion.options?.map((option, index) => {
@@ -437,7 +455,9 @@ export function ExamSession({
       case 'multiple':
         const committedMultipleAnswers = Array.isArray(currentAnswer) ? currentAnswer : [];
         const isMultipleAnswered = committedMultipleAnswers.length > 0;
-        const isMultipleCorrect = shouldRevealAnswer && isMultipleAnswered ? isAnswerCorrect(committedMultipleAnswers, currentQuestion.correctAnswer) : false;
+        const isMultipleCorrect = shouldRevealAnswer && isMultipleAnswered
+          ? isQuestionCorrect(currentQuestion, committedMultipleAnswers)
+          : false;
         const correctOptions = Array.isArray(currentQuestion.correctAnswer) ? currentQuestion.correctAnswer : [currentQuestion.correctAnswer];
         const normalizedCommittedAnswers = committedMultipleAnswers.map(normalizeAnswerValue);
         const hasDraftChanges =
@@ -480,9 +500,9 @@ export function ExamSession({
                     <Checkbox
                       id={`option-${index}`}
                       checked={isSelected}
-                      disabled={isReadOnly}
+                      disabled={isCurrentQuestionLocked}
                       onCheckedChange={(checked) => {
-                        if (isReadOnly) {
+                        if (isCurrentQuestionLocked) {
                           return;
                         }
                         if (checked) {
@@ -499,10 +519,14 @@ export function ExamSession({
               );
             })}
             <div className="flex flex-wrap items-center gap-3 pt-2">
-              <Button onClick={handleConfirmMultipleAnswer} disabled={isReadOnly} className="bg-blue-600 hover:bg-blue-700">
-                {isMultipleAnswered ? '更新答案' : '确认答案'}
+              <Button
+                onClick={() => void handleConfirmCurrentAnswer(multipleDraft)}
+                disabled={isCurrentQuestionLocked || isConfirming || multipleDraft.length === 0}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                {isConfirming ? '确认中...' : '确认答案'}
               </Button>
-              <Button variant="outline" onClick={() => setMultipleDraft(committedMultipleAnswers)} disabled={isReadOnly}>
+              <Button variant="outline" onClick={() => setMultipleDraft(committedMultipleAnswers)} disabled={isCurrentQuestionLocked}>
                 撤销修改
               </Button>
               <div className="text-sm text-slate-500">
@@ -517,7 +541,7 @@ export function ExamSession({
         return (
           <Input
             value={fillDraft}
-            disabled={isReadOnly}
+            disabled={isCurrentQuestionLocked}
             onChange={(e) => {
               setFillDraft(e.target.value);
               handleAnswerChange(e.target.value);
@@ -531,7 +555,7 @@ export function ExamSession({
         return (
           <Textarea
             value={fillDraft}
-            disabled={isReadOnly}
+            disabled={isCurrentQuestionLocked}
             onChange={(e) => {
               setFillDraft(e.target.value);
               handleAnswerChange(e.target.value);
@@ -594,7 +618,7 @@ export function ExamSession({
                     </Badge>
                     {session.answers[currentQuestion.id] && (() => {
                       const currentAnswerCorrect = shouldRevealAnswer
-                        ? isAnswerCorrect(session.answers[currentQuestion.id], currentQuestion.correctAnswer)
+                        ? isQuestionCorrect(currentQuestion, session.answers[currentQuestion.id])
                         : false;
                       return (
                       <Badge className={
@@ -646,17 +670,17 @@ export function ExamSession({
                       {markedQuestions.has(currentQuestionIndex) ? '取消标记' : '标记'}
                     </Button>
                     
-                    {/* 练习模式下未答题时显示查看答案按钮 */}
-                    {session.examMode === 'practice' && !session.answers[currentQuestion.id] && (
+                    {session.examMode === 'practice'
+                      && currentQuestion.type !== 'multiple'
+                      && session.answers[currentQuestion.id]
+                      && !isCurrentQuestionLocked && (
                       <Button
-                        variant="outline"
                         size="sm"
-                        onClick={() => setShowAnswer(true)}
-                        disabled={showAnswer}
-                        className="text-blue-700 hover:bg-blue-50 border-blue-300"
+                        onClick={() => void handleConfirmCurrentAnswer()}
+                        disabled={isConfirming}
+                        className="bg-blue-600 hover:bg-blue-700"
                       >
-                        <BookOpen className="w-3.5 h-3.5 mr-1.5" />
-                        查看答案
+                        {isConfirming ? '确认中...' : '确认答案'}
                       </Button>
                     )}
                   </div>
@@ -687,30 +711,30 @@ export function ExamSession({
                     {/* 已答题时显示答案解析 */}
                     {session.answers[currentQuestion.id] && (
                       <div className={`mt-6 p-4 border-l-4 rounded-r-lg ${
-                        isAnswerCorrect(session.answers[currentQuestion.id], currentQuestion.correctAnswer)
+                        isQuestionCorrect(currentQuestion, session.answers[currentQuestion.id])
                           ? 'bg-green-50 border-green-500'
                           : 'bg-red-50 border-red-500'
                       }`}>
                         <div className="flex items-start gap-2 mb-3">
-                          {isAnswerCorrect(session.answers[currentQuestion.id], currentQuestion.correctAnswer) ? (
+                          {isQuestionCorrect(currentQuestion, session.answers[currentQuestion.id]) ? (
                             <CheckCircle className="w-5 h-5 text-green-600 mt-0.5" />
                           ) : (
                             <AlertCircle className="w-5 h-5 text-red-600 mt-0.5" />
                           )}
                           <div className="flex-1">
                             <div className={`mb-1 ${
-                              isAnswerCorrect(session.answers[currentQuestion.id], currentQuestion.correctAnswer)
+                              isQuestionCorrect(currentQuestion, session.answers[currentQuestion.id])
                                 ? 'text-green-900'
                                 : 'text-red-900'
                             }`}>
-                              {isAnswerCorrect(session.answers[currentQuestion.id], currentQuestion.correctAnswer)
+                              {isQuestionCorrect(currentQuestion, session.answers[currentQuestion.id])
                                 ? '回答正确！'
                                 : '回答错误'
                               }
                             </div>
                             <div className="space-y-2">
                               <div className={`${
-                                isAnswerCorrect(session.answers[currentQuestion.id], currentQuestion.correctAnswer)
+                                isQuestionCorrect(currentQuestion, session.answers[currentQuestion.id])
                                   ? 'text-green-800'
                                   : 'text-red-800'
                               }`}>
@@ -720,7 +744,7 @@ export function ExamSession({
                                 </span>
                               </div>
                               <div className={`${
-                                isAnswerCorrect(session.answers[currentQuestion.id], currentQuestion.correctAnswer)
+                                isQuestionCorrect(currentQuestion, session.answers[currentQuestion.id])
                                   ? 'text-green-800'
                                   : 'text-red-800'
                               }`}>
@@ -734,14 +758,14 @@ export function ExamSession({
                         </div>
                         <div className="pl-7">
                           <div className={`mb-1 ${
-                            isAnswerCorrect(session.answers[currentQuestion.id], currentQuestion.correctAnswer)
+                            isQuestionCorrect(currentQuestion, session.answers[currentQuestion.id])
                               ? 'text-green-900'
                               : 'text-red-900'
                           }`}>
                             解析
                           </div>
                           <div className={`markdown-body text-sm ${
-                            isAnswerCorrect(session.answers[currentQuestion.id], currentQuestion.correctAnswer)
+                            isQuestionCorrect(currentQuestion, session.answers[currentQuestion.id])
                               ? 'text-green-700'
                               : 'text-red-700'
                           }`}>
@@ -823,8 +847,11 @@ export function ExamSession({
                     const isCurrent = questionIndex === currentQuestionIndex;
                     const isMarked = markedQuestions.has(questionIndex);
                     
-                    const canRevealCorrectness = shouldRevealAnswer && question.type !== 'essay';
-                    const isCorrect = isAnswered && canRevealCorrectness ? isAnswerCorrect(userAnswer, question.correctAnswer) : false;
+                    const canRevealCorrectness = (isReadOnly || Boolean(question.confirmedAt))
+                      && question.type !== 'essay';
+                    const isCorrect = isAnswered && canRevealCorrectness
+                      ? question.isCorrect ?? isAnswerCorrect(userAnswer, question.correctAnswer)
+                      : false;
 
                     let buttonClasses = 'w-full aspect-square rounded text-sm transition-all font-medium flex items-center justify-center min-h-[32px] ';
 
@@ -899,7 +926,7 @@ export function ExamSession({
                       <span className="inline-block h-3 w-3 rounded border border-slate-300 bg-white"></span>
                       未答
                     </div>
-                    {shouldRevealAnswer && (
+                    {hasRevealedAnswers && (
                       <>
                         <div className="flex items-center gap-2 text-slate-600">
                           <span className="inline-block h-3 w-3 rounded border border-green-200 bg-green-50"></span>
@@ -928,14 +955,15 @@ export function ExamSession({
                     <span className="text-slate-600">已答题：</span>
                     <span className="text-slate-800">{answeredCount}</span>
                   </div>
-                  {shouldRevealAnswer && answeredCount > 0 && (
+                  {hasRevealedAnswers && answeredCount > 0 && (
                     <>
                       <div className="flex justify-between">
                         <span className="text-slate-600">正确：</span>
                         <span className="text-green-600">
                           {session.questions.filter(q => {
                             const answer = session.answers[q.id];
-                            return answer && isAnswerCorrect(answer, q.correctAnswer);
+                            const canReveal = isReadOnly || Boolean(q.confirmedAt);
+                            return answer && canReveal && (q.isCorrect ?? isAnswerCorrect(answer, q.correctAnswer));
                           }).length}
                         </span>
                       </div>
@@ -944,7 +972,9 @@ export function ExamSession({
                         <span className="text-red-600">
                           {session.questions.filter(q => {
                             const answer = session.answers[q.id];
-                            return answer && !isAnswerCorrect(answer, q.correctAnswer);
+                            const canReveal = isReadOnly || Boolean(q.confirmedAt);
+                            return answer && canReveal && q.type !== 'essay'
+                              && !(q.isCorrect ?? isAnswerCorrect(answer, q.correctAnswer));
                           }).length}
                         </span>
                       </div>

@@ -25,6 +25,7 @@ class EncryptedEndpointCoverageTest {
                 "QuestionController#getQuestionDetail",
                 "PracticeSessionController#startPracticeSession",
                 "PracticeSessionController#getPracticeSessionDetail",
+                "PracticeSessionController#getPracticeSessionResult",
                 "EssayController#getHistory",
                 "EssayController#getQuestions",
                 "UserStatsController#getWrongQuestions",

@@ -86,8 +86,8 @@ type BackendQuestionDTO = {
   name: string;
   intro: string;
   options: BackendOption[];
-  answer: string;
-  analysis: string;
+  answer?: string | null;
+  analysis?: string | null;
   questionType: number;
   difficulty: number;
   questionRecordId?: number | null;
@@ -190,7 +190,10 @@ function mapDifficulty(difficulty: number): Question['difficulty'] {
   }
 }
 
-function parseCorrectAnswer(answer: string, type: Question['type']): string | string[] {
+function parseCorrectAnswer(answer: string | null | undefined, type: Question['type']): string | string[] {
+  if (!answer) {
+    return type === 'multiple' ? [] : '';
+  }
   if (type === 'multiple') {
     return answer.split(',').map(item => item.trim()).filter(Boolean);
   }
@@ -550,6 +553,18 @@ export async function fetchWrongQuestions(params: PageQuery = {}): Promise<PageR
 
 export async function continuePracticeSession(sessionId: string): Promise<ExamSession> {
   const data = await requestEncrypted<GetSessionRes>(`/session/${sessionId}`);
+  if (data.status === 1) {
+    return fetchPracticeSessionResult(sessionId);
+  }
+  return mapSessionResponse(data);
+}
+
+export async function fetchPracticeSessionResult(sessionId: string): Promise<ExamSession> {
+  const data = await requestEncrypted<GetSessionRes>(`/session/${sessionId}/result`);
+  return mapSessionResponse(data);
+}
+
+function mapSessionResponse(data: GetSessionRes): ExamSession {
   const questions = data.questionList.map(q => mapQuestion(q, data.paper?.paperCateId ?? 1));
   const isCompleted = data.status === 1;
   const resolvedSessionId = String(data.id);
