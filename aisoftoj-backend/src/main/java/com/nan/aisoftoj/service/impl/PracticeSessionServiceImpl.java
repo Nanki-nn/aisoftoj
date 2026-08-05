@@ -1,6 +1,7 @@
 package com.nan.aisoftoj.service.impl;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.nan.aisoftoj.common.ConflictException;
 import com.nan.aisoftoj.common.ForbiddenException;
 import com.nan.aisoftoj.common.ResourceNotFoundException;
 import com.nan.aisoftoj.consts.PracticeSessionState;
@@ -280,6 +281,13 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
         if (practiceSession == null) {
             throw new IllegalArgumentException("试卷会话记录不存在");
         }
+        if (practiceSession.getStatus() != null
+                && practiceSession.getStatus() == PracticeSessionState.FINISHED.getCode()) {
+            return buildPersistedSubmitResponse(practiceSession);
+        }
+        if (!isDoing(practiceSession)) {
+            throw new ConflictException("当前刷题会话不能交卷");
+        }
         boolean shouldRecordWrongStats = practiceSession.getStatus() == null
                 || practiceSession.getStatus() != PracticeSessionState.FINISHED.getCode();
 
@@ -349,6 +357,15 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
         response.setRecordId(Long.valueOf(practiceSessionId));
         response.setScore(score);
         response.setTotalScore(BigDecimal.valueOf(questions.size()));
+        response.setStatus(PracticeSessionState.FINISHED.getCode());
+        return response;
+    }
+
+    private PaperSubmitResponse buildPersistedSubmitResponse(PracticeSession practiceSession) {
+        PaperSubmitResponse response = new PaperSubmitResponse();
+        response.setRecordId(Long.valueOf(practiceSession.getId()));
+        response.setScore(practiceSession.getScore());
+        response.setTotalScore(practiceSession.getTotalScore());
         response.setStatus(PracticeSessionState.FINISHED.getCode());
         return response;
     }

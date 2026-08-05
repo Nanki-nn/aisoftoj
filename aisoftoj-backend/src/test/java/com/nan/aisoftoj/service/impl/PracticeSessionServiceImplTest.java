@@ -2,6 +2,7 @@ package com.nan.aisoftoj.service.impl;
 
 import com.nan.aisoftoj.consts.PracticeSessionState;
 import com.nan.aisoftoj.dto.GETPracticeSessionRes;
+import com.nan.aisoftoj.dto.PaperSubmitResponse;
 import com.nan.aisoftoj.entity.Paper;
 import com.nan.aisoftoj.entity.PracticeSession;
 import com.nan.aisoftoj.mapper.PracticeSessionMapper;
@@ -17,6 +18,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
+import java.math.BigDecimal;
 import java.util.Collections;
 import java.util.Date;
 
@@ -24,6 +26,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -100,6 +104,24 @@ class PracticeSessionServiceImplTest {
         verify(practiceSessionMapper).updateById(updateCaptor.capture());
         assertEquals(result.getStartTime(), updateCaptor.getValue().getStartTime());
         assertEquals(0L, updateCaptor.getValue().getEndTime().getTime());
+    }
+
+    @Test
+    void resubmittingFinishedSessionReturnsPersistedResultWithoutMutatingRecords() {
+        PracticeSession session = doingSession();
+        session.setStatus(PracticeSessionState.FINISHED.getCode());
+        session.setScore(new BigDecimal("62.00"));
+        session.setTotalScore(new BigDecimal("75.00"));
+        when(practiceSessionMapper.selectById(12)).thenReturn(session);
+
+        PaperSubmitResponse result = practiceSessionService.submitPracticeSession(7, 12, null);
+
+        assertEquals(12L, result.getRecordId());
+        assertEquals(new BigDecimal("62.00"), result.getScore());
+        assertEquals(new BigDecimal("75.00"), result.getTotalScore());
+        assertEquals(PracticeSessionState.FINISHED.getCode(), result.getStatus());
+        verify(practiceSessionMapper, never()).updateById(any());
+        verifyNoInteractions(questionService, practiceSessionQuestionRecordMapper, userWrongQuestionStatMapper);
     }
 
     private PracticeSession doingSession() {
