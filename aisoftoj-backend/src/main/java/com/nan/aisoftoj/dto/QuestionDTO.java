@@ -5,6 +5,7 @@ import com.baomidou.mybatisplus.annotation.TableId;
 import lombok.Data;
 
 import java.io.Serializable;
+import java.math.BigDecimal;
 import java.util.Date;
 import java.util.List;
 
@@ -100,4 +101,16 @@ public class QuestionDTO {
 	 * 当前会话答题记录的服务端版本号。
 	 */
 	private Long answerRevision;
+
+	/** 会话固定题序。 */
+	private Integer questionOrder;
+
+	/** 会话固定分值。 */
+	private BigDecimal scoreSnapshot;
+
+	/** 会话固定判分策略。 */
+	private String gradingStrategySnapshot;
+
+	/** 练题模式确认时间。 */
+	private Date confirmedAt;
 }

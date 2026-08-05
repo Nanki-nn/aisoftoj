@@ -1,6 +1,7 @@
 package com.nan.aisoftoj.mapper;
 
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
+import com.nan.aisoftoj.dto.SessionQuestionSnapshot;
 import com.nan.aisoftoj.entity.Question;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
@@ -15,8 +16,34 @@ public interface QuestionMapper extends BaseMapper<Question> {
     @Select("SELECT t1.* FROM question t1 " +
             "JOIN paper_question_relation t2 ON t1.id = t2.question_id " +
             "WHERE t2.paper_id = #{paperId} AND t1.is_deleted = 0 " +
+            "ORDER BY t2.order_num, t2.id " +
             "LIMIT 201")
     List<Question> selectQuestionsByPaperId(Integer paperId);
+
+    @Select("SELECT pqr.id AS paperQuestionRelationId, q.id AS questionId, " +
+            "pqr.order_num AS questionOrder, pqr.score AS scoreSnapshot, " +
+            "q.grading_strategy AS gradingStrategySnapshot, " +
+            "q.name, q.intro, q.options, q.answer, q.analysis, q.question_type AS questionType, q.difficulty " +
+            "FROM paper_question_relation pqr " +
+            "JOIN question q ON q.id = pqr.question_id " +
+            "WHERE pqr.paper_id = #{paperId} AND q.is_deleted = 0 " +
+            "ORDER BY pqr.order_num, pqr.id LIMIT 201")
+    List<SessionQuestionSnapshot> selectSessionQuestionSnapshotsByPaperId(Integer paperId);
+
+    @Select("SELECT psqr.paper_question_relation_id AS paperQuestionRelationId, " +
+            "psqr.question_id AS questionId, psqr.question_order AS questionOrder, " +
+            "psqr.score_snapshot AS scoreSnapshot, " +
+            "psqr.grading_strategy_snapshot AS gradingStrategySnapshot, " +
+            "q.name, q.intro, q.options, q.answer, q.analysis, q.question_type AS questionType, q.difficulty, " +
+            "psqr.id AS questionRecordId, psqr.user_answer AS userAnswer, " +
+            "psqr.is_submitted AS isSubmitted, psqr.is_correct AS isCorrect, " +
+            "psqr.spend_time AS spendTime, psqr.answer_revision AS answerRevision, " +
+            "psqr.confirmed_at AS confirmedAt " +
+            "FROM practice_session_question_record psqr " +
+            "JOIN question q ON q.id = psqr.question_id " +
+            "WHERE psqr.session_id = #{sessionId} AND psqr.is_deleted = 0 " +
+            "ORDER BY psqr.question_order, psqr.id LIMIT 201")
+    List<SessionQuestionSnapshot> selectSessionQuestionSnapshotsBySessionId(Integer sessionId);
 
     @Select("SELECT COUNT(1) FROM question q " +
             "JOIN paper_question_relation pqr ON q.id = pqr.question_id " +
@@ -24,6 +51,10 @@ public interface QuestionMapper extends BaseMapper<Question> {
             "WHERE q.id = #{questionId} AND q.is_deleted = 0 " +
             "AND p.is_deleted = 0 AND p.publish_status = 1")
     int countPublishedPaperRelations(@Param("questionId") Integer questionId);
+
+    @Select("SELECT COUNT(1) FROM practice_session_question_record " +
+            "WHERE question_id = #{questionId} AND is_deleted = 0")
+    int countSessionQuestionRecords(@Param("questionId") Integer questionId);
 
     @Select("SELECT q.id, q.name, q.intro, " +
             "MAX(p.paper_year) AS year, MAX(p.subject_name) AS subjectName " +

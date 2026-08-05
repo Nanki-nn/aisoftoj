@@ -44,6 +44,11 @@ public class Question {
     private Integer questionType;
 
     /**
+     * 判分策略：EXACT_CHOICE/SET_CHOICE/ORDERED_BLANKS/MANUAL。
+     */
+    private String gradingStrategy;
+
+    /**
      * 难度: 1-易, 2-中, 3-难
      */
     private Integer difficulty;

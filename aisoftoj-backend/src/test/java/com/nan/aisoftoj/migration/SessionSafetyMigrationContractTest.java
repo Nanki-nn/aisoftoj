@@ -41,4 +41,26 @@ class SessionSafetyMigrationContractTest {
         assertTrue(sql.contains("`last_mutation_id` varchar(64) default null"));
         assertTrue(sql.contains("`confirmed_at` datetime default null"));
     }
+
+    @Test
+    void v7AddsDeterministicQuestionAndGradingSnapshots() throws Exception {
+        InputStream stream = getClass().getClassLoader().getResourceAsStream(
+                "db/migration/V7__add_stable_session_question_snapshots.sql");
+
+        assertNotNull(stream);
+        String sql = StreamUtils.copyToString(stream, StandardCharsets.UTF_8)
+                .replaceAll("\\s+", " ")
+                .toLowerCase();
+
+        assertTrue(sql.contains("`order_num` int unsigned"));
+        assertTrue(sql.contains("`grading_strategy` varchar(32)"));
+        assertTrue(sql.contains("`paper_question_relation_id` int unsigned"));
+        assertTrue(sql.contains("`question_order` int unsigned"));
+        assertTrue(sql.contains("`score_snapshot` decimal(5,2)"));
+        assertTrue(sql.contains("`grading_strategy_snapshot` varchar(32)"));
+        assertTrue(sql.contains("modify column `user_answer` text null"));
+        assertTrue(sql.contains("join `paper_question_relation` pqr"));
+        assertTrue(sql.contains("values ('question_type_supported')"));
+        assertTrue(sql.contains("where `question_type` not in (1, 2, 3, 4, 5, 6)"));
+    }
 }

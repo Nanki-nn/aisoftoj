@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.annotation.IdType;
 import com.baomidou.mybatisplus.annotation.TableId;
 import lombok.Data;
 
+import java.math.BigDecimal;
 import java.util.Date;
 
 @Data
@@ -23,6 +24,26 @@ public class PracticeSessionQuestionRecord {
      * 题目ID
      */
     private Integer questionId;
+
+    /**
+     * 会话创建时关联的试卷题目关系。
+     */
+    private Integer paperQuestionRelationId;
+
+    /**
+     * 会话创建时固定的题目顺序。
+     */
+    private Integer questionOrder;
+
+    /**
+     * 会话创建时固定的本题分值。
+     */
+    private BigDecimal scoreSnapshot;
+
+    /**
+     * 会话创建时固定的判分策略。
+     */
+    private String gradingStrategySnapshot;
 
     /**
      * 用户答案

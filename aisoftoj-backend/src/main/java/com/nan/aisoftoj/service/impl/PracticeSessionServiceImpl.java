@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.nan.aisoftoj.common.ConflictException;
 import com.nan.aisoftoj.common.ForbiddenException;
 import com.nan.aisoftoj.common.ResourceNotFoundException;
+import com.nan.aisoftoj.consts.GradingStrategy;
 import com.nan.aisoftoj.consts.PracticeSessionState;
 import com.nan.aisoftoj.dto.*;
 import com.nan.aisoftoj.entity.Paper;
@@ -29,6 +30,7 @@ import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.stream.Collectors;
 
 @Service
@@ -74,6 +76,12 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
 			return getStatPracticeSessionRes(practiceSession, paperId, paper);
         }
 
+        List<SessionQuestionSnapshot> questionSnapshots =
+                questionService.listSessionQuestionSnapshotsByPaperId(paperId);
+        if (questionSnapshots.isEmpty()) {
+            throw new IllegalArgumentException("试卷不存在题目");
+        }
+
         //创建试卷会话记录
         PracticeSession insertPracticeSession = new PracticeSession();
         insertPracticeSession.setPaperId(paperId);
@@ -82,7 +90,7 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
         insertPracticeSession.setExamMode(sessionMode);
         insertPracticeSession.setAnsweredCount(0);
         insertPracticeSession.setStatus(PracticeSessionState.DOING.getCode());
-        insertPracticeSession.setTotalScore(BigDecimal.valueOf(75));
+        insertPracticeSession.setTotalScore(calculateGradableTotalScore(questionSnapshots));
         // 插入记录到数据库
         try {
             practiceSessionMapper.insert(insertPracticeSession);
@@ -97,7 +105,7 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
 
 
         //初始化会话题目记录PracticeSessionQuestionRecord
-        initPracticeSessionQuestionRecord(paperId, insertPracticeSession.getId());
+        initPracticeSessionQuestionRecord(questionSnapshots, insertPracticeSession.getId());
 
         // 返回新创建的会话记录
 		return getStatPracticeSessionRes(insertPracticeSession, paperId, paper);
@@ -124,43 +132,39 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
         res.setStatus(practiceSession.getStatus());
         res.setStartTime(practiceSession.getStartTime());
         res.setPaper(paper);
-        //找出所有与试卷关联的题目
-        List<Question> questions = questionService.listByPaperId(paperId);
-        // 转换为DTO格式
-        List<QuestionDTO> questionDTOs = getQuestionDTOS(questions);
-        Map<Integer, PracticeSessionQuestionRecord> recordMap = getSessionQuestionRecordMap(practiceSession.getId());
-        questionDTOs.forEach(questionDTO -> {
-            PracticeSessionQuestionRecord record = recordMap.get(questionDTO.getId());
-            if (record != null) {
-                questionDTO.setQuestionRecordId(record.getId());
-                questionDTO.setUserAnswer(record.getUserAnswer());
-                questionDTO.setIsSubmitted(record.getIsSubmitted());
-                questionDTO.setIsCorrect(record.getIsCorrect());
-                questionDTO.setSpendTime(record.getSpendTime());
-                questionDTO.setAnswerRevision(record.getAnswerRevision());
-            }
-        });
-        res.setQuestionList(questionDTOs);
+        res.setQuestionList(getSessionQuestionDTOs(practiceSession.getId()));
         return res;
     }
 
 
 
-	private List<QuestionDTO> getQuestionDTOS(List<Question> questions) {
-		return questions.stream()
-				.map(question -> {
-					QuestionDTO questionDTO = new QuestionDTO();
-					questionDTO.setId(question.getId());
-					questionDTO.setName(question.getName());
-					questionDTO.setIntro(question.getIntro());
-					questionDTO.setOptions(parseOptions(question.getOptions()));
-					questionDTO.setAnswer(question.getAnswer());
-					questionDTO.setAnalysis(question.getAnalysis());
-					questionDTO.setQuestionType(question.getQuestionType());
-					questionDTO.setDifficulty(question.getDifficulty());
-					return questionDTO;
-				})
-				.collect(Collectors.toList());
+    private List<QuestionDTO> getSessionQuestionDTOs(Integer practiceSessionId) {
+        List<SessionQuestionSnapshot> snapshots =
+                questionService.listSessionQuestionSnapshotsBySessionId(practiceSessionId);
+        List<QuestionDTO> questionDTOs = new ArrayList<>();
+        for (SessionQuestionSnapshot snapshot : snapshots) {
+            QuestionDTO questionDTO = new QuestionDTO();
+            questionDTO.setId(snapshot.getQuestionId());
+            questionDTO.setName(snapshot.getName());
+            questionDTO.setIntro(snapshot.getIntro());
+            questionDTO.setOptions(parseOptions(snapshot.getOptions()));
+            questionDTO.setAnswer(snapshot.getAnswer());
+            questionDTO.setAnalysis(snapshot.getAnalysis());
+            questionDTO.setQuestionType(snapshot.getQuestionType());
+            questionDTO.setDifficulty(snapshot.getDifficulty());
+            questionDTO.setQuestionRecordId(snapshot.getQuestionRecordId());
+            questionDTO.setUserAnswer(snapshot.getUserAnswer());
+            questionDTO.setIsSubmitted(snapshot.getIsSubmitted());
+            questionDTO.setIsCorrect(snapshot.getIsCorrect());
+            questionDTO.setSpendTime(snapshot.getSpendTime());
+            questionDTO.setAnswerRevision(snapshot.getAnswerRevision());
+            questionDTO.setQuestionOrder(snapshot.getQuestionOrder());
+            questionDTO.setScoreSnapshot(snapshot.getScoreSnapshot());
+            questionDTO.setGradingStrategySnapshot(snapshot.getGradingStrategySnapshot());
+            questionDTO.setConfirmedAt(snapshot.getConfirmedAt());
+            questionDTOs.add(questionDTO);
+        }
+        return questionDTOs;
     }
 
     private List<Option> parseOptions(String rawOptions) {
@@ -192,32 +196,27 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
     }
 
 
-    private void initPracticeSessionQuestionRecord(Integer paperId, Integer practiceSessionId) {
-
-        //1. 从数据库中查询所有与试卷相关的题目
-        List<Question> questions = questionService.listByPaperId(paperId);
-        if (questions.isEmpty()) {
-            throw new IllegalArgumentException("试卷不存在题目");
-        }
-
-        //2. 遍历题目列表，创建PracticeSessionQuestionRecord记录
-        for (Question question : questions) {
+    private void initPracticeSessionQuestionRecord(
+            List<SessionQuestionSnapshot> questionSnapshots,
+            Integer practiceSessionId) {
+        for (SessionQuestionSnapshot snapshot : questionSnapshots) {
             PracticeSessionQuestionRecord practiceSessionQuestionRecord = new PracticeSessionQuestionRecord();
             practiceSessionQuestionRecord.setSessionId(practiceSessionId);
-            practiceSessionQuestionRecord.setQuestionId(question.getId());
+            practiceSessionQuestionRecord.setQuestionId(snapshot.getQuestionId());
+            practiceSessionQuestionRecord.setPaperQuestionRelationId(snapshot.getPaperQuestionRelationId());
+            practiceSessionQuestionRecord.setQuestionOrder(snapshot.getQuestionOrder());
+            practiceSessionQuestionRecord.setScoreSnapshot(snapshot.getScoreSnapshot());
+            practiceSessionQuestionRecord.setGradingStrategySnapshot(snapshot.getGradingStrategySnapshot());
             practiceSessionQuestionRecordMapper.insert(practiceSessionQuestionRecord);
         }
-
     }
 
-    private Map<Integer, PracticeSessionQuestionRecord> getSessionQuestionRecordMap(Integer practiceSessionId) {
-        List<PracticeSessionQuestionRecord> records = practiceSessionQuestionRecordMapper.selectList(
-                new LambdaQueryWrapper<PracticeSessionQuestionRecord>()
-                        .eq(PracticeSessionQuestionRecord::getSessionId, practiceSessionId)
-                        .eq(PracticeSessionQuestionRecord::getIsDeleted, false)
-        );
-        return records.stream()
-                .collect(Collectors.toMap(PracticeSessionQuestionRecord::getQuestionId, record -> record, (left, right) -> left));
+    private BigDecimal calculateGradableTotalScore(List<SessionQuestionSnapshot> snapshots) {
+        return snapshots.stream()
+                .filter(snapshot -> !GradingStrategy.MANUAL.name().equals(snapshot.getGradingStrategySnapshot()))
+                .map(SessionQuestionSnapshot::getScoreSnapshot)
+                .filter(Objects::nonNull)
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
     }
 
     @Override
@@ -248,10 +247,7 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
         resDTO.setPaperName(paper.getName());
         resDTO.setPaper(paper);
 
-        //找出所有与试卷关联的题目
-        List<Question> questions = questionService.listByPaperId(practiceSession.getPaperId());
-        // 转换为DTO格式，并附带本次会话的答题记录
-        getQuestionDTOs(questions, resDTO, getSessionQuestionRecordMap(practiceSessionId));
+        resDTO.setQuestionList(getSessionQuestionDTOs(practiceSessionId));
         return resDTO;
 
     }
@@ -275,23 +271,6 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
         practiceSession.setEndTime(pausedAt);
     }
 
-    private void getQuestionDTOs(List<Question> questions, GETPracticeSessionRes resDTO, Map<Integer, PracticeSessionQuestionRecord> recordMap) {
-        List<QuestionDTO> questionDTOs = getQuestionDTOS(questions);
-        questionDTOs.forEach(questionDTO -> {
-            PracticeSessionQuestionRecord record = recordMap.get(questionDTO.getId());
-            if (record != null) {
-                questionDTO.setQuestionRecordId(record.getId());
-                questionDTO.setUserAnswer(record.getUserAnswer());
-                questionDTO.setIsSubmitted(record.getIsSubmitted());
-                questionDTO.setIsCorrect(record.getIsCorrect());
-                questionDTO.setSpendTime(record.getSpendTime());
-                questionDTO.setAnswerRevision(record.getAnswerRevision());
-            }
-        });
-        resDTO.setQuestionList(questionDTOs);
-    }
-
-
     @Override
     @Transactional(rollbackFor = Exception.class)
     public PaperSubmitResponse submitPracticeSession(Integer userId, Integer practiceSessionId, PaperSubmitRequest request) {
@@ -309,14 +288,20 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
         boolean shouldRecordWrongStats = practiceSession.getStatus() == null
                 || practiceSession.getStatus() != PracticeSessionState.FINISHED.getCode();
 
-        List<Question> questions = questionService.listByPaperId(practiceSession.getPaperId());
-        if (questions.isEmpty()) {
-            throw new IllegalArgumentException("试卷不存在题目");
+        List<PracticeSessionQuestionRecord> records =
+                practiceSessionQuestionRecordMapper.selectBySessionIdOrdered(practiceSessionId);
+        if (records.isEmpty()) {
+            throw new IllegalArgumentException("试卷会话不存在题目快照");
         }
         Paper paper = paperService.getById(practiceSession.getPaperId());
 
-        Map<Integer, Question> questionMap = questions.stream()
-                .collect(Collectors.toMap(Question::getId, question -> question));
+        Map<Integer, SessionQuestionSnapshot> questionMap = questionService
+                .listSessionQuestionSnapshotsBySessionId(practiceSessionId)
+                .stream()
+                .collect(Collectors.toMap(
+                        SessionQuestionSnapshot::getQuestionId,
+                        snapshot -> snapshot,
+                        (left, right) -> left));
         Map<Integer, PaperSubmitRequest.QuestionAnswer> answerMap = new HashMap<>();
         if (request != null && request.getAnswers() != null) {
             for (PaperSubmitRequest.QuestionAnswer answer : request.getAnswers()) {
@@ -327,22 +312,28 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
         }
 
         BigDecimal score = BigDecimal.ZERO;
+        BigDecimal totalScore = BigDecimal.ZERO;
         int answeredCount = 0;
 
-        List<PracticeSessionQuestionRecord> records = practiceSessionQuestionRecordMapper.selectList(
-                new LambdaQueryWrapper<PracticeSessionQuestionRecord>()
-                        .eq(PracticeSessionQuestionRecord::getSessionId, practiceSessionId)
-        );
-
         for (PracticeSessionQuestionRecord record : records) {
-            Question question = questionMap.get(record.getQuestionId());
+            SessionQuestionSnapshot question = questionMap.get(record.getQuestionId());
             if (question == null) {
-                continue;
+                throw new ConflictException("会话题目快照已失效");
             }
 
             PaperSubmitRequest.QuestionAnswer submitAnswer = answerMap.get(record.getQuestionId());
             String userAnswer = submitAnswer == null ? record.getUserAnswer() : submitAnswer.getUserAnswer();
-            boolean isCorrect = isCorrectAnswer(question.getAnswer(), userAnswer);
+            String gradingStrategy = record.getGradingStrategySnapshot() == null
+                    ? GradingStrategy.fromQuestionType(question.getQuestionType()).name()
+                    : record.getGradingStrategySnapshot();
+            BigDecimal questionScore = record.getScoreSnapshot() == null
+                    ? BigDecimal.ONE
+                    : record.getScoreSnapshot();
+            boolean manual = GradingStrategy.MANUAL.name().equals(gradingStrategy);
+            Boolean isCorrect = manual ? null : isCorrectAnswer(question.getAnswer(), userAnswer);
+            if (!manual) {
+                totalScore = totalScore.add(questionScore);
+            }
             if (userAnswer != null && !userAnswer.trim().isEmpty()) {
                 answeredCount++;
             }
@@ -355,10 +346,10 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
             updateRecord.setSpendTime(submitAnswer == null ? record.getSpendTime() : submitAnswer.getSpendTime());
             practiceSessionQuestionRecordMapper.updateById(updateRecord);
 
-            if (isCorrect) {
-                score = score.add(BigDecimal.ONE);
-            } else if (shouldRecordWrongStats) {
-                saveWrongQuestionStat(userId, practiceSession.getPaperId(), paper, question);
+            if (Boolean.TRUE.equals(isCorrect)) {
+                score = score.add(questionScore);
+            } else if (Boolean.FALSE.equals(isCorrect) && shouldRecordWrongStats) {
+                saveWrongQuestionStat(userId, practiceSession.getPaperId(), paper, toQuestion(question));
             }
         }
 
@@ -368,15 +359,23 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
         updateSession.setAnsweredCount(answeredCount);
         updateSession.setEndTime(request != null && request.getEndTime() != null ? request.getEndTime() : new Date());
         updateSession.setScore(score);
-        updateSession.setTotalScore(BigDecimal.valueOf(questions.size()));
+        updateSession.setTotalScore(totalScore);
         practiceSessionMapper.updateById(updateSession);
 
         PaperSubmitResponse response = new PaperSubmitResponse();
         response.setRecordId(Long.valueOf(practiceSessionId));
         response.setScore(score);
-        response.setTotalScore(BigDecimal.valueOf(questions.size()));
+        response.setTotalScore(totalScore);
         response.setStatus(PracticeSessionState.FINISHED.getCode());
         return response;
+    }
+
+    private Question toQuestion(SessionQuestionSnapshot snapshot) {
+        Question question = new Question();
+        question.setId(snapshot.getQuestionId());
+        question.setName(snapshot.getName());
+        question.setQuestionType(snapshot.getQuestionType());
+        return question;
     }
 
     private PaperSubmitResponse buildPersistedSubmitResponse(PracticeSession practiceSession) {
