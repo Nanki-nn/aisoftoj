@@ -3,6 +3,8 @@ package com.nan.aisoftoj.service.impl;
 import com.nan.aisoftoj.consts.PracticeSessionState;
 import com.nan.aisoftoj.dto.GETPracticeSessionRes;
 import com.nan.aisoftoj.dto.PaperSubmitResponse;
+import com.nan.aisoftoj.dto.StartPracticeSessionReq;
+import com.nan.aisoftoj.dto.StartPracticeSessionRes;
 import com.nan.aisoftoj.entity.Paper;
 import com.nan.aisoftoj.entity.PracticeSession;
 import com.nan.aisoftoj.mapper.PracticeSessionMapper;
@@ -16,6 +18,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.math.BigDecimal;
@@ -28,6 +31,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -124,6 +128,33 @@ class PracticeSessionServiceImplTest {
         verify(practiceSessionMapper, never()).selectById(12);
         verify(practiceSessionMapper, never()).updateById(any());
         verifyNoInteractions(questionService, practiceSessionQuestionRecordMapper, userWrongQuestionStatMapper);
+    }
+
+    @Test
+    void concurrentStartReturnsTheWinningActiveSessionWithoutReinitializingQuestions() {
+        Paper paper = new Paper();
+        paper.setId(3);
+        paper.setName("测试试卷");
+        paper.setPublishStatus(true);
+        paper.setIsDeleted(false);
+        when(paperService.getById(3)).thenReturn(paper);
+
+        PracticeSession winningSession = doingSession();
+        when(practiceSessionMapper.selectOne(any())).thenReturn(null, winningSession);
+        when(practiceSessionMapper.insert(any())).thenThrow(new DuplicateKeyException("active session"));
+        when(questionService.listByPaperId(3)).thenReturn(Collections.emptyList());
+        when(practiceSessionQuestionRecordMapper.selectList(any())).thenReturn(Collections.emptyList());
+
+        StartPracticeSessionReq request = new StartPracticeSessionReq();
+        request.setPaperId(3);
+        request.setMode(1);
+
+        StartPracticeSessionRes result = practiceSessionService.startPracticeSession(7, request);
+
+        assertEquals(12, result.getPracticeSessionId());
+        assertEquals(PracticeSessionState.DOING.getCode(), result.getStatus());
+        verify(practiceSessionMapper, times(2)).selectOne(any());
+        verify(practiceSessionQuestionRecordMapper, never()).insert(any());
     }
 
     private PracticeSession doingSession() {
