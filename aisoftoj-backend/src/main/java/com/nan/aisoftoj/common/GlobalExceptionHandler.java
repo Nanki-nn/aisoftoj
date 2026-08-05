@@ -41,6 +41,12 @@ public class GlobalExceptionHandler {
         return error(HttpStatus.FORBIDDEN, ex.getMessage(), request);
     }
 
+    @ExceptionHandler(ConflictException.class)
+    public ResponseEntity<ErrorResponse> handleConflictException(
+            HttpServletRequest request, ConflictException ex) {
+        return error(HttpStatus.CONFLICT, ex.getMessage(), request);
+    }
+
     @ExceptionHandler(TooManyRequestsException.class)
     public ResponseEntity<ErrorResponse> handleTooManyRequestsException(
             HttpServletRequest request, TooManyRequestsException ex) {

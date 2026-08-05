@@ -1,7 +1,9 @@
 package com.nan.aisoftoj.service.impl;
 
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.nan.aisoftoj.common.ConflictException;
 import com.nan.aisoftoj.common.ForbiddenException;
+import com.nan.aisoftoj.consts.PracticeSessionState;
 import com.nan.aisoftoj.dto.UpdateQuestionRecordDTO;
 import com.nan.aisoftoj.entity.PracticeSession;
 import com.nan.aisoftoj.entity.PracticeSessionQuestionRecord;
@@ -42,6 +44,10 @@ public class  PracticeSessionQuestionRecordServiceImpl implements PracticeSessio
                 .last("LIMIT 1"));
         if (practiceSession == null) {
             throw new ForbiddenException("无权修改该题目记录");
+        }
+        if (practiceSession.getStatus() == null
+                || practiceSession.getStatus() != PracticeSessionState.DOING.getCode()) {
+            throw new ConflictException("已结束的刷题会话不能修改答题记录");
         }
 
         PracticeSessionQuestionRecord updatePracticeSessionQuestionRecord = new PracticeSessionQuestionRecord();
