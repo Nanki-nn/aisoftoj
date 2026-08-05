@@ -137,6 +137,7 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
                 questionDTO.setIsSubmitted(record.getIsSubmitted());
                 questionDTO.setIsCorrect(record.getIsCorrect());
                 questionDTO.setSpendTime(record.getSpendTime());
+                questionDTO.setAnswerRevision(record.getAnswerRevision());
             }
         });
         res.setQuestionList(questionDTOs);
@@ -284,6 +285,7 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
                 questionDTO.setIsSubmitted(record.getIsSubmitted());
                 questionDTO.setIsCorrect(record.getIsCorrect());
                 questionDTO.setSpendTime(record.getSpendTime());
+                questionDTO.setAnswerRevision(record.getAnswerRevision());
             }
         });
         resDTO.setQuestionList(questionDTOs);

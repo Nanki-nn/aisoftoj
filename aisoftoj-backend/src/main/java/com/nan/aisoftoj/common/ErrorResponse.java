@@ -8,11 +8,17 @@ public class ErrorResponse {
     private String message;
     private long timestamp;
     private String path;
+    private Object data;
 
     public ErrorResponse(int code, String message, String path) {
         this.code = code;
         this.message = message;
         this.timestamp = System.currentTimeMillis();
         this.path = path;
+    }
+
+    public ErrorResponse(int code, String message, String path, Object data) {
+        this(code, message, path);
+        this.data = data;
     }
 }

@@ -1,5 +1,6 @@
 package com.nan.aisoftoj.controller;
 
+import com.nan.aisoftoj.dto.QuestionRecordUpdateResponse;
 import com.nan.aisoftoj.dto.ResultDTO;
 import com.nan.aisoftoj.dto.UpdateQuestionRecordDTO;
 import com.nan.aisoftoj.service.AuthService;
@@ -8,6 +9,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.http.HttpServletRequest;
+import javax.validation.Valid;
 
 /**
  * 会话题目状态
@@ -17,7 +19,7 @@ import javax.servlet.http.HttpServletRequest;
 public class PracticeSessionQuestionRecordController {
 
     @Autowired
-    private PracticeSessionQuestionRecordService  practiceSessionQuestionRecordService;
+    private PracticeSessionQuestionRecordService practiceSessionQuestionRecordService;
 
     @Autowired
     private AuthService authService;
@@ -29,15 +31,13 @@ public class PracticeSessionQuestionRecordController {
      * Method: PATCH
      */
     @PatchMapping("/practice/session/question/record/{questionRecordId}")
-    public ResultDTO<Long> updatePracticeSessionQuestionRecord(@PathVariable Integer questionRecordId,
-                                                               @RequestBody UpdateQuestionRecordDTO updateQuestionRecordDTO,
-                                                               HttpServletRequest request) {
+    public ResultDTO<QuestionRecordUpdateResponse> updatePracticeSessionQuestionRecord(
+            @PathVariable Integer questionRecordId,
+            @Valid @RequestBody UpdateQuestionRecordDTO updateQuestionRecordDTO,
+            HttpServletRequest request) {
         Integer userId = authService.getCurrentUserId(request.getHeader("Authorization"));
-        Long result = practiceSessionQuestionRecordService.updatePracticeSessionQuestionRecord(userId, questionRecordId, updateQuestionRecordDTO);
+        QuestionRecordUpdateResponse result = practiceSessionQuestionRecordService
+                .updatePracticeSessionQuestionRecord(userId, questionRecordId, updateQuestionRecordDTO);
         return ResultDTO.success(result);
     }
-
-
-
-
 }

@@ -1,11 +1,12 @@
 package com.nan.aisoftoj.service;
-import com.nan.aisoftoj.dto.QuestionRecordRequest;
-import com.nan.aisoftoj.dto.UpdateQuestionRecordDTO;
 
-import java.util.List;
+import com.nan.aisoftoj.dto.QuestionRecordUpdateResponse;
+import com.nan.aisoftoj.dto.UpdateQuestionRecordDTO;
 
 public interface PracticeSessionQuestionRecordService {
 
-    Long updatePracticeSessionQuestionRecord(Integer userId, Integer questionRecordId, UpdateQuestionRecordDTO updateQuestionRecordDTO);
-
+    QuestionRecordUpdateResponse updatePracticeSessionQuestionRecord(
+            Integer userId,
+            Integer questionRecordId,
+            UpdateQuestionRecordDTO updateQuestionRecordDTO);
 }
