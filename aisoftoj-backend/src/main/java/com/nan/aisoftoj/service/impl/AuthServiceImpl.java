@@ -8,6 +8,7 @@ import cn.hutool.jwt.JWTUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nan.aisoftoj.auth.EmailCodeScene;
 import com.nan.aisoftoj.auth.EmailNormalizer;
+import com.nan.aisoftoj.auth.WeChatCodeExchangeClient;
 import com.nan.aisoftoj.common.ForbiddenException;
 import com.nan.aisoftoj.common.InvalidEmailCodeException;
 import com.nan.aisoftoj.common.UnauthorizedException;
@@ -18,6 +19,7 @@ import com.nan.aisoftoj.dto.AuthRegisterRequest;
 import com.nan.aisoftoj.dto.AuthResponse;
 import com.nan.aisoftoj.dto.AuthUserDTO;
 import com.nan.aisoftoj.dto.PasswordResetRequest;
+import com.nan.aisoftoj.dto.WeChatLoginRequest;
 import com.nan.aisoftoj.entity.User;
 import com.nan.aisoftoj.mapper.PracticeSessionMapper;
 import com.nan.aisoftoj.mapper.UserMapper;
@@ -56,6 +58,10 @@ public class AuthServiceImpl implements AuthService {
     private EmailCodeService emailCodeService;
     @Autowired
     private AuthRateLimitService rateLimitService;
+    @Autowired
+    private WeChatCodeExchangeClient weChatCodeExchangeClient;
+    @Autowired
+    private WeChatUserService weChatUserService;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -133,6 +139,14 @@ public class AuthServiceImpl implements AuthService {
         emailCodeService.consumeCode(normalizedEmail, EmailCodeScene.LOGIN, request.getCode());
         markLogin(user);
         return buildAuthResponse(user);
+    }
+
+    @Override
+    public AuthResponse loginByWechat(WeChatLoginRequest request, String requestIp) {
+        rateLimitService.acquireWechatCodeExchangeLimit(requestIp);
+        String openId = weChatCodeExchangeClient.exchangeForOpenId(request.getCode());
+        rateLimitService.acquireWechatOpenIdLoginLimit(openId);
+        return buildAuthResponse(weChatUserService.loginOrCreate(openId));
     }
 
     @Override

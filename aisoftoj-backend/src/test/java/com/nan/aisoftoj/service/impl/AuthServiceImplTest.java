@@ -2,6 +2,7 @@ package com.nan.aisoftoj.service.impl;
 
 import cn.hutool.jwt.JWTUtil;
 import com.nan.aisoftoj.auth.EmailCodeScene;
+import com.nan.aisoftoj.auth.WeChatCodeExchangeClient;
 import com.nan.aisoftoj.common.ForbiddenException;
 import com.nan.aisoftoj.common.UnauthorizedException;
 import com.nan.aisoftoj.common.UserRole;
@@ -10,6 +11,7 @@ import com.nan.aisoftoj.dto.AuthLoginRequest;
 import com.nan.aisoftoj.dto.AuthUserDTO;
 import com.nan.aisoftoj.dto.AuthRegisterRequest;
 import com.nan.aisoftoj.dto.PasswordResetRequest;
+import com.nan.aisoftoj.dto.WeChatLoginRequest;
 import com.nan.aisoftoj.entity.User;
 import com.nan.aisoftoj.mapper.PracticeSessionMapper;
 import com.nan.aisoftoj.mapper.UserMapper;
@@ -36,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.eq;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -53,6 +56,10 @@ class AuthServiceImplTest {
     private EmailCodeService emailCodeService;
     @Mock
     private AuthRateLimitService rateLimitService;
+    @Mock
+    private WeChatCodeExchangeClient weChatCodeExchangeClient;
+    @Mock
+    private WeChatUserService weChatUserService;
 
     private AuthServiceImpl authService;
 
@@ -66,6 +73,8 @@ class AuthServiceImplTest {
         ReflectionTestUtils.setField(authService, "userWrongQuestionStatMapper", userWrongQuestionStatMapper);
         ReflectionTestUtils.setField(authService, "emailCodeService", emailCodeService);
         ReflectionTestUtils.setField(authService, "rateLimitService", rateLimitService);
+        ReflectionTestUtils.setField(authService, "weChatCodeExchangeClient", weChatCodeExchangeClient);
+        ReflectionTestUtils.setField(authService, "weChatUserService", weChatUserService);
     }
 
     @Test
@@ -253,6 +262,29 @@ class AuthServiceImplTest {
         when(userMapper.selectById(7)).thenReturn(user);
         assertThrows(UnauthorizedException.class,
                 () -> authService.getCurrentUser(tokenFor(7, 0, System.currentTimeMillis() + 60_000)));
+    }
+
+    @Test
+    void wechatLoginAppliesIpThenOpenIdLimitsBeforeIssuingToken() {
+        User user = activeUser(UserRole.USER.name());
+        when(weChatCodeExchangeClient.exchangeForOpenId("temporary-code"))
+                .thenReturn("openid-1");
+        when(weChatUserService.loginOrCreate("openid-1")).thenReturn(user);
+        when(practiceSessionMapper.selectCount(any())).thenReturn(0L);
+        when(userWrongQuestionStatMapper.selectCount(any())).thenReturn(0L);
+
+        WeChatLoginRequest request = new WeChatLoginRequest();
+        request.setCode("temporary-code");
+
+        AuthUserDTO responseUser = authService.loginByWechat(request, "127.0.0.1").getUser();
+
+        assertEquals("7", responseUser.getId());
+        org.mockito.InOrder order = inOrder(
+                rateLimitService, weChatCodeExchangeClient, weChatUserService);
+        order.verify(rateLimitService).acquireWechatCodeExchangeLimit("127.0.0.1");
+        order.verify(weChatCodeExchangeClient).exchangeForOpenId("temporary-code");
+        order.verify(rateLimitService).acquireWechatOpenIdLoginLimit("openid-1");
+        order.verify(weChatUserService).loginOrCreate("openid-1");
     }
 
     private User activeUser(String role) {

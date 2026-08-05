@@ -44,6 +44,22 @@ public class AuthRateLimitServiceImpl implements AuthRateLimitService {
         acquireAll(limits, "登录尝试过于频繁，请 15 分钟后再试");
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void acquireWechatCodeExchangeLimit(String requestIp) {
+        List<LimitSpec> limits = new ArrayList<>();
+        limits.add(limit("wechat-code-ip", requestIp, 50, Duration.ofMinutes(15)));
+        acquireAll(limits, "微信登录尝试过于频繁，请稍后再试");
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void acquireWechatOpenIdLoginLimit(String openId) {
+        List<LimitSpec> limits = new ArrayList<>();
+        limits.add(limit("wechat-openid", openId, 20, Duration.ofMinutes(15)));
+        acquireAll(limits, "微信登录尝试过于频繁，请稍后再试");
+    }
+
     private LimitSpec limit(String scope, String identity, int maximum, Duration duration) {
         return new LimitSpec(crypto.stableLimitKey(scope, identity), maximum, duration);
     }
