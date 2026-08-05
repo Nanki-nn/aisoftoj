@@ -38,7 +38,7 @@ CREATE TABLE `user` (
 CREATE TABLE `auth_email_code` (
   `id` bigint(20) unsigned NOT NULL AUTO_INCREMENT COMMENT '验证码ID',
   `email` varchar(254) COLLATE utf8mb4_bin NOT NULL COMMENT '规范化邮箱',
-  `scene` varchar(24) COLLATE utf8mb4_bin NOT NULL COMMENT 'REGISTER/PASSWORD_RESET/LOGIN',
+  `scene` varchar(24) COLLATE utf8mb4_bin NOT NULL COMMENT 'REGISTER/PASSWORD_RESET/LOGIN/BIND_EMAIL',
   `code_hash` char(64) COLLATE ascii_bin NOT NULL COMMENT '验证码HMAC-SHA256',
   `code_salt` char(32) COLLATE ascii_bin NOT NULL COMMENT '验证码随机盐',
   `status` varchar(16) COLLATE ascii_bin NOT NULL COMMENT 'PENDING/ACTIVE/CONSUMED/SUPERSEDED/FAILED/SUPPRESSED',

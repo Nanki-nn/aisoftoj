@@ -287,6 +287,41 @@ class AuthServiceImplTest {
         order.verify(weChatUserService).loginOrCreate("openid-1");
     }
 
+    @Test
+    void wxOnlyUserCanRequestEmailBindingCode() {
+        User user = activeUser(UserRole.USER.name());
+        user.setWxOpenId("openid-1");
+        when(userMapper.selectById(7)).thenReturn(user);
+
+        authService.sendEmailBindingCode(
+                tokenFor(7, System.currentTimeMillis() + 60_000),
+                " USER@example.com ",
+                "127.0.0.1");
+
+        org.mockito.Mockito.verify(emailCodeService)
+                .requestBindingCode(" USER@example.com ", "127.0.0.1", 7);
+    }
+
+    @Test
+    void emailBindingCodeRejectsNonWxOnlyAccounts() {
+        User emailUser = activeUser(UserRole.USER.name());
+        emailUser.setWxOpenId("openid-1");
+        emailUser.setEmailNormalized("user@example.com");
+        when(userMapper.selectById(7)).thenReturn(emailUser);
+        assertThrows(IllegalArgumentException.class, () -> authService.sendEmailBindingCode(
+                tokenFor(7, System.currentTimeMillis() + 60_000),
+                "user@example.com",
+                "127.0.0.1"));
+
+        User admin = activeUser(UserRole.ADMIN.name());
+        admin.setWxOpenId("openid-1");
+        when(userMapper.selectById(7)).thenReturn(admin);
+        assertThrows(IllegalArgumentException.class, () -> authService.sendEmailBindingCode(
+                tokenFor(7, System.currentTimeMillis() + 60_000),
+                "user@example.com",
+                "127.0.0.1"));
+    }
+
     private User activeUser(String role) {
         User user = new User();
         user.setId(7);

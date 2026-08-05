@@ -60,6 +60,21 @@ public class AuthRateLimitServiceImpl implements AuthRateLimitService {
         acquireAll(limits, "微信登录尝试过于频繁，请稍后再试");
     }
 
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void acquireEmailBindingCodeLimits(
+            String normalizedEmail, String requestIp, Integer userId) {
+        List<LimitSpec> limits = new ArrayList<>();
+        limits.add(limit("email-code-cooldown:" + EmailCodeScene.BIND_EMAIL.name(),
+                normalizedEmail, 1, Duration.ofSeconds(60)));
+        limits.add(limit("email-code-hour:" + EmailCodeScene.BIND_EMAIL.name(),
+                normalizedEmail, 6, Duration.ofHours(1)));
+        limits.add(limit("email-code-ip-hour:" + EmailCodeScene.BIND_EMAIL.name(),
+                requestIp, 30, Duration.ofHours(1)));
+        limits.add(limit("email-bind-user-hour", String.valueOf(userId), 6, Duration.ofHours(1)));
+        acquireAll(limits, "操作过于频繁，请稍后再试");
+    }
+
     private LimitSpec limit(String scope, String identity, int maximum, Duration duration) {
         return new LimitSpec(crypto.stableLimitKey(scope, identity), maximum, duration);
     }

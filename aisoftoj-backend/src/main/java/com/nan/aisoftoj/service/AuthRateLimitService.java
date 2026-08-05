@@ -10,4 +10,6 @@ public interface AuthRateLimitService {
     void acquireWechatCodeExchangeLimit(String requestIp);
 
     void acquireWechatOpenIdLoginLimit(String openId);
+
+    void acquireEmailBindingCodeLimits(String normalizedEmail, String requestIp, Integer userId);
 }

@@ -29,4 +29,22 @@ class AuthControllerTest {
 
         verify(authService).loginByWechat(request, "203.0.113.8");
     }
+
+    @Test
+    void emailBindingCodeForwardsTokenEmailAndClientIp() {
+        AuthService authService = mock(AuthService.class);
+        AuthController controller = new AuthController();
+        ReflectionTestUtils.setField(controller, "authService", authService);
+        com.nan.aisoftoj.dto.EmailBindCodeRequest request =
+                new com.nan.aisoftoj.dto.EmailBindCodeRequest();
+        request.setEmail("user@example.com");
+        MockHttpServletRequest servletRequest = new MockHttpServletRequest();
+        servletRequest.addHeader("Authorization", "Bearer token");
+        servletRequest.addHeader("X-Real-IP", "203.0.113.8");
+
+        controller.sendEmailBindingCode(request, servletRequest);
+
+        verify(authService).sendEmailBindingCode(
+                "Bearer token", "user@example.com", "203.0.113.8");
+    }
 }

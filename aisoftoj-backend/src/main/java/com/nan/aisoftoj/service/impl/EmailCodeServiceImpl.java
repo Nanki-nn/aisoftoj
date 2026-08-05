@@ -7,6 +7,7 @@ import com.nan.aisoftoj.auth.EmailNormalizer;
 import com.nan.aisoftoj.auth.EmailOutboxStatus;
 import com.nan.aisoftoj.auth.AuthEmailProperties;
 import com.nan.aisoftoj.common.InvalidEmailCodeException;
+import com.nan.aisoftoj.common.UserRole;
 import com.nan.aisoftoj.entity.AuthEmailCode;
 import com.nan.aisoftoj.entity.AuthEmailOutbox;
 import com.nan.aisoftoj.entity.User;
@@ -62,6 +63,26 @@ public class EmailCodeServiceImpl implements EmailCodeService {
         rateLimitService.acquireEmailCodeLimits(normalizedEmail, scene, normalizeIp(requestIp));
         boolean deliverable = scene == EmailCodeScene.REGISTER || isActiveVerifiedUser(existing);
 
+        persistCode(normalizedEmail, scene, requestIp, deliverable);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void requestBindingCode(String email, String requestIp, Integer currentUserId) {
+        String normalizedEmail = EmailNormalizer.normalize(email);
+        emailSender.ensureConfigured();
+        User existing = userMapper.selectAnyByNormalizedEmail(normalizedEmail);
+        rateLimitService.acquireEmailBindingCodeLimits(
+                normalizedEmail, normalizeIp(requestIp), currentUserId);
+        boolean deliverable = existing == null || isActiveVerifiedRegularUser(existing);
+        persistCode(normalizedEmail, EmailCodeScene.BIND_EMAIL, requestIp, deliverable);
+    }
+
+    private void persistCode(
+            String normalizedEmail,
+            EmailCodeScene scene,
+            String requestIp,
+            boolean deliverable) {
         String code = crypto.generateCode();
         String salt = crypto.generateSalt();
         AuthEmailCode record = new AuthEmailCode();
@@ -118,6 +139,11 @@ public class EmailCodeServiceImpl implements EmailCodeService {
                 && !Boolean.TRUE.equals(user.getIsDeleted())
                 && Boolean.TRUE.equals(user.getIsEnabled())
                 && user.getEmailVerifiedAt() != null;
+    }
+
+    private boolean isActiveVerifiedRegularUser(User user) {
+        return isActiveVerifiedUser(user)
+                && UserRole.USER.name().equals(user.getRole());
     }
 
     private String normalizeIp(String requestIp) {

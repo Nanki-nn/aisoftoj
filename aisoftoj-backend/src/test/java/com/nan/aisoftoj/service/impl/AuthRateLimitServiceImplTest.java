@@ -18,6 +18,7 @@ import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.atLeastOnce;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -65,5 +66,20 @@ class AuthRateLimitServiceImplTest {
                 any(LocalDateTime.class),
                 any(LocalDateTime.class),
                 any(LocalDateTime.class));
+    }
+
+    @Test
+    void emailBindingLimitsCoverEmailIpAndCurrentUser() {
+        AuthRateLimit current = new AuthRateLimit();
+        current.setCounter(0);
+        current.setWindowStart(LocalDateTime.now());
+        current.setExpiresAt(LocalDateTime.now().plusHours(1));
+        when(mapper.selectForUpdate(anyString())).thenReturn(current);
+
+        service.acquireEmailBindingCodeLimits("user@example.com", "127.0.0.1", 7);
+
+        verify(mapper, times(4)).insertIgnore(
+                anyString(), any(LocalDateTime.class), any(LocalDateTime.class));
+        verify(mapper, times(4)).selectForUpdate(anyString());
     }
 }

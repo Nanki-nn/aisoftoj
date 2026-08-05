@@ -150,6 +150,18 @@ public class AuthServiceImpl implements AuthService {
     }
 
     @Override
+    public void sendEmailBindingCode(String token, String email, String requestIp) {
+        User user = getActiveUserByToken(token);
+        if (!UserRole.USER.name().equals(user.getRole())
+                || StrUtil.isBlank(user.getWxOpenId())
+                || StrUtil.isNotBlank(user.getEmail())
+                || StrUtil.isNotBlank(user.getEmailNormalized())) {
+            throw new IllegalArgumentException("当前账号不支持邮箱绑定");
+        }
+        emailCodeService.requestBindingCode(email, requestIp, user.getId());
+    }
+
+    @Override
     @Transactional(rollbackFor = Exception.class, noRollbackFor = InvalidEmailCodeException.class)
     public void resetPassword(PasswordResetRequest request) {
         if (!StrUtil.equals(request.getNewPassword(), request.getConfirmPassword())) {
