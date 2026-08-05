@@ -7,6 +7,7 @@ import com.nan.aisoftoj.dto.AuthRegisterRequest;
 import com.nan.aisoftoj.dto.AuthResponse;
 import com.nan.aisoftoj.dto.AuthUserDTO;
 import com.nan.aisoftoj.dto.EmailBindCodeRequest;
+import com.nan.aisoftoj.dto.EmailBindRequest;
 import com.nan.aisoftoj.dto.EmailCodeRequest;
 import com.nan.aisoftoj.dto.PasswordResetRequest;
 import com.nan.aisoftoj.dto.ResultDTO;
@@ -70,6 +71,14 @@ public class AuthController {
                 request.getEmail(),
                 clientIp(servletRequest));
         return ResultDTO.success("如果邮箱可用，验证码将发送到该邮箱", null);
+    }
+
+    @PostMapping("/email/bind")
+    public ResultDTO<AuthResponse> bindEmail(
+            @Validated @RequestBody EmailBindRequest request,
+            HttpServletRequest servletRequest) {
+        return ResultDTO.success(authService.bindEmail(
+                servletRequest.getHeader("Authorization"), request));
     }
 
     @PostMapping("/password/reset")

@@ -20,6 +20,12 @@ public interface UserMapper extends BaseMapper<User> {
     @Select("SELECT * FROM user WHERE email_normalized = #{email} AND is_deleted = 0 LIMIT 1 FOR UPDATE")
     User selectByNormalizedEmailForUpdate(@Param("email") String email);
 
+    @Select("SELECT * FROM user WHERE email_normalized = #{email} LIMIT 1 FOR UPDATE")
+    User selectAnyByNormalizedEmailForUpdate(@Param("email") String email);
+
+    @Select("SELECT * FROM user WHERE id = #{userId} LIMIT 1 FOR UPDATE")
+    User selectByIdForUpdate(@Param("userId") Integer userId);
+
     @Select("SELECT * FROM user WHERE wx_open_id = #{openId} LIMIT 1 FOR UPDATE")
     User selectByWxOpenIdForUpdate(@Param("openId") String openId);
 

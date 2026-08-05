@@ -6,6 +6,7 @@ import com.nan.aisoftoj.dto.AuthLoginRequest;
 import com.nan.aisoftoj.dto.AuthRegisterRequest;
 import com.nan.aisoftoj.dto.AuthResponse;
 import com.nan.aisoftoj.dto.AuthUserDTO;
+import com.nan.aisoftoj.dto.EmailBindRequest;
 import com.nan.aisoftoj.dto.PasswordResetRequest;
 import com.nan.aisoftoj.dto.WeChatLoginRequest;
 
@@ -21,6 +22,8 @@ public interface AuthService {
     AuthResponse loginByWechat(WeChatLoginRequest request, String requestIp);
 
     void sendEmailBindingCode(String token, String email, String requestIp);
+
+    AuthResponse bindEmail(String token, EmailBindRequest request);
 
     void resetPassword(PasswordResetRequest request);
 

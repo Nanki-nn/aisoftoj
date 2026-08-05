@@ -60,6 +60,8 @@ class AuthServiceImplTest {
     private WeChatCodeExchangeClient weChatCodeExchangeClient;
     @Mock
     private WeChatUserService weChatUserService;
+    @Mock
+    private EmailBindingService emailBindingService;
 
     private AuthServiceImpl authService;
 
@@ -75,6 +77,7 @@ class AuthServiceImplTest {
         ReflectionTestUtils.setField(authService, "rateLimitService", rateLimitService);
         ReflectionTestUtils.setField(authService, "weChatCodeExchangeClient", weChatCodeExchangeClient);
         ReflectionTestUtils.setField(authService, "weChatUserService", weChatUserService);
+        ReflectionTestUtils.setField(authService, "emailBindingService", emailBindingService);
     }
 
     @Test
@@ -320,6 +323,32 @@ class AuthServiceImplTest {
                 tokenFor(7, System.currentTimeMillis() + 60_000),
                 "user@example.com",
                 "127.0.0.1"));
+    }
+
+    @Test
+    void emailBindingReturnsFreshAuthResponseForLockedUser() {
+        User current = activeUser(UserRole.USER.name());
+        current.setWxOpenId("openid-1");
+        current.setEmail("user@example.com");
+        current.setEmailNormalized("user@example.com");
+        current.setEmailVerifiedAt(new Date());
+        when(userMapper.selectById(7)).thenReturn(activeUser(UserRole.USER.name()));
+        when(emailBindingService.bind(7, "user@example.com", "123456"))
+                .thenReturn(current);
+        when(practiceSessionMapper.selectCount(any())).thenReturn(0L);
+        when(userWrongQuestionStatMapper.selectCount(any())).thenReturn(0L);
+
+        com.nan.aisoftoj.dto.EmailBindRequest request =
+                new com.nan.aisoftoj.dto.EmailBindRequest();
+        request.setEmail("user@example.com");
+        request.setCode("123456");
+
+        AuthUserDTO response = authService.bindEmail(
+                tokenFor(7, System.currentTimeMillis() + 60_000), request).getUser();
+
+        assertEquals("user@example.com", response.getEmail());
+        org.mockito.Mockito.verify(emailBindingService)
+                .bind(7, "user@example.com", "123456");
     }
 
     private User activeUser(String role) {
