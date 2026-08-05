@@ -63,4 +63,22 @@ class SessionSafetyMigrationContractTest {
         assertTrue(sql.contains("values ('question_type_supported')"));
         assertTrue(sql.contains("where `question_type` not in (1, 2, 3, 4, 5, 6)"));
     }
+
+    @Test
+    void v8AddsAtomicActiveWrongQuestionIdentityAndStableSessionOrigin() throws Exception {
+        InputStream stream = getClass().getClassLoader().getResourceAsStream(
+                "db/migration/V8__add_atomic_wrong_question_upsert.sql");
+
+        assertNotNull(stream);
+        String sql = StreamUtils.copyToString(stream, StandardCharsets.UTF_8)
+                .replaceAll("\\s+", " ")
+                .toLowerCase();
+
+        assertTrue(sql.contains("create temporary table `migration_v8_preflight_guard`"));
+        assertTrue(sql.contains("where `question_id` is not null and `is_deleted` = 0"));
+        assertTrue(sql.contains("`last_session_id` int unsigned default null"));
+        assertTrue(sql.contains("generated always as (if(`is_deleted` = 0, 1, null)) stored"));
+        assertTrue(sql.contains("unique key `uk_wrong_question_active` (`user_id`, `question_id`, `active_marker`)"));
+        assertTrue(sql.contains("set `last_session_id` = ("));
+    }
 }

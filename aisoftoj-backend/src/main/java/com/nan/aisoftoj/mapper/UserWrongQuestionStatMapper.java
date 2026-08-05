@@ -4,6 +4,7 @@ import com.baomidou.mybatisplus.core.mapper.BaseMapper;
 import com.nan.aisoftoj.dto.WrongQuestionDTO;
 import com.nan.aisoftoj.dto.WrongQuestionSummaryDTO;
 import com.nan.aisoftoj.entity.UserWrongQuestionStat;
+import org.apache.ibatis.annotations.Insert;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
@@ -15,16 +16,7 @@ public interface UserWrongQuestionStatMapper extends BaseMapper<UserWrongQuestio
 
     @Select("SELECT " +
             "id, " +
-            "(SELECT psqr.session_id " +
-            "FROM practice_session_question_record psqr " +
-            "JOIN practice_session ps ON ps.id = psqr.session_id " +
-            "WHERE ps.user_id = user_wrong_question_stat.user_id " +
-            "AND psqr.question_id = user_wrong_question_stat.question_id " +
-            "AND psqr.is_correct = 0 " +
-            "AND psqr.is_deleted = 0 " +
-            "AND ps.is_deleted = 0 " +
-            "ORDER BY psqr.update_time DESC, psqr.id DESC " +
-            "LIMIT 1) AS sessionId, " +
+            "last_session_id AS sessionId, " +
             "question_id AS questionId, " +
             "question_name AS topicName, " +
             "paper_name AS questionBank, " +
@@ -54,4 +46,50 @@ public interface UserWrongQuestionStatMapper extends BaseMapper<UserWrongQuestio
             "FROM user_wrong_question_stat " +
             "WHERE user_id = #{userId} AND is_deleted = 0")
     WrongQuestionSummaryDTO selectSummaryByUserId(@Param("userId") Integer userId);
+
+    @Insert("INSERT INTO user_wrong_question_stat (" +
+            "source_front_id, source_type, user_id, paper_id, question_id, " +
+            "question_name, paper_name, topic_type, error_count, importance_level, " +
+            "last_wrong_time, last_session_id, is_deleted" +
+            ") VALUES (" +
+            "#{sourceFrontId}, #{sourceType}, #{userId}, #{paperId}, #{questionId}, " +
+            "#{questionName}, #{paperName}, #{topicType}, #{errorCount}, #{importanceLevel}, " +
+            "#{lastWrongTime}, #{lastSessionId}, #{isDeleted}" +
+            ") ON DUPLICATE KEY UPDATE " +
+            "paper_id = CASE " +
+            "WHEN last_wrong_time IS NULL OR VALUES(last_wrong_time) > last_wrong_time " +
+            "OR (VALUES(last_wrong_time) = last_wrong_time " +
+            "AND VALUES(last_session_id) > COALESCE(last_session_id, 0)) " +
+            "THEN VALUES(paper_id) ELSE paper_id END, " +
+            "question_name = CASE " +
+            "WHEN last_wrong_time IS NULL OR VALUES(last_wrong_time) > last_wrong_time " +
+            "OR (VALUES(last_wrong_time) = last_wrong_time " +
+            "AND VALUES(last_session_id) > COALESCE(last_session_id, 0)) " +
+            "THEN VALUES(question_name) ELSE question_name END, " +
+            "paper_name = CASE " +
+            "WHEN last_wrong_time IS NULL OR VALUES(last_wrong_time) > last_wrong_time " +
+            "OR (VALUES(last_wrong_time) = last_wrong_time " +
+            "AND VALUES(last_session_id) > COALESCE(last_session_id, 0)) " +
+            "THEN COALESCE(VALUES(paper_name), paper_name) ELSE paper_name END, " +
+            "topic_type = CASE " +
+            "WHEN last_wrong_time IS NULL OR VALUES(last_wrong_time) > last_wrong_time " +
+            "OR (VALUES(last_wrong_time) = last_wrong_time " +
+            "AND VALUES(last_session_id) > COALESCE(last_session_id, 0)) " +
+            "THEN VALUES(topic_type) ELSE topic_type END, " +
+            "error_count = error_count + 1, " +
+            "importance_level = CASE " +
+            "WHEN FIELD(VALUES(importance_level), 'low', 'medium', 'high', 'must') " +
+            "> FIELD(importance_level, 'low', 'medium', 'high', 'must') " +
+            "THEN VALUES(importance_level) ELSE importance_level END, " +
+            "last_session_id = CASE " +
+            "WHEN last_wrong_time IS NULL OR VALUES(last_wrong_time) > last_wrong_time " +
+            "THEN VALUES(last_session_id) " +
+            "WHEN VALUES(last_wrong_time) = last_wrong_time " +
+            "THEN GREATEST(COALESCE(last_session_id, 0), COALESCE(VALUES(last_session_id), 0)) " +
+            "ELSE last_session_id END, " +
+            "last_wrong_time = CASE " +
+            "WHEN last_wrong_time IS NULL OR VALUES(last_wrong_time) > last_wrong_time " +
+            "THEN VALUES(last_wrong_time) ELSE last_wrong_time END, " +
+            "is_deleted = 0")
+    int upsertActiveWrongQuestion(UserWrongQuestionStat stat);
 }
