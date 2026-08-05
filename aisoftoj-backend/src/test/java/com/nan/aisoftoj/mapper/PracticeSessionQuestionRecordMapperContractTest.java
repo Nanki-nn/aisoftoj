@@ -5,6 +5,7 @@ import org.apache.ibatis.annotations.Update;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Method;
+import java.util.Date;
 import java.util.Locale;
 
 import static org.junit.jupiter.api.Assertions.assertNotNull;
@@ -46,6 +47,29 @@ class PracticeSessionQuestionRecordMapperContractTest {
         assertTrue(sql.contains("ANSWER_REVISION = #{EXPECTEDREVISION}"));
         assertTrue(sql.contains("CONFIRMED_AT IS NULL"));
         assertTrue(sql.contains("IS_CORRECT = NULL"));
+    }
+
+    @Test
+    void practiceConfirmationAtomicallyGradesAndClosesTheRecord() throws Exception {
+        Method updateMethod = PracticeSessionQuestionRecordMapper.class.getMethod(
+                "confirmWithRevision",
+                Integer.class,
+                String.class,
+                Integer.class,
+                Long.class,
+                String.class,
+                Boolean.class,
+                Date.class);
+        Update update = updateMethod.getAnnotation(Update.class);
+        assertNotNull(update);
+
+        String sql = normalize(update.value());
+        assertTrue(sql.contains("IS_SUBMITTED = 1"));
+        assertTrue(sql.contains("IS_CORRECT = #{ISCORRECT}"));
+        assertTrue(sql.contains("CONFIRMED_AT = #{CONFIRMEDAT}"));
+        assertTrue(sql.contains("ANSWER_REVISION = ANSWER_REVISION + 1"));
+        assertTrue(sql.contains("ANSWER_REVISION = #{EXPECTEDREVISION}"));
+        assertTrue(sql.contains("CONFIRMED_AT IS NULL"));
     }
 
     private String normalize(String[] statements) {

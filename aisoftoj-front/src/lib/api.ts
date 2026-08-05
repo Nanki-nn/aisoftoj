@@ -96,6 +96,7 @@ type BackendQuestionDTO = {
   isCorrect?: boolean | null;
   spendTime?: number | null;
   answerRevision?: number | null;
+  confirmedAt?: string | null;
 };
 
 type QuestionRecordUpdateResponse = {
@@ -104,10 +105,13 @@ type QuestionRecordUpdateResponse = {
   spendTime?: number | null;
   answerRevision: number;
   mutationId: string;
+  isSubmitted?: boolean | null;
+  isCorrect?: boolean | null;
+  confirmedAt?: string | null;
 };
 
 const questionRecordRevisions = new Map<string, number>();
-const questionRecordUpdateQueues = new Map<string, Promise<void>>();
+const questionRecordUpdateQueues = new Map<string, Promise<unknown>>();
 
 type StartSessionRes = {
   practiceSessionId: number;
@@ -265,6 +269,7 @@ function mapQuestion(question: BackendQuestionDTO, paperCateId = 1): Question {
     isSubmitted: question.isSubmitted ?? undefined,
     isCorrect: question.isCorrect ?? undefined,
     spendTime: question.spendTime ?? undefined,
+    confirmedAt: parseServerDate(question.confirmedAt),
   };
 }
 
@@ -572,8 +577,9 @@ export async function pausePracticeSession(sessionId: string): Promise<void> {
 export async function updatePracticeQuestionRecord(
   questionRecordId: string,
   userAnswer: string | string[],
-  spendTime = 0
-): Promise<void> {
+  spendTime = 0,
+  confirm = false
+): Promise<QuestionRecordUpdateResponse> {
   const previousUpdate = questionRecordUpdateQueues.get(questionRecordId) ?? Promise.resolve();
   const mutationId = createMutationId();
   const update = previousUpdate.then(async () => {
@@ -590,10 +596,12 @@ export async function updatePracticeQuestionRecord(
             spendTime,
             expectedRevision,
             mutationId,
+            confirm,
           }),
         }
       );
       questionRecordRevisions.set(questionRecordId, response.answerRevision);
+      return response;
     } catch (error) {
       if (isApiRequestError(error) && error.status === 409 && isQuestionRecordUpdateResponse(error.data)) {
         questionRecordRevisions.set(questionRecordId, error.data.answerRevision);
@@ -602,7 +610,7 @@ export async function updatePracticeQuestionRecord(
     }
   });
 
-  let trackedUpdate: Promise<void>;
+  let trackedUpdate: Promise<QuestionRecordUpdateResponse>;
   trackedUpdate = update.finally(() => {
     if (questionRecordUpdateQueues.get(questionRecordId) === trackedUpdate) {
       questionRecordUpdateQueues.delete(questionRecordId);

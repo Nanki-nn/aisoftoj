@@ -7,6 +7,7 @@ import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
+import java.util.Date;
 import java.util.List;
 
 @Mapper
@@ -34,5 +35,20 @@ public interface PracticeSessionQuestionRecordMapper extends BaseMapper<Practice
             @Param("spendTime") Integer spendTime,
             @Param("expectedRevision") Long expectedRevision,
             @Param("mutationId") String mutationId);
+
+    @Update("UPDATE practice_session_question_record " +
+            "SET user_answer = #{userAnswer}, spend_time = #{spendTime}, " +
+            "is_submitted = 1, is_correct = #{isCorrect}, confirmed_at = #{confirmedAt}, " +
+            "answer_revision = answer_revision + 1, last_mutation_id = #{mutationId} " +
+            "WHERE id = #{recordId} AND answer_revision = #{expectedRevision} " +
+            "AND confirmed_at IS NULL AND is_deleted = 0")
+    int confirmWithRevision(
+            @Param("recordId") Integer recordId,
+            @Param("userAnswer") String userAnswer,
+            @Param("spendTime") Integer spendTime,
+            @Param("expectedRevision") Long expectedRevision,
+            @Param("mutationId") String mutationId,
+            @Param("isCorrect") Boolean isCorrect,
+            @Param("confirmedAt") Date confirmedAt);
 
 }

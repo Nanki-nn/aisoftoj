@@ -44,6 +44,31 @@ describe('revisioned practice answer writes', () => {
     expect(requests[1].expectedRevision).toBe(1);
     expect(requests[0].mutationId).toEqual(expect.any(String));
     expect(requests[1].mutationId).not.toBe(requests[0].mutationId);
+    expect(requests[0].confirm).toBe(false);
+  });
+
+  it('sends an explicit confirmation and returns the confirmed server state', async () => {
+    globalThis.fetch = async (_input, init) => {
+      const body = JSON.parse(String(init?.body)) as Record<string, unknown>;
+      requests.push(body);
+      return successResponse({
+        recordId: 903,
+        answerRevision: Number(body.expectedRevision) + 1,
+        mutationId: body.mutationId,
+        userAnswer: body.userAnswer,
+        isSubmitted: true,
+        isCorrect: true,
+        confirmedAt: '2026-08-06T01:00:00+08:00',
+      });
+    };
+
+    const result = await updatePracticeQuestionRecord('903', 'A', 12, true);
+
+    expect(requests).toHaveLength(1);
+    expect(requests[0].confirm).toBe(true);
+    expect(result.isSubmitted).toBe(true);
+    expect(result.isCorrect).toBe(true);
+    expect(result.confirmedAt).toBe('2026-08-06T01:00:00+08:00');
   });
 
   it('does not auto-overwrite after a server revision conflict', async () => {
