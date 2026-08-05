@@ -21,6 +21,7 @@ public class UserWrongQuestionStat {
     private Integer errorCount;
     private String importanceLevel;
     private Date lastWrongTime;
+    private Integer lastSessionId;
     private Date createTime;
     private Date updateTime;
     private Integer isDeleted;

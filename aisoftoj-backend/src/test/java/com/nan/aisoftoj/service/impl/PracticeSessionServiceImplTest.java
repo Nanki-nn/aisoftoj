@@ -11,6 +11,7 @@ import com.nan.aisoftoj.dto.StartPracticeSessionRes;
 import com.nan.aisoftoj.entity.Paper;
 import com.nan.aisoftoj.entity.PracticeSession;
 import com.nan.aisoftoj.entity.PracticeSessionQuestionRecord;
+import com.nan.aisoftoj.entity.UserWrongQuestionStat;
 import com.nan.aisoftoj.mapper.PracticeSessionMapper;
 import com.nan.aisoftoj.mapper.PracticeSessionQuestionRecordMapper;
 import com.nan.aisoftoj.mapper.UserWrongQuestionStatMapper;
@@ -229,6 +230,45 @@ class PracticeSessionServiceImplTest {
         assertEquals(null, updateCaptor.getValue().getIsCorrect());
         assertEquals(true, updateCaptor.getValue().getIsSubmitted());
         verifyNoInteractions(userWrongQuestionStatMapper);
+    }
+
+    @Test
+    void wrongObjectiveSubmissionUsesTheAtomicBusinessKeyUpsert() {
+        PracticeSession session = doingSession();
+        when(practiceSessionMapper.selectByIdForUpdate(12)).thenReturn(session);
+
+        PracticeSessionQuestionRecord record = new PracticeSessionQuestionRecord();
+        record.setId(30);
+        record.setSessionId(12);
+        record.setQuestionId(9);
+        record.setQuestionOrder(1);
+        record.setScoreSnapshot(BigDecimal.ONE);
+        record.setGradingStrategySnapshot("EXACT_CHOICE");
+        when(practiceSessionQuestionRecordMapper.selectBySessionIdOrdered(12))
+                .thenReturn(Collections.singletonList(record));
+        when(questionService.listSessionQuestionSnapshotsBySessionId(12))
+                .thenReturn(Collections.singletonList(snapshot(101, 9, 1, "1.00", "EXACT_CHOICE")));
+        when(paperService.getById(3)).thenReturn(publishedPaper());
+
+        PaperSubmitRequest.QuestionAnswer answer = new PaperSubmitRequest.QuestionAnswer();
+        answer.setQuestionId(9);
+        answer.setUserAnswer("B");
+        PaperSubmitRequest request = new PaperSubmitRequest();
+        request.setAnswers(Collections.singletonList(answer));
+
+        practiceSessionService.submitPracticeSession(7, 12, request);
+
+        ArgumentCaptor<UserWrongQuestionStat> statCaptor =
+                ArgumentCaptor.forClass(UserWrongQuestionStat.class);
+        verify(userWrongQuestionStatMapper).upsertActiveWrongQuestion(statCaptor.capture());
+        UserWrongQuestionStat stat = statCaptor.getValue();
+        assertEquals(7, stat.getUserId());
+        assertEquals(9, stat.getQuestionId());
+        assertEquals(12, stat.getLastSessionId());
+        assertEquals(1, stat.getErrorCount());
+        verify(userWrongQuestionStatMapper, never()).selectOne(any());
+        verify(userWrongQuestionStatMapper, never()).insert(any());
+        verify(userWrongQuestionStatMapper, never()).updateById(any());
     }
 
     @Test

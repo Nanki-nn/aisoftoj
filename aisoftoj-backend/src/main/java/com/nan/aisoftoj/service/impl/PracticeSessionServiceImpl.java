@@ -352,7 +352,12 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
 
             score = score.add(gradingResult.getAwardedScore());
             if (Boolean.FALSE.equals(isCorrect) && shouldRecordWrongStats) {
-                saveWrongQuestionStat(userId, practiceSession.getPaperId(), paper, toQuestion(question));
+                saveWrongQuestionStat(
+                        userId,
+                        practiceSession.getPaperId(),
+                        practiceSessionId,
+                        paper,
+                        toQuestion(question));
             }
         }
 
@@ -390,43 +395,29 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
         return response;
     }
 
-    private void saveWrongQuestionStat(Integer userId, Integer paperId, Paper paper, Question question) {
+    private void saveWrongQuestionStat(
+            Integer userId,
+            Integer paperId,
+            Integer sessionId,
+            Paper paper,
+            Question question) {
         Date now = new Date();
         String sourceFrontId = "session_wrong_" + userId + "_" + question.getId();
-        UserWrongQuestionStat existingStat = userWrongQuestionStatMapper.selectOne(
-                new LambdaQueryWrapper<UserWrongQuestionStat>()
-                        .eq(UserWrongQuestionStat::getSourceFrontId, sourceFrontId)
-                        .last("LIMIT 1")
-        );
-
-        if (existingStat == null) {
-            UserWrongQuestionStat insertStat = new UserWrongQuestionStat();
-            insertStat.setSourceFrontId(sourceFrontId);
-            insertStat.setSourceType("wrong_question");
-            insertStat.setUserId(userId);
-            insertStat.setPaperId(paperId);
-            insertStat.setQuestionId(question.getId());
-            insertStat.setQuestionName(question.getName());
-            insertStat.setPaperName(paper == null ? null : paper.getName());
-            insertStat.setTopicType(getQuestionTypeName(question.getQuestionType()));
-            insertStat.setErrorCount(1);
-            insertStat.setImportanceLevel("medium");
-            insertStat.setLastWrongTime(now);
-            insertStat.setIsDeleted(0);
-            userWrongQuestionStatMapper.insert(insertStat);
-            return;
-        }
-
-        UserWrongQuestionStat updateStat = new UserWrongQuestionStat();
-        updateStat.setId(existingStat.getId());
-        updateStat.setPaperId(paperId);
-        updateStat.setQuestionName(question.getName());
-        updateStat.setPaperName(paper == null ? existingStat.getPaperName() : paper.getName());
-        updateStat.setTopicType(getQuestionTypeName(question.getQuestionType()));
-        updateStat.setErrorCount((existingStat.getErrorCount() == null ? 0 : existingStat.getErrorCount()) + 1);
-        updateStat.setLastWrongTime(now);
-        updateStat.setIsDeleted(0);
-        userWrongQuestionStatMapper.updateById(updateStat);
+        UserWrongQuestionStat stat = new UserWrongQuestionStat();
+        stat.setSourceFrontId(sourceFrontId);
+        stat.setSourceType("wrong_question");
+        stat.setUserId(userId);
+        stat.setPaperId(paperId);
+        stat.setQuestionId(question.getId());
+        stat.setQuestionName(question.getName());
+        stat.setPaperName(paper == null ? null : paper.getName());
+        stat.setTopicType(getQuestionTypeName(question.getQuestionType()));
+        stat.setErrorCount(1);
+        stat.setImportanceLevel("medium");
+        stat.setLastWrongTime(now);
+        stat.setLastSessionId(sessionId);
+        stat.setIsDeleted(0);
+        userWrongQuestionStatMapper.upsertActiveWrongQuestion(stat);
     }
 
     private String getQuestionTypeName(Integer questionType) {
