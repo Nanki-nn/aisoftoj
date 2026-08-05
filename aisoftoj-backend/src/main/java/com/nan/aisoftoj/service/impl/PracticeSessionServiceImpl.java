@@ -15,6 +15,7 @@ import com.nan.aisoftoj.entity.UserWrongQuestionStat;
 import com.nan.aisoftoj.mapper.PracticeSessionMapper;
 import com.nan.aisoftoj.mapper.PracticeSessionQuestionRecordMapper;
 import com.nan.aisoftoj.mapper.UserWrongQuestionStatMapper;
+import com.nan.aisoftoj.service.GradingService;
 import com.nan.aisoftoj.service.PaperService;
 import com.nan.aisoftoj.service.PracticeSessionService;
 import com.nan.aisoftoj.service.QuestionService;
@@ -25,7 +26,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Date;
 import java.util.HashMap;
 import java.util.List;
@@ -48,6 +48,8 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
     private PracticeSessionQuestionRecordMapper practiceSessionQuestionRecordMapper;
     @Autowired
     private UserWrongQuestionStatMapper userWrongQuestionStatMapper;
+    @Autowired
+    private GradingService gradingService;
 
 
     @Override
@@ -323,17 +325,19 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
 
             PaperSubmitRequest.QuestionAnswer submitAnswer = answerMap.get(record.getQuestionId());
             String userAnswer = submitAnswer == null ? record.getUserAnswer() : submitAnswer.getUserAnswer();
-            String gradingStrategy = record.getGradingStrategySnapshot() == null
+            String gradingStrategyName = record.getGradingStrategySnapshot() == null
                     ? GradingStrategy.fromQuestionType(question.getQuestionType()).name()
                     : record.getGradingStrategySnapshot();
             BigDecimal questionScore = record.getScoreSnapshot() == null
                     ? BigDecimal.ONE
                     : record.getScoreSnapshot();
-            boolean manual = GradingStrategy.MANUAL.name().equals(gradingStrategy);
-            Boolean isCorrect = manual ? null : isCorrectAnswer(question.getAnswer(), userAnswer);
-            if (!manual) {
-                totalScore = totalScore.add(questionScore);
-            }
+            GradingResult gradingResult = gradingService.grade(
+                    GradingStrategy.valueOf(gradingStrategyName),
+                    question.getAnswer(),
+                    userAnswer,
+                    questionScore);
+            Boolean isCorrect = gradingResult.getIsCorrect();
+            totalScore = totalScore.add(gradingResult.getGradableScore());
             if (userAnswer != null && !userAnswer.trim().isEmpty()) {
                 answeredCount++;
             }
@@ -346,9 +350,8 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
             updateRecord.setSpendTime(submitAnswer == null ? record.getSpendTime() : submitAnswer.getSpendTime());
             practiceSessionQuestionRecordMapper.updateById(updateRecord);
 
-            if (Boolean.TRUE.equals(isCorrect)) {
-                score = score.add(questionScore);
-            } else if (Boolean.FALSE.equals(isCorrect) && shouldRecordWrongStats) {
+            score = score.add(gradingResult.getAwardedScore());
+            if (Boolean.FALSE.equals(isCorrect) && shouldRecordWrongStats) {
                 saveWrongQuestionStat(userId, practiceSession.getPaperId(), paper, toQuestion(question));
             }
         }
@@ -500,30 +503,4 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
                 && practiceSession.getEndTime().getTime() >= PAUSED_END_TIME_CUTOFF_MILLIS;
     }
 
-    private boolean isCorrectAnswer(String standardAnswer, String userAnswer) {
-        if (standardAnswer == null || standardAnswer.trim().isEmpty()) {
-            return false;
-        }
-        if (userAnswer == null || userAnswer.trim().isEmpty()) {
-            return false;
-        }
-
-        String normalizedStandard = standardAnswer.trim();
-        String normalizedUser = userAnswer.trim();
-        if (!normalizedStandard.contains(",")) {
-            return normalizedStandard.equalsIgnoreCase(normalizedUser);
-        }
-
-        List<String> standardAnswers = Arrays.stream(normalizedStandard.split(","))
-                .map(String::trim)
-                .filter(item -> !item.isEmpty())
-                .sorted()
-                .collect(Collectors.toList());
-        List<String> userAnswers = Arrays.stream(normalizedUser.split(","))
-                .map(String::trim)
-                .filter(item -> !item.isEmpty())
-                .sorted()
-                .collect(Collectors.toList());
-        return standardAnswers.equals(userAnswers);
-    }
 }

@@ -2,6 +2,7 @@ package com.nan.aisoftoj.service.impl;
 
 import com.nan.aisoftoj.common.AnswerRevisionConflictException;
 import com.nan.aisoftoj.common.ConflictException;
+import com.nan.aisoftoj.common.UnprocessableEntityException;
 import com.nan.aisoftoj.consts.PracticeSessionState;
 import com.nan.aisoftoj.dto.QuestionRecordUpdateResponse;
 import com.nan.aisoftoj.dto.UpdateQuestionRecordDTO;
@@ -43,6 +44,7 @@ class PracticeSessionQuestionRecordServiceImplTest {
         ReflectionTestUtils.setField(service, "practiceSessionQuestionRecordMapper", questionRecordMapper);
         ReflectionTestUtils.setField(service, "practiceSessionMapper", practiceSessionMapper);
         ReflectionTestUtils.setField(service, "questionService", questionService);
+        ReflectionTestUtils.setField(service, "gradingService", new GradingServiceImpl());
     }
 
     @Test
@@ -138,6 +140,24 @@ class PracticeSessionQuestionRecordServiceImplTest {
         verifyNoInteractions(questionService);
     }
 
+    @Test
+    void rejectsDraftLongerThanTenThousandCodePointsBeforeWriting() {
+        PracticeSessionQuestionRecord record = questionRecord(2L, "mutation-old", "A");
+        when(questionRecordMapper.selectById(30)).thenReturn(record);
+        when(practiceSessionMapper.selectByIdForUpdate(12)).thenReturn(doingSession());
+        when(questionRecordMapper.selectByIdForUpdate(30)).thenReturn(record);
+
+        assertThrows(
+                UnprocessableEntityException.class,
+                () -> service.updatePracticeSessionQuestionRecord(
+                        7,
+                        30,
+                        updateRequest(2L, "mutation-long", repeat("题", 10_001))));
+
+        verify(questionRecordMapper, never()).updateDraftWithRevision(any(), any(), any(), any(), any());
+        verify(practiceSessionMapper, never()).updateById(any());
+    }
+
     private PracticeSession doingSession() {
         PracticeSession session = new PracticeSession();
         session.setId(12);
@@ -165,5 +185,13 @@ class PracticeSessionQuestionRecordServiceImplTest {
         request.setUserAnswer(answer);
         request.setSpendTime(10);
         return request;
+    }
+
+    private String repeat(String value, int count) {
+        StringBuilder builder = new StringBuilder(value.length() * count);
+        for (int i = 0; i < count; i++) {
+            builder.append(value);
+        }
+        return builder.toString();
     }
 }
