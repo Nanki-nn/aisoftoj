@@ -36,6 +36,20 @@ class PracticeSessionMapperContractTest {
         assertExcludesMerged(summary.getAnnotation(Select.class));
     }
 
+    @Test
+    void accountMergeLocksBothUsersSessionsInStableOrder() throws Exception {
+        Method method = PracticeSessionMapper.class.getMethod(
+                "selectForAccountMerge", Integer.class, Integer.class);
+        Select select = method.getAnnotation(Select.class);
+
+        assertNotNull(select);
+        String sql = String.join(" ", select.value()).replaceAll("\\s+", " ").toUpperCase(Locale.ROOT);
+        assertTrue(sql.contains("USER_ID IN (#{FIRSTUSERID}, #{SECONDUSERID})"));
+        assertTrue(sql.contains("STATUS IN (0, 1)"));
+        assertTrue(sql.contains("ORDER BY USER_ID, ID"));
+        assertTrue(sql.endsWith("FOR UPDATE"));
+    }
+
     private void assertExcludesMerged(Select select) {
         assertNotNull(select);
         String sql = String.join(" ", select.value()).replaceAll("\\s+", " ").toUpperCase(Locale.ROOT);

@@ -8,6 +8,7 @@ import org.apache.ibatis.annotations.Select;
 import org.apache.ibatis.annotations.Update;
 
 import java.util.Date;
+import java.util.List;
 
 @Mapper
 public interface UserMapper extends BaseMapper<User> {
@@ -25,6 +26,13 @@ public interface UserMapper extends BaseMapper<User> {
 
     @Select("SELECT * FROM user WHERE id = #{userId} LIMIT 1 FOR UPDATE")
     User selectByIdForUpdate(@Param("userId") Integer userId);
+
+    @Select("SELECT * FROM user " +
+            "WHERE id IN (#{firstUserId}, #{secondUserId}) " +
+            "ORDER BY id FOR UPDATE")
+    List<User> selectPairForUpdate(
+            @Param("firstUserId") Integer firstUserId,
+            @Param("secondUserId") Integer secondUserId);
 
     @Select("SELECT * FROM user WHERE wx_open_id = #{openId} LIMIT 1 FOR UPDATE")
     User selectByWxOpenIdForUpdate(@Param("openId") String openId);
