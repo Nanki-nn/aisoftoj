@@ -4,6 +4,7 @@ export default defineAppConfig({
     'pages/exam-config/index',
     'pages/session/index',
     'pages/result/index',
+    'pages/history/index',
     'pages/home/index',
     'pages/papers/index',
     'pages/wrong/index',
