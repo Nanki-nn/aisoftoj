@@ -5,6 +5,7 @@ export default defineAppConfig({
     'pages/session/index',
     'pages/result/index',
     'pages/history/index',
+    'pages/privacy/index',
     'pages/home/index',
     'pages/papers/index',
     'pages/wrong/index',

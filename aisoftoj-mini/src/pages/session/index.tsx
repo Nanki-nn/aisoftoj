@@ -1,6 +1,7 @@
 import { Button, Text, Textarea, View } from '@tarojs/components'
 import Taro, { useDidShow, useRouter } from '@tarojs/taro'
-import { useCallback, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { miniStorage } from '../../adapters/storage'
 import {
   answeredCount,
   applyServerQuestion,
@@ -10,6 +11,17 @@ import {
   toSubmitAnswers,
   updateQuestionAnswer
 } from '../../features/session/model'
+import {
+  applyDrafts,
+  clearRecovery,
+  completeAnswer,
+  loadRecovery,
+  queueAnswer,
+  recordSyncFailure,
+  retryDelay,
+  saveDraft,
+  type PendingAnswer
+} from '../../features/session/recovery'
 import {
   fetchPracticeSession,
   submitPracticeSession,
@@ -27,6 +39,52 @@ export default function SessionPage() {
   const [loading, setLoading] = useState(true)
   const [saving, setSaving] = useState(false)
   const [error, setError] = useState('')
+  const [syncState, setSyncState] = useState('已同步')
+  const sessionRef = useRef<PracticeSessionDTO | null>(null)
+  const retryTimer = useRef<ReturnType<typeof setTimeout> | null>(null)
+
+  useEffect(() => { sessionRef.current = session }, [session])
+
+  const scheduleRetry = useCallback((attempt: number, retry: () => void) => {
+    if (retryTimer.current) clearTimeout(retryTimer.current)
+    retryTimer.current = setTimeout(retry, retryDelay(attempt))
+  }, [])
+
+  const retryPending = useCallback(async (baseSession: PracticeSessionDTO) => {
+    const pending = loadRecovery(miniStorage, sessionId).pending
+    if (!pending.length) return
+    setSyncState('正在同步')
+    let nextSession = baseSession
+    for (const item of pending) {
+      try {
+        const server = await updateQuestionRecord(item.recordId, {
+          userAnswer: item.userAnswer,
+          spendTime: item.spendTime,
+          expectedRevision: item.expectedRevision,
+          mutationId: item.mutationId,
+          confirm: item.confirm
+        })
+        completeAnswer(miniStorage, sessionId, item.recordId, item.questionId)
+        nextSession = applyServerQuestion(nextSession, item.questionId, server)
+      } catch (cause) {
+        if (cause instanceof ApiRequestError && cause.status === 409 && isQuestionRecordUpdateResponse(cause.data)) {
+          completeAnswer(miniStorage, sessionId, item.recordId, item.questionId)
+          nextSession = applyServerQuestion(nextSession, item.questionId, cause.data)
+          setError('检测到另一端更新，已加载服务器最新答案')
+          continue
+        }
+        const attempt = recordSyncFailure(miniStorage, sessionId, item.recordId)
+        setSession(nextSession)
+        setSyncState('同步失败，已保存到本地')
+        scheduleRetry(attempt, () => {
+          if (sessionRef.current) void retryPending(sessionRef.current)
+        })
+        return
+      }
+    }
+    setSession(nextSession)
+    setSyncState('已同步')
+  }, [scheduleRetry, sessionId])
 
   const load = useCallback(async () => {
     if (!sessionId) {
@@ -37,15 +95,30 @@ export default function SessionPage() {
     setLoading(true)
     setError('')
     try {
-      setSession(await fetchPracticeSession(sessionId))
+      const recovery = loadRecovery(miniStorage, sessionId)
+      const restored = applyDrafts(miniStorage, sessionId, await fetchPracticeSession(sessionId))
+      setSession(restored)
+      if (recovery.pending.length) void retryPending(restored)
+      else if (Object.keys(recovery.drafts).length) setSyncState('已保存到本地')
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '恢复答题会话失败')
     } finally {
       setLoading(false)
     }
-  }, [sessionId])
+  }, [retryPending, sessionId])
 
   useDidShow(() => { void load() })
+
+  useEffect(() => {
+    const onNetwork = ({ isConnected }: { isConnected: boolean }) => {
+      if (isConnected && sessionRef.current) void retryPending(sessionRef.current)
+    }
+    Taro.onNetworkStatusChange(onNetwork)
+    return () => {
+      if (retryTimer.current) clearTimeout(retryTimer.current)
+      Taro.offNetworkStatusChange(onNetwork)
+    }
+  }, [retryPending])
 
   if (loading) {
     return <View className='page-shell session-page'><Text className='session-status'>正在恢复加密会话…</Text></View>
@@ -67,25 +140,43 @@ export default function SessionPage() {
   const isLast = currentIndex === session.questionList.length - 1
 
   const setAnswer = (answer: string) => {
-    if (!isConfirmed) setSession(updateQuestionAnswer(session, question.id, answer))
+    if (!isConfirmed) {
+      saveDraft(miniStorage, sessionId, question.id, answer)
+      setSession(updateQuestionAnswer(session, question.id, answer))
+      setSyncState('已保存到本地')
+    }
   }
 
   const saveAndAdvance = async () => {
     setSaving(true)
     setError('')
     try {
-      const server = await updateQuestionRecord(question.questionRecordId, {
+      const payload: PendingAnswer = {
+        recordId: question.questionRecordId,
+        questionId: question.id,
         userAnswer: question.userAnswer?.trim() || null,
         spendTime: question.spendTime || 0,
         expectedRevision: question.answerRevision || 0,
         mutationId: createMutationId(question.questionRecordId),
-        confirm: session.examMode === 'practice'
+        confirm: session.examMode === 'practice',
+        attempt: 0
+      }
+      queueAnswer(miniStorage, sessionId, payload)
+      setSyncState('正在同步')
+      const server = await updateQuestionRecord(question.questionRecordId, {
+        userAnswer: payload.userAnswer,
+        spendTime: payload.spendTime,
+        expectedRevision: payload.expectedRevision,
+        mutationId: payload.mutationId,
+        confirm: payload.confirm
       })
+      completeAnswer(miniStorage, sessionId, question.questionRecordId, question.id)
       const savedSession = applyServerQuestion(session, question.id, server)
       setSession(savedSession)
+      setSyncState('已同步')
       if (session.examMode === 'practice') {
         try {
-          setSession(await fetchPracticeSession(sessionId))
+          setSession(applyDrafts(miniStorage, sessionId, await fetchPracticeSession(sessionId)))
         } catch {
           setError('答案已确认，解析暂时未加载，可重新进入会话恢复')
         }
@@ -93,10 +184,17 @@ export default function SessionPage() {
       if (currentIndex < session.questionList.length - 1) setCurrentIndex(currentIndex + 1)
     } catch (cause) {
       if (cause instanceof ApiRequestError && cause.status === 409 && isQuestionRecordUpdateResponse(cause.data)) {
+        completeAnswer(miniStorage, sessionId, question.questionRecordId, question.id)
         setSession(applyServerQuestion(session, question.id, cause.data))
+        setSyncState('已同步')
         setError('检测到另一端更新，已加载服务器最新答案')
       } else {
-        setError(cause instanceof Error ? cause.message : '答案保存失败')
+        const attempt = recordSyncFailure(miniStorage, sessionId, question.questionRecordId)
+        setSyncState('同步失败，已保存到本地')
+        scheduleRetry(attempt, () => {
+          if (sessionRef.current) void retryPending(sessionRef.current)
+        })
+        setError(cause instanceof Error ? cause.message : '答案已保存在本地，联网后自动重试')
       }
     } finally {
       setSaving(false)
@@ -115,6 +213,7 @@ export default function SessionPage() {
     setError('')
     try {
       await submitPracticeSession(session, toSubmitAnswers(session.questionList))
+      clearRecovery(miniStorage, sessionId)
       Taro.redirectTo({ url: `/pages/result/index?sessionId=${encodeURIComponent(sessionId)}` })
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '交卷失败，请稍后重试')
@@ -126,7 +225,7 @@ export default function SessionPage() {
     <View className='page-shell session-page'>
       <View className='session-progress'>
         <Text>{currentIndex + 1} / {session.questionList.length}</Text>
-        <Text>{answeredCount(session.questionList)} 题已作答</Text>
+        <View><Text>{answeredCount(session.questionList)} 题已作答</Text><Text className='session-sync'>{syncState}</Text></View>
       </View>
       <Text className='session-paper'>{session.paperName}</Text>
       <Text className='session-question'>{toPlainQuestionText(question.intro || question.name)}</Text>
