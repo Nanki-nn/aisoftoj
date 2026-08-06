@@ -12,13 +12,18 @@ import type {
   AuthResponse,
   AuthUser,
   PaperDTO,
+  PageWithSummaryDTO,
   PaperSubmitResponse,
   PaperSummary,
+  PracticeHistoryDTO,
+  PracticeHistorySummaryDTO,
   PracticeSessionDTO,
   QuestionDTO,
   QuestionRecordUpdateRequest,
   QuestionRecordUpdateResponse,
-  SubmitAnswerDTO
+  SubmitAnswerDTO,
+  WrongQuestionDTO,
+  WrongQuestionSummaryDTO
 } from '../types/api'
 import { ApiRequestError, buildRequestHeaders, normalizeApiBaseUrl, unwrapApiResult } from './http-core'
 
@@ -142,4 +147,18 @@ export async function submitPracticeSession(
     method: 'POST',
     data: { answers }
   })
+}
+
+export async function fetchPracticeHistory(
+  page = 1,
+  pageSize = 20
+): Promise<PageWithSummaryDTO<PracticeHistoryDTO, PracticeHistorySummaryDTO>> {
+  return request(`/session/history?page=${page}&pageSize=${pageSize}`)
+}
+
+export async function fetchWrongQuestions(
+  page = 1,
+  pageSize = 20
+): Promise<PageWithSummaryDTO<WrongQuestionDTO, WrongQuestionSummaryDTO>> {
+  return request(`/wrong-questions?page=${page}&pageSize=${pageSize}`, { encrypted: true })
 }

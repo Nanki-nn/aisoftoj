@@ -121,3 +121,49 @@ export interface PaperSubmitResponse {
   totalScore: number
   status: number
 }
+
+export interface PageWithSummaryDTO<T, S> {
+  records: T[]
+  total: number
+  page: number
+  pageSize: number
+  summary: S
+}
+
+export interface PracticeHistoryDTO {
+  id: number
+  sessionId: number
+  examName: string
+  examMode: string
+  examType: string
+  createTime: string
+  answeredCount: number
+  totalCount: number
+  status: 'completed' | 'inProgress'
+}
+
+export interface PracticeHistorySummaryDTO {
+  totalCount: number
+  inProgressCount: number
+  completedCount: number
+  answeredCount: number
+}
+
+export interface WrongQuestionDTO {
+  id: number
+  sessionId: number
+  questionId: number
+  topicName: string
+  questionBank: string
+  topicType: string
+  errorCount: number
+  updateTime: string
+  importance: 'low' | 'medium' | 'high' | 'must'
+}
+
+export interface WrongQuestionSummaryDTO {
+  totalCount: number
+  masterCount: number
+  frequentCount: number
+  paperCount: number
+}

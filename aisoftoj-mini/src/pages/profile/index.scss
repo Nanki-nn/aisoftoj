@@ -2,4 +2,9 @@
 .profile-stats { margin-top: 58rpx; padding: 34rpx 0; border-top: 2rpx solid #18342d; border-bottom: 2rpx solid #18342d; display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); }
 .profile-stats > view { display: flex; flex-direction: column; gap: 8rpx; color: #66746d; font-size: 21rpx; }
 .profile-stats__value { color: #18342d; font-size: 34rpx; font-weight: 800; }
-.logout-button { margin: 72rpx 0 0; padding: 0; background: transparent; color: #a13e2d; font-size: 25rpx; font-weight: 700; line-height: 72rpx; border-top: 2rpx solid #dce3dd; border-bottom: 2rpx solid #dce3dd; border-radius: 0; }
+.profile-sync-note { display: block; margin-top: 24rpx; color: #a13e2d; font-size: 22rpx; }
+.profile-menu { margin-top: 46rpx; padding: 28rpx 0; border-top: 2rpx solid #dce3dd; border-bottom: 2rpx solid #dce3dd; display: flex; align-items: center; justify-content: space-between; }
+.profile-menu__title { display: block; font-size: 27rpx; font-weight: 750; }
+.profile-menu__note { display: block; margin-top: 7rpx; color: #66746d; font-size: 21rpx; }
+.profile-menu__arrow { color: #166b5d; font-size: 32rpx; font-weight: 700; }
+.logout-button { margin: 36rpx 0 0; padding: 0; background: transparent; color: #a13e2d; font-size: 25rpx; font-weight: 700; line-height: 72rpx; border-bottom: 2rpx solid #dce3dd; border-radius: 0; }
