@@ -7,6 +7,7 @@ import com.nan.aisoftoj.entity.PracticeSession;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 import org.apache.ibatis.annotations.Select;
+import org.apache.ibatis.annotations.Update;
 
 import java.util.List;
 
@@ -18,6 +19,21 @@ public interface  PracticeSessionMapper extends BaseMapper<PracticeSession> {
             "WHERE id = #{sessionId} AND is_deleted = 0 " +
             "LIMIT 1 FOR UPDATE")
     PracticeSession selectByIdForUpdate(@Param("sessionId") Integer sessionId);
+
+    @Select("SELECT * FROM practice_session " +
+            "WHERE user_id IN (#{firstUserId}, #{secondUserId}) " +
+            "AND is_deleted = 0 AND status IN (0, 1) " +
+            "ORDER BY user_id, id FOR UPDATE")
+    List<PracticeSession> selectForAccountMerge(
+            @Param("firstUserId") Integer firstUserId,
+            @Param("secondUserId") Integer secondUserId);
+
+    @Update("UPDATE practice_session SET answered_count = (" +
+            "SELECT COUNT(1) FROM practice_session_question_record " +
+            "WHERE session_id = #{sessionId} AND is_deleted = 0 " +
+            "AND user_answer IS NOT NULL AND user_answer <> ''" +
+            ") WHERE id = #{sessionId} AND is_deleted = 0")
+    int recalculateAnsweredCount(@Param("sessionId") Integer sessionId);
 
     @Select("SELECT " +
             "ps.id AS id, " +

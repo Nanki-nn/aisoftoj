@@ -47,6 +47,13 @@ public interface UserWrongQuestionStatMapper extends BaseMapper<UserWrongQuestio
             "WHERE user_id = #{userId} AND is_deleted = 0")
     WrongQuestionSummaryDTO selectSummaryByUserId(@Param("userId") Integer userId);
 
+    @Select("SELECT * FROM user_wrong_question_stat " +
+            "WHERE user_id IN (#{firstUserId}, #{secondUserId}) AND is_deleted = 0 " +
+            "ORDER BY user_id, id FOR UPDATE")
+    List<UserWrongQuestionStat> selectForAccountMerge(
+            @Param("firstUserId") Integer firstUserId,
+            @Param("secondUserId") Integer secondUserId);
+
     @Insert("INSERT INTO user_wrong_question_stat (" +
             "source_front_id, source_type, user_id, paper_id, question_id, " +
             "question_name, paper_name, topic_type, error_count, importance_level, " +
