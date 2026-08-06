@@ -54,7 +54,22 @@
 .trust-item { display: flex; flex-direction: column; color: #40534c; font-size: 21rpx; line-height: 1.45; }
 .trust-index { margin-bottom: 8rpx; color: #bd8925; font-weight: 800; }
 .login-page__action { flex: 0 0 auto; }
+.login-form { display: flex; flex-direction: column; gap: 18rpx; }
+.login-input {
+  width: 100%;
+  height: 82rpx;
+  padding: 0 24rpx;
+  border: 2rpx solid #cdd8d1;
+  border-radius: 6rpx;
+  background: #fbfcf8;
+  color: #18342d;
+  font-size: 27rpx;
+}
+.login-input:focus { border-color: #166b5d; }
 .login-button { gap: 16rpx; }
 .wechat-mark { width: 42rpx; height: 42rpx; border-radius: 50%; background: #f8fbf7; color: #166b5d; font-size: 22rpx; line-height: 42rpx; text-align: center; }
 .login-error { display: block; margin-bottom: 18rpx; color: #a13e2d; font-size: 24rpx; line-height: 1.5; }
 .legal-copy { display: block; margin-top: 22rpx; color: #7a8780; font-size: 20rpx; text-align: center; }
+
+.login-page--h5 .login-page__content { padding-top: 36rpx; padding-bottom: 30rpx; }
+.login-page--h5 .trust-row { margin-top: 48rpx; }

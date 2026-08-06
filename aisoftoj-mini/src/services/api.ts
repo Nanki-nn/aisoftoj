@@ -79,8 +79,20 @@ export async function loginByWechat(): Promise<AuthResponse> {
     method: 'POST',
     data: { code: loginResult.code }
   })
+  return persistStudentAuth(auth, '当前微信账号不可用于学生端')
+}
+
+export async function loginByPassword(email: string, password: string): Promise<AuthResponse> {
+  const auth = await request<AuthResponse>('/auth/login', {
+    method: 'POST',
+    data: { email, password }
+  })
+  return persistStudentAuth(auth, '当前账号不可用于学生端')
+}
+
+function persistStudentAuth(auth: AuthResponse, roleError: string): AuthResponse {
   if (auth.user.role !== 'USER') {
-    throw new Error('当前微信账号不可用于学生端')
+    throw new Error(roleError)
   }
   saveAuthSession(auth, miniStorage)
   return auth

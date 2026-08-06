@@ -16,7 +16,8 @@ const baseConfig: UserConfigExport = {
   outputRoot: 'dist',
   plugins: [
     '@tarojs/plugin-framework-react',
-    '@tarojs/plugin-platform-weapp'
+    '@tarojs/plugin-platform-weapp',
+    '@tarojs/plugin-platform-h5'
   ],
   defineConstants: {
     'process.env.TARO_APP_API_BASE_URL': JSON.stringify(
