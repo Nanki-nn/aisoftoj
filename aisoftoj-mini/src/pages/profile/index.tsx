@@ -45,6 +45,13 @@ export default function ProfilePage() {
         </View>
         <Text className='profile-menu__arrow'>→</Text>
       </View>
+      <View className='profile-menu profile-menu--privacy' onClick={() => Taro.navigateTo({ url: '/pages/privacy/index' })}>
+        <View>
+          <Text className='profile-menu__title'>隐私说明</Text>
+          <Text className='profile-menu__note'>了解账号、答案与本地草稿如何使用</Text>
+        </View>
+        <Text className='profile-menu__arrow'>→</Text>
+      </View>
 
       <Button className='logout-button' onClick={logout}>退出当前账号</Button>
     </View>
