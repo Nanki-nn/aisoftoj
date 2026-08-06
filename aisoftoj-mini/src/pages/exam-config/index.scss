@@ -1,0 +1,9 @@
+.config-page { padding-top: 46rpx; }
+.mode-list { margin-top: 54rpx; border-top: 2rpx solid #cdd7d0; }
+.mode-option { display: grid; grid-template-columns: 76rpx 1fr; gap: 20rpx; padding: 34rpx 8rpx; border-bottom: 2rpx solid #dce3dd; color: #66746d; }
+.mode-option--active { background: #e6efe9; color: #18342d; }
+.mode-option__index { color: #bd8925; font-size: 22rpx; font-weight: 800; }
+.mode-option__title { display: block; font-size: 31rpx; font-weight: 750; }
+.mode-option__copy { display: block; margin-top: 8rpx; font-size: 23rpx; line-height: 1.6; }
+.config-error { display: block; margin-top: 34rpx; color: #a13e2d; font-size: 24rpx; }
+.config-start { margin-top: 58rpx; }

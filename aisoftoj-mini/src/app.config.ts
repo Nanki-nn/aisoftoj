@@ -1,6 +1,9 @@
 export default defineAppConfig({
   pages: [
     'pages/login/index',
+    'pages/exam-config/index',
+    'pages/session/index',
+    'pages/result/index',
     'pages/home/index',
     'pages/papers/index',
     'pages/wrong/index',

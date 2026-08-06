@@ -85,7 +85,39 @@ export interface PracticeSessionDTO {
   paperName: string
   examMode?: 'practice' | 'exam'
   status: number
-  startTime: string
-  endTime?: string | null
+  startTime: string | number
+  endTime?: string | number | null
   questionList: QuestionDTO[]
+}
+
+export interface QuestionRecordUpdateRequest {
+  userAnswer: string | null
+  spendTime: number
+  expectedRevision: number
+  mutationId: string
+  confirm: boolean
+}
+
+export interface QuestionRecordUpdateResponse {
+  recordId: number
+  userAnswer: string | null
+  spendTime: number
+  answerRevision: number
+  mutationId: string
+  isSubmitted: boolean
+  isCorrect: boolean | null
+  confirmedAt?: string | null
+}
+
+export interface SubmitAnswerDTO {
+  questionId: number
+  userAnswer: string | null
+  spendTime: number
+}
+
+export interface PaperSubmitResponse {
+  recordId: number
+  score: number
+  totalScore: number
+  status: number
 }

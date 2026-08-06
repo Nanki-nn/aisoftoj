@@ -1,0 +1,14 @@
+.result-page { padding-top: 46rpx; }
+.result-summary { margin-top: 48rpx; padding: 34rpx 0; border-top: 2rpx solid #166b5d; border-bottom: 2rpx solid #cdd7d0; }
+.result-summary__value { display: block; color: #166b5d; font-size: 64rpx; font-weight: 850; }
+.result-summary__label { display: block; margin-top: 6rpx; color: #40534c; font-size: 24rpx; }
+.result-summary__note { display: block; margin-top: 18rpx; color: #bd8925; font-size: 22rpx; }
+.review-list { margin-top: 54rpx; border-top: 2rpx solid #cdd7d0; }
+.review-row { display: grid; grid-template-columns: 58rpx 1fr; gap: 18rpx; padding: 32rpx 0; border-bottom: 2rpx solid #dce3dd; }
+.review-row__index { color: #bd8925; font-size: 21rpx; font-weight: 800; }
+.review-row__state { color: #166b5d; font-size: 21rpx; font-weight: 800; }
+.review-row__question { display: block; margin-top: 9rpx; font-size: 26rpx; font-weight: 650; line-height: 1.65; }
+.review-row__answer { display: block; margin-top: 12rpx; color: #40534c; font-size: 23rpx; line-height: 1.55; }
+.review-row__analysis { display: block; margin-top: 14rpx; color: #66746d; font-size: 22rpx; line-height: 1.65; }
+.result-error { display: block; margin-top: 28rpx; color: #a13e2d; font-size: 24rpx; }
+.result-link { margin: 48rpx 0 0; background: #e4eee9; color: #166b5d; border-radius: 4rpx; font-size: 25rpx; font-weight: 750; }

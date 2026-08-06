@@ -23,6 +23,10 @@ input {
   box-sizing: border-box;
 }
 
+textarea {
+  box-sizing: border-box;
+}
+
 button::after {
   border: 0;
 }
