@@ -1,0 +1,105 @@
+page {
+  --paper: #f5f7f2;
+  --surface: #fbfcf8;
+  --ink: #18342d;
+  --muted: #66746d;
+  --line: #dce3dd;
+  --brand: #166b5d;
+  --brand-deep: #0e4d43;
+  --coral: #c8543d;
+  --amber: #bd8925;
+  --blue: #356c91;
+  min-height: 100%;
+  background: var(--paper);
+  color: var(--ink);
+  font-family: 'PingFang SC', 'Noto Sans CJK SC', sans-serif;
+  letter-spacing: 0;
+}
+
+view,
+text,
+button,
+input {
+  box-sizing: border-box;
+}
+
+button::after {
+  border: 0;
+}
+
+.page-shell {
+  min-height: 100vh;
+  padding: 40rpx 34rpx calc(48rpx + env(safe-area-inset-bottom));
+}
+
+.eyebrow {
+  display: block;
+  color: var(--brand);
+  font-size: 22rpx;
+  font-weight: 700;
+  line-height: 1.4;
+}
+
+.page-title {
+  display: block;
+  margin-top: 8rpx;
+  font-size: 46rpx;
+  font-weight: 750;
+  line-height: 1.2;
+}
+
+.page-note {
+  display: block;
+  margin-top: 14rpx;
+  color: var(--muted);
+  font-size: 26rpx;
+  line-height: 1.7;
+}
+
+.primary-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 92rpx;
+  border-radius: 6rpx;
+  background: var(--brand);
+  color: #f8fbf7;
+  font-size: 30rpx;
+  font-weight: 700;
+  line-height: 92rpx;
+}
+
+.primary-button[disabled] {
+  background: #91aaa3;
+  color: #eef3ef;
+}
+
+.empty-state {
+  margin-top: 96rpx;
+  padding: 54rpx 0;
+  border-top: 2rpx solid var(--line);
+  border-bottom: 2rpx solid var(--line);
+}
+
+.empty-state__mark {
+  display: block;
+  color: var(--coral);
+  font-size: 24rpx;
+  font-weight: 800;
+}
+
+.empty-state__title {
+  display: block;
+  margin-top: 14rpx;
+  font-size: 32rpx;
+  font-weight: 700;
+}
+
+.empty-state__body {
+  display: block;
+  margin-top: 10rpx;
+  color: var(--muted);
+  font-size: 25rpx;
+  line-height: 1.7;
+}

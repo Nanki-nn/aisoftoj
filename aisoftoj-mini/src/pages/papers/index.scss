@@ -1,0 +1,14 @@
+.papers-page { padding-top: 46rpx; }
+.paper-list { margin-top: 48rpx; border-top: 2rpx solid #cdd7d0; }
+.paper-row { min-height: 176rpx; padding: 30rpx 0; border-bottom: 2rpx solid #dce3dd; display: grid; grid-template-columns: 116rpx minmax(0, 1fr) 82rpx; gap: 22rpx; align-items: center; }
+.paper-row__date { align-self: stretch; display: flex; flex-direction: column; justify-content: space-between; color: #40534c; font-size: 22rpx; font-weight: 700; }
+.paper-row__dot { width: 16rpx; height: 16rpx; border-radius: 50%; background: #98a49e; }
+.paper-row__dot--in_progress { background: #bd8925; }
+.paper-row__dot--completed { background: #166b5d; }
+.paper-row__body { min-width: 0; }
+.paper-row__category { color: #356c91; font-size: 20rpx; font-weight: 800; }
+.paper-row__title { display: block; margin-top: 8rpx; font-size: 28rpx; font-weight: 750; line-height: 1.4; }
+.paper-row__meta { display: block; margin-top: 8rpx; color: #66746d; font-size: 21rpx; }
+.paper-row__action { margin: 0; padding: 0; width: 82rpx; height: 58rpx; border-radius: 4rpx; background: #e4eee9; color: #166b5d; font-size: 22rpx; font-weight: 800; line-height: 58rpx; }
+.paper-error { display: block; margin-top: 34rpx; padding: 22rpx 0; border-bottom: 2rpx solid #c8543d; color: #a13e2d; font-size: 24rpx; }
+.paper-loading { display: block; margin-top: 42rpx; color: #66746d; font-size: 24rpx; text-align: center; }

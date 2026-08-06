@@ -1,0 +1,5 @@
+node_modules/
+dist/
+.swc/
+.env.local
+.env.production

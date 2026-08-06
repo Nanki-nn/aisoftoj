@@ -1,0 +1,60 @@
+.login-page {
+  min-height: 100vh;
+  padding: calc(54rpx + env(safe-area-inset-top)) 42rpx calc(42rpx + env(safe-area-inset-bottom));
+  background: #f5f7f2;
+  display: flex;
+  flex-direction: column;
+}
+
+.login-page__masthead {
+  display: flex;
+  align-items: center;
+  gap: 22rpx;
+}
+
+.brand-seal {
+  width: 84rpx;
+  height: 84rpx;
+  border-radius: 50%;
+  background: #18342d;
+  color: #f5f7f2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 25rpx;
+  font-weight: 800;
+}
+
+.brand-lockup { display: flex; flex-direction: column; }
+.brand-name { font-size: 32rpx; font-weight: 800; }
+.brand-subtitle { margin-top: 4rpx; color: #66746d; font-size: 20rpx; }
+
+.login-page__content {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  padding: 54rpx 0 44rpx;
+}
+
+.login-kicker { color: #c8543d; font-size: 22rpx; font-weight: 800; }
+.login-title { margin-top: 18rpx; max-width: 580rpx; font-size: 62rpx; font-weight: 800; line-height: 1.18; }
+.login-copy { margin-top: 28rpx; max-width: 610rpx; color: #66746d; font-size: 27rpx; line-height: 1.75; }
+
+.trust-row {
+  margin-top: 70rpx;
+  padding: 28rpx 0;
+  border-top: 2rpx solid #dce3dd;
+  border-bottom: 2rpx solid #dce3dd;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 22rpx;
+}
+
+.trust-item { display: flex; flex-direction: column; color: #40534c; font-size: 21rpx; line-height: 1.45; }
+.trust-index { margin-bottom: 8rpx; color: #bd8925; font-weight: 800; }
+.login-page__action { flex: 0 0 auto; }
+.login-button { gap: 16rpx; }
+.wechat-mark { width: 42rpx; height: 42rpx; border-radius: 50%; background: #f8fbf7; color: #166b5d; font-size: 22rpx; line-height: 42rpx; text-align: center; }
+.login-error { display: block; margin-bottom: 18rpx; color: #a13e2d; font-size: 24rpx; line-height: 1.5; }
+.legal-copy { display: block; margin-top: 22rpx; color: #7a8780; font-size: 20rpx; text-align: center; }
