@@ -17,7 +17,12 @@ describe('http core', () => {
 
   it('unwraps successful responses and preserves API failures', () => {
     expect(unwrapApiResult({ code: 200, message: 'ok', data: { id: 7 } }, 200)).toEqual({ id: 7 })
-    expect(() => unwrapApiResult({ code: 409, message: '版本冲突', data: null }, 409))
-      .toThrowError(ApiRequestError)
+    try {
+      unwrapApiResult({ code: 409, message: '版本冲突', data: { answerRevision: 3 } }, 409)
+      throw new Error('expected conflict')
+    } catch (error) {
+      expect(error).toBeInstanceOf(ApiRequestError)
+      expect((error as ApiRequestError).data).toEqual({ answerRevision: 3 })
+    }
   })
 })

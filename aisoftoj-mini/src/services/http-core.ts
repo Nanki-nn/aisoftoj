@@ -3,12 +3,14 @@ import type { ApiResult } from '../types/api'
 export class ApiRequestError extends Error {
   readonly status: number
   readonly code?: number
+  readonly data?: unknown
 
-  constructor(message: string, status: number, code?: number) {
+  constructor(message: string, status: number, code?: number, data?: unknown) {
     super(message)
     this.name = 'ApiRequestError'
     this.status = status
     this.code = code
+    this.data = data
   }
 }
 
@@ -32,7 +34,8 @@ export function unwrapApiResult<T>(payload: unknown, status: number): T {
     throw new ApiRequestError(
       result?.message || `请求失败: ${status}`,
       status,
-      result?.code
+      result?.code,
+      result?.data
     )
   }
   return result.data as T

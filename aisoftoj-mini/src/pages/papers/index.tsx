@@ -27,6 +27,16 @@ export default function PapersPage() {
   useDidShow(() => { void load() })
   usePullDownRefresh(() => { void load() })
 
+  const openPaper = (paper: PaperSummary) => {
+    if (paper.sessionId) {
+      Taro.navigateTo({ url: `/pages/session/index?sessionId=${encodeURIComponent(paper.sessionId)}` })
+      return
+    }
+    Taro.navigateTo({
+      url: `/pages/exam-config/index?paperId=${encodeURIComponent(paper.id)}&paperName=${encodeURIComponent(paper.title)}`
+    })
+  }
+
   return (
     <View className='page-shell papers-page'>
       <Text className='eyebrow'>历年真题</Text>
@@ -46,7 +56,7 @@ export default function PapersPage() {
               <Text className='paper-row__title'>{paper.title}</Text>
               <Text className='paper-row__meta'>{paper.questionCount} 题 · 已完成 {paper.completedCount}</Text>
             </View>
-            <Button className='paper-row__action'>
+            <Button className='paper-row__action' onClick={() => openPaper(paper)}>
               {paper.sessionId ? '继续' : '开始'}
             </Button>
           </View>

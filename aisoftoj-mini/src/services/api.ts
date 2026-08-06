@@ -12,9 +12,13 @@ import type {
   AuthResponse,
   AuthUser,
   PaperDTO,
+  PaperSubmitResponse,
   PaperSummary,
   PracticeSessionDTO,
-  QuestionDTO
+  QuestionDTO,
+  QuestionRecordUpdateRequest,
+  QuestionRecordUpdateResponse,
+  SubmitAnswerDTO
 } from '../types/api'
 import { ApiRequestError, buildRequestHeaders, normalizeApiBaseUrl, unwrapApiResult } from './http-core'
 
@@ -116,4 +120,26 @@ export async function fetchPracticeResult(sessionId: string): Promise<PracticeSe
     `/session/${encodeURIComponent(sessionId)}/result`,
     { encrypted: true }
   )
+}
+
+export async function updateQuestionRecord(
+  recordId: number,
+  payload: QuestionRecordUpdateRequest
+): Promise<QuestionRecordUpdateResponse> {
+  return request<QuestionRecordUpdateResponse>(
+    `/practice/session/question/record/${recordId}`,
+    { method: 'PATCH', data: payload }
+  )
+}
+
+export async function submitPracticeSession(
+  session: PracticeSessionDTO,
+  answers: SubmitAnswerDTO[]
+): Promise<PaperSubmitResponse> {
+  const sessionId = session.id ?? session.practiceSessionId
+  if (!sessionId) throw new Error('刷题会话标识缺失')
+  return request<PaperSubmitResponse>(`/session/submit/${sessionId}`, {
+    method: 'POST',
+    data: { answers }
+  })
 }

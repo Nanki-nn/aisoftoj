@@ -1,0 +1,19 @@
+.session-page { padding-top: 34rpx; }
+.session-status { display: block; margin-top: 180rpx; color: #66746d; font-size: 26rpx; text-align: center; }
+.session-progress { display: flex; justify-content: space-between; padding-bottom: 20rpx; border-bottom: 2rpx solid #cdd7d0; color: #66746d; font-size: 22rpx; font-weight: 700; }
+.session-paper { display: block; margin-top: 26rpx; color: #356c91; font-size: 21rpx; font-weight: 800; }
+.session-question { display: block; margin-top: 18rpx; font-size: 31rpx; font-weight: 650; line-height: 1.75; white-space: pre-wrap; }
+.answer-options { margin-top: 42rpx; border-top: 2rpx solid #dce3dd; }
+.answer-option { display: grid; grid-template-columns: 58rpx 1fr; gap: 16rpx; padding: 28rpx 8rpx; border-bottom: 2rpx solid #dce3dd; color: #40534c; }
+.answer-option--active { background: #e4eee9; color: #18342d; }
+.answer-option__key { color: #166b5d; font-size: 25rpx; font-weight: 850; }
+.answer-option__value { font-size: 26rpx; line-height: 1.6; }
+.case-answer { width: 100%; min-height: 320rpx; margin-top: 42rpx; padding: 26rpx; border: 2rpx solid #cdd7d0; background: #fbfcf8; color: #18342d; font-size: 26rpx; line-height: 1.7; }
+.practice-feedback { margin-top: 34rpx; padding: 26rpx 0; border-top: 2rpx solid #bd8925; border-bottom: 2rpx solid #dce3dd; }
+.practice-feedback text { display: block; margin-top: 8rpx; font-size: 24rpx; line-height: 1.65; }
+.session-error { display: block; margin-top: 28rpx; color: #a13e2d; font-size: 24rpx; line-height: 1.6; }
+.session-actions { display: grid; grid-template-columns: 1fr 2fr; gap: 18rpx; margin-top: 48rpx; }
+.session-text-button, .session-save, .session-submit { margin: 0; border-radius: 4rpx; font-size: 25rpx; font-weight: 750; }
+.session-text-button { background: transparent; color: #356c91; }
+.session-save { background: #166b5d; color: #f8fbf7; }
+.session-submit { margin-top: 18rpx; background: #18342d; color: #f8fbf7; }
