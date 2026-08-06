@@ -2,6 +2,7 @@ package com.nan.aisoftoj.auth;
 
 import cn.hutool.core.util.StrUtil;
 import com.nan.aisoftoj.common.UnauthorizedException;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Component;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
 import org.springframework.web.client.RestClientException;
@@ -17,6 +18,7 @@ public class WeChatCodeExchangeClient {
     private final WeChatProperties properties;
     private final RestOperations restOperations;
 
+    @Autowired
     public WeChatCodeExchangeClient(WeChatProperties properties) {
         this(properties, createRestTemplate(properties));
     }
