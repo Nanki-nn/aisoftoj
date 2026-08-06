@@ -3,3 +3,4 @@ dist/
 .swc/
 .env.local
 .env.production
+project.release.config.json

@@ -5,7 +5,9 @@
   "description": "知构软考刷题平台微信小程序",
   "scripts": {
     "build:weapp": "taro build --type weapp",
+    "build:weapp:release": "node release/check-release.mjs && taro build --type weapp --mode production",
     "dev:weapp": "taro build --type weapp --watch",
+    "release:check": "node release/check-release.mjs",
     "test": "vitest run"
   },
   "dependencies": {
