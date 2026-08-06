@@ -1,0 +1,41 @@
+{
+  "name": "aisoftoj-mini",
+  "version": "0.1.0",
+  "private": true,
+  "description": "知构软考刷题平台微信小程序",
+  "scripts": {
+    "build:weapp": "taro build --type weapp",
+    "dev:weapp": "taro build --type weapp --watch",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "@tarojs/components": "4.2.1",
+    "@tarojs/helper": "4.2.1",
+    "@tarojs/plugin-framework-react": "4.2.1",
+    "@tarojs/plugin-platform-weapp": "4.2.1",
+    "@tarojs/react": "4.2.1",
+    "@tarojs/runtime": "4.2.1",
+    "@tarojs/shared": "4.2.1",
+    "@tarojs/taro": "4.2.1",
+    "react": "18.3.1",
+    "react-dom": "18.3.1"
+  },
+  "devDependencies": {
+    "@babel/preset-react": "7.29.7",
+    "@tarojs/cli": "4.2.1",
+    "@tarojs/taro-loader": "4.2.1",
+    "@tarojs/webpack5-runner": "4.2.1",
+    "@types/react": "18.3.28",
+    "@types/webpack-env": "1.18.8",
+    "babel-preset-taro": "4.2.1",
+    "less": "4.2.2",
+    "sass": "1.90.0",
+    "typescript": "5.9.2",
+    "vite": "7.1.1",
+    "vitest": "4.1.10"
+  },
+  "engines": {
+    "node": ">=20"
+  },
+  "packageManager": "pnpm@11.16.0"
+}

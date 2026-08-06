@@ -1,0 +1,12 @@
+.home-page { padding-top: 46rpx; }
+.countdown-band { margin-top: 56rpx; padding: 34rpx 0; border-top: 2rpx solid #18342d; border-bottom: 2rpx solid #18342d; display: grid; grid-template-columns: 1fr auto; row-gap: 10rpx; }
+.countdown-band__label { color: #66746d; font-size: 23rpx; }
+.countdown-band__value { grid-column: 1; font-size: 34rpx; font-weight: 750; }
+.countdown-band__accent { grid-column: 2; grid-row: 1 / span 2; align-self: center; color: #c8543d; font-size: 24rpx; font-weight: 800; }
+.section-heading { margin-top: 58rpx; display: flex; justify-content: space-between; align-items: baseline; font-size: 30rpx; font-weight: 750; }
+.section-heading__meta { color: #356c91; font-size: 22rpx; font-weight: 700; }
+.continue-panel { margin-top: 22rpx; padding: 34rpx; background: #fbfcf8; border: 2rpx solid #dce3dd; border-radius: 6rpx; }
+.continue-panel__date { color: #bd8925; font-size: 22rpx; font-weight: 800; }
+.continue-panel__title { display: block; margin-top: 12rpx; font-size: 32rpx; font-weight: 750; line-height: 1.42; }
+.continue-panel__meta { display: block; margin-top: 12rpx; color: #66746d; font-size: 23rpx; }
+.continue-link { margin: 32rpx 0 0; padding: 0; background: transparent; color: #166b5d; font-size: 26rpx; font-weight: 800; line-height: 1.5; text-align: left; }
