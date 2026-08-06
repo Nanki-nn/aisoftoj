@@ -1,14 +1,17 @@
-import { Button, Text, View } from '@tarojs/components'
+import { Button, Input, Text, View } from '@tarojs/components'
 import Taro, { useDidShow } from '@tarojs/taro'
 import { useCallback, useState } from 'react'
 import { miniStorage } from '../../adapters/storage'
 import { loadAuthSession } from '../../features/auth/session'
-import { loginByWechat, restoreCurrentUser } from '../../services/api'
+import { loginByPassword, loginByWechat, restoreCurrentUser } from '../../services/api'
 import './index.scss'
 
 export default function LoginPage() {
+  const isH5 = process.env.TARO_ENV === 'h5'
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
+  const [email, setEmail] = useState('')
+  const [password, setPassword] = useState('')
 
   const enterApp = useCallback(() => {
     Taro.switchTab({ url: '/pages/home/index' })
@@ -37,8 +40,25 @@ export default function LoginPage() {
     }
   }
 
+  const handlePasswordLogin = async () => {
+    const normalizedEmail = email.trim()
+    if (!normalizedEmail || !password) {
+      setError('请输入邮箱和密码')
+      return
+    }
+    setLoading(true)
+    setError('')
+    try {
+      await loginByPassword(normalizedEmail, password)
+      enterApp()
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : '登录失败，请稍后重试')
+      setLoading(false)
+    }
+  }
+
   return (
-    <View className='login-page'>
+    <View className={`login-page${isH5 ? ' login-page--h5' : ''}`}>
       <View className='login-page__masthead'>
         <View className='brand-seal'><Text>知构</Text></View>
         <View className='brand-lockup'>
@@ -61,10 +81,33 @@ export default function LoginPage() {
 
       <View className='login-page__action'>
         {error ? <Text className='login-error'>{error}</Text> : null}
-        <Button className='primary-button login-button' disabled={loading} onClick={handleLogin}>
-          <Text className='wechat-mark'>微</Text>
-          <Text>{loading ? '正在恢复登录' : '微信一键登录'}</Text>
-        </Button>
+        {isH5 ? (
+          <View className='login-form'>
+            <Input
+              className='login-input'
+              type='text'
+              value={email}
+              placeholder='邮箱'
+              onInput={(event) => setEmail(event.detail.value)}
+            />
+            <Input
+              className='login-input'
+              type='text'
+              password
+              value={password}
+              placeholder='密码'
+              onInput={(event) => setPassword(event.detail.value)}
+            />
+            <Button className='primary-button login-button' disabled={loading} onClick={handlePasswordLogin}>
+              <Text>{loading ? '正在恢复登录' : '登录并进入'}</Text>
+            </Button>
+          </View>
+        ) : (
+          <Button className='primary-button login-button' disabled={loading} onClick={handleLogin}>
+            <Text className='wechat-mark'>微</Text>
+            <Text>{loading ? '正在恢复登录' : '微信一键登录'}</Text>
+          </Button>
+        )}
         <Text className='legal-copy'>登录即表示你同意服务条款与隐私政策</Text>
       </View>
     </View>

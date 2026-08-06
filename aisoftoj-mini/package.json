@@ -4,8 +4,10 @@
   "private": true,
   "description": "知构软考刷题平台微信小程序",
   "scripts": {
+    "build:h5": "taro build --type h5",
     "build:weapp": "taro build --type weapp",
     "build:weapp:release": "node release/check-release.mjs && taro build --type weapp --mode production",
+    "dev:h5": "taro build --type h5 --watch",
     "dev:weapp": "taro build --type weapp --watch",
     "release:check": "node release/check-release.mjs",
     "test": "vitest run"
@@ -23,8 +25,10 @@
     "react-dom": "18.3.1"
   },
   "devDependencies": {
+    "@pmmmwh/react-refresh-webpack-plugin": "0.6.2",
     "@babel/preset-react": "7.29.7",
     "@tarojs/cli": "4.2.1",
+    "@tarojs/plugin-platform-h5": "4.2.1",
     "@tarojs/taro-loader": "4.2.1",
     "@tarojs/webpack5-runner": "4.2.1",
     "@types/react": "18.3.28",
