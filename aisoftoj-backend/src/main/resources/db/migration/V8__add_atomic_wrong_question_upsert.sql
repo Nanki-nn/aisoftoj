@@ -21,7 +21,7 @@ LIMIT 1;
 DROP TEMPORARY TABLE `migration_v8_preflight_guard`;
 
 ALTER TABLE `user_wrong_question_stat`
-  ADD COLUMN `last_session_id` int unsigned DEFAULT NULL AFTER `last_wrong_time`,
+  ADD COLUMN `last_session_id` bigint unsigned DEFAULT NULL AFTER `last_wrong_time`,
   ADD COLUMN `active_marker` tinyint(1)
     GENERATED ALWAYS AS (IF(`is_deleted` = 0, 1, NULL)) STORED AFTER `is_deleted`,
   ADD UNIQUE KEY `uk_wrong_question_active` (`user_id`, `question_id`, `active_marker`);
