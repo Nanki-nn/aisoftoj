@@ -36,6 +36,7 @@ def upgrade() -> None:
         sa.Column("create_time", sa.DateTime(), nullable=False, server_default=sa.func.now()),
         sa.ForeignKeyConstraint(["thread_id"], ["ai_threads.id"], ondelete="CASCADE"),
         sa.UniqueConstraint("thread_id", "sequence", name="uq_ai_messages_thread_sequence"),
+        sa.UniqueConstraint("run_id", "role", name="uq_ai_messages_run_role"),
     )
     op.create_table(
         "ai_runs",

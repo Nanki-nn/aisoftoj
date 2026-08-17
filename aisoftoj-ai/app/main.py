@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from uuid import uuid4
 
-from fastapi import FastAPI, Request
+from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 from app.lifespan import lifespan
@@ -29,6 +29,27 @@ def create_app() -> FastAPI:
                     "message": "internal server error",
                     "request_id": request_id,
                 }
+            ).model_dump(mode="json"),
+            headers={"X-Request-ID": request_id},
+        )
+
+    @application.exception_handler(HTTPException)
+    async def http_exception(request: Request, exc: HTTPException) -> JSONResponse:
+        request_id = request.headers.get("X-Request-ID") or str(uuid4())
+        code = {
+            400: "BAD_REQUEST",
+            401: "UNAUTHORIZED",
+            403: "FORBIDDEN",
+            404: "NOT_FOUND",
+            409: "CONFLICT",
+            429: "RATE_LIMITED",
+            503: "NOT_READY",
+        }.get(exc.status_code, "HTTP_ERROR")
+        message = exc.detail if isinstance(exc.detail, str) else "request failed"
+        return JSONResponse(
+            status_code=exc.status_code,
+            content=ErrorResponse(
+                error={"code": code, "message": message, "request_id": request_id}
             ).model_dump(mode="json"),
             headers={"X-Request-ID": request_id},
         )
