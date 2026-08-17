@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import os
 from pathlib import Path
-from typing import Any
+from typing import Any, Literal
 
 import yaml
 from pydantic import BaseModel, Field, HttpUrl, SecretStr, field_validator, model_validator
@@ -17,6 +17,7 @@ class Settings(BaseModel):
     platform_max_response_bytes: int = Field(default=2_097_152, gt=0)
 
     llm_base_url: HttpUrl
+    llm_endpoint_mode: Literal["openai_base", "direct_endpoint"] = "openai_base"
     llm_api_key: SecretStr
     llm_default_model: str = Field(min_length=1)
     llm_request_timeout_seconds: float = Field(default=60, gt=0)
