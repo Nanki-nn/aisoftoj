@@ -6,7 +6,7 @@
 
 ## 模块边界
 
-- `src/lib/aiApi.ts`：定义 Thread、Message、Run、SSE 类型；封装创建 Thread、读取历史、创建 Run、取消 Run以及带 Bearer 的 SSE 流解析。
+- `src/lib/aiApi.ts`：定义 Thread、Message、Run、SSE 类型；封装创建/列出 Thread、读取消息、创建/列出/读取/取消 Run以及带 Bearer 的 SSE 流解析。
 - `src/hooks/useAIConversation.ts`：管理当前 Thread、消息、发送状态、AbortController、事件 sequence 去重和错误状态。
 - `AIAgentPanel.tsx`：只负责输入、展示、重试和新对话交互，不直接拼接请求。
 - `vite.config.ts`：开发环境将 `/api/ai` 代理到 `127.0.0.1:8000`，将其余 `/api` 代理到 Java `127.0.0.1:8080`。生产环境继续由同源 Nginx 路由。
@@ -15,7 +15,9 @@
 
 首次发送时先创建 Thread，再为该次用户意图生成一个 `Idempotency-Key` 创建 Run。该 key 保存在待发送消息状态中；网络超时和用户点击“重试”必须复用原 key，只有编辑后重新发送或发送下一条消息才生成新 key。前端立即展示用户消息；创建 Run 失败时将消息标为失败而不是删除，允许安全重试。
 
-Run 创建成功后使用 `fetch()` 读取 SSE：`message.delta` 追加到当前 Assistant 消息；心跳注释忽略；只有带持久事件 `id` 的事件推进 sequence；`stream.reset` 使用其 `last_sequence` 立即重新建立补流连接；`run.completed`、`run.failed`、`run.cancelled`、`run.interrupted` 和对应 `stream.end` 收敛终态。网络中断最多自动重连两次，耗尽后调用 `GET Run`：若已终态则按服务端状态结束，仍活跃则显示可重试的连接错误但不重复创建 Run。
+Run 创建成功后使用 `fetch()` 读取 SSE：`message.delta` 追加到当前 Assistant 消息；心跳注释忽略；只有带持久事件 `id` 的事件推进 sequence；`stream.reset` 使用其 `last_sequence` 立即重新建立补流连接；`run.completed`、`run.failed`、`run.cancelled`、`run.interrupted` 和对应 `stream.end` 收敛终态。网络中断最多自动重连两次，耗尽后调用 `GET Run`：若已完成则重新读取消息历史，以服务端 Assistant Message 替换可能截断的流文本；若其他终态则按服务端状态结束；仍活跃则显示可重试的连接错误但不重复创建 Run。`run.failed.error_code=AUTH_EXPIRED` 与 HTTP 401 使用相同的登录失效提示。
+
+创建 Run 返回 409 时不生成新 key、不重复用户消息，而是刷新 Run 列表并接入该 Thread 已存在的活跃 Run；找不到活跃 Run 时才显示冲突错误。
 
 当前 Thread ID 持久化到用户级 `localStorage` 键。面板首次打开或刷新后先读取该 Thread 的历史消息；若不存在则通过 Thread 列表选择最近更新的一条。随后读取该 Thread 的 Run 列表；发现活跃 Run 时使用已有 Run ID 和最后已知 sequence 恢复 SSE。对话记录按钮展示 Thread 列表并允许切换，切换后重新读取消息。
 
