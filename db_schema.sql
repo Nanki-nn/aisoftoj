@@ -201,7 +201,7 @@ CREATE TABLE `user_wrong_question_stat` (
   `error_count` int(11) NOT NULL DEFAULT 1 COMMENT '错误次数',
   `importance_level` varchar(16) DEFAULT 'medium' COMMENT '重要级别：low/medium/high/must',
   `last_wrong_time` datetime DEFAULT NULL COMMENT '最后一次错误时间',
-  `last_session_id` int(11) unsigned DEFAULT NULL COMMENT '最近一次产生该错题的会话ID',
+  `last_session_id` bigint unsigned DEFAULT NULL COMMENT '最近一次产生该错题的会话ID',
   `create_time` datetime DEFAULT CURRENT_TIMESTAMP COMMENT '创建时间',
   `update_time` datetime DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP COMMENT '更新时间',
   `is_deleted` tinyint(1) NOT NULL DEFAULT '0' COMMENT '删除状态：0-未删除，1-已删除',

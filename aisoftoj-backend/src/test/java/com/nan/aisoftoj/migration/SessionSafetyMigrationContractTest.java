@@ -76,7 +76,7 @@ class SessionSafetyMigrationContractTest {
 
         assertTrue(sql.contains("create temporary table `migration_v8_preflight_guard`"));
         assertTrue(sql.contains("where `question_id` is not null and `is_deleted` = 0"));
-        assertTrue(sql.contains("`last_session_id` int unsigned default null"));
+        assertTrue(sql.contains("`last_session_id` bigint unsigned default null"));
         assertTrue(sql.contains("generated always as (if(`is_deleted` = 0, 1, null)) stored"));
         assertTrue(sql.contains("unique key `uk_wrong_question_active` (`user_id`, `question_id`, `active_marker`)"));
         assertTrue(sql.contains("set `last_session_id` = ("));
