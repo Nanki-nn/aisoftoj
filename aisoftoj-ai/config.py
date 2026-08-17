@@ -45,8 +45,8 @@ class Settings(BaseModel):
         if not raw.startswith("mysql+asyncmy://"):
             raise ValueError("database_url must use mysql+asyncmy")
         database_name = raw.split("?", 1)[0].rstrip("/").rsplit("/", 1)[-1]
-        if database_name != "aisoftoj_ai" and not database_name.startswith("aisoftoj_ai_test"):
-            raise ValueError("database_url must target the aisoftoj_ai database")
+        if database_name != "aisoftoj" and not database_name.startswith("aisoftoj_test"):
+            raise ValueError("database_url must target the aisoftoj database")
         return value
 
     @field_validator("platform_base_url")

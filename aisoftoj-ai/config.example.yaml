@@ -1,4 +1,4 @@
-database_url: mysql+asyncmy://aisoftoj_ai:change-me@127.0.0.1:3306/aisoftoj_ai
+database_url: mysql+asyncmy://aisoftoj_ai:change-me@127.0.0.1:3306/aisoftoj
 
 platform_base_url: http://127.0.0.1:8080
 platform_service_key: change-me

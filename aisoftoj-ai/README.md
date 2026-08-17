@@ -11,11 +11,15 @@ business-tool request.
 ```bash
 cd /Users/bytedance/aisoftoj/aisoftoj-ai
 cp config.example.yaml config.yaml
-# Edit config.yaml. The database must be the separate aisoftoj_ai MySQL database.
+# Edit config.yaml. The AI tables live in the shared aisoftoj MySQL database.
 /opt/homebrew/bin/uv sync
 /opt/homebrew/bin/uv run alembic upgrade head
 /opt/homebrew/bin/uv run python server.py
 ```
+
+Flyway owns the Java platform tables and Alembic owns only the `ai_*` tables
+plus `alembic_version`; both migration systems use the shared `aisoftoj`
+database. The AI database account should be restricted to that database.
 
 The service listens on `127.0.0.1:8000` by default. Readiness is exposed at
 `/readyz`; liveness is exposed at `/livez`.

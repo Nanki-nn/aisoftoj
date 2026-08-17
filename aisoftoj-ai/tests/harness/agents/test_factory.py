@@ -17,7 +17,7 @@ from packages.harness.aisoftoj_agent.agents.factory import build_agent_graph
 def settings() -> Settings:
     return Settings.model_validate(
         {
-            "database_url": "mysql+asyncmy://user:secret@127.0.0.1/aisoftoj_ai",
+            "database_url": "mysql+asyncmy://user:secret@127.0.0.1/aisoftoj",
             "platform_service_key": "service-secret",
             "llm_base_url": "https://gateway.example/v1",
             "llm_api_key": "llm-secret",

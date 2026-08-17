@@ -10,7 +10,7 @@ from config import Settings
 
 def valid_settings() -> dict[str, object]:
     return {
-        "database_url": "mysql+asyncmy://user:secret@127.0.0.1/aisoftoj_ai",
+        "database_url": "mysql+asyncmy://user:secret@127.0.0.1/aisoftoj",
         "platform_base_url": "http://127.0.0.1:8080",
         "platform_service_key": "service-secret",
         "llm_base_url": "https://gateway.example/v1",
@@ -34,6 +34,16 @@ def test_platform_must_be_loopback() -> None:
     payload["platform_base_url"] = "https://platform.example"
 
     with pytest.raises(ValidationError):
+        Settings.model_validate(payload)
+
+
+def test_legacy_separate_database_is_rejected() -> None:
+    payload = valid_settings()
+    payload["database_url"] = (
+        "mysql+asyncmy://user:secret@127.0.0.1/aisoftoj_ai"
+    )
+
+    with pytest.raises(ValidationError, match="aisoftoj database"):
         Settings.model_validate(payload)
 
 
