@@ -2,9 +2,9 @@ package com.nan.aisoftoj.service.impl;
 
 import com.nan.aisoftoj.common.ResourceNotFoundException;
 import com.nan.aisoftoj.dto.PracticeHistorySummaryDTO;
+import com.nan.aisoftoj.dto.PracticeHistoryDTO;
 import com.nan.aisoftoj.dto.ai.AiPracticeHistoryPageDTO;
 import com.nan.aisoftoj.dto.ai.AiWrongQuestionReviewDTO;
-import com.nan.aisoftoj.entity.Paper;
 import com.nan.aisoftoj.entity.PracticeSession;
 import com.nan.aisoftoj.entity.PracticeSessionQuestionRecord;
 import com.nan.aisoftoj.entity.Question;
@@ -112,22 +112,17 @@ class AiPlatformProgressReadServiceTest {
 
     @Test
     void practiceHistoryPageUsesFullDatasetSummary() {
-        PracticeSession session = new PracticeSession();
-        session.setId(14);
-        session.setPaperId(5);
+        PracticeHistoryDTO session = new PracticeHistoryDTO();
+        session.setSessionId(14);
+        session.setExamName("案例试卷");
         session.setExamMode("practice");
-        session.setStatus(0);
+        session.setExamType("案例分析");
+        session.setStatus("inProgress");
         session.setAnsweredCount(8);
-        session.setCreateTime(Date.from(Instant.parse("2026-08-11T00:00:00Z")));
-        when(practiceSessionMapper.selectList(any()))
+        session.setTotalCount(20);
+        session.setCreateTime("2026-08-11 08:00:00");
+        when(practiceSessionMapper.selectPracticeHistoryByUserId(7, 10, 10))
                 .thenReturn(Collections.singletonList(session));
-        Paper paper = new Paper();
-        paper.setId(5);
-        paper.setName("案例试卷");
-        paper.setPaperCateId(2);
-        paper.setQuestionTotal(20);
-        paper.setIsDeleted(false);
-        when(paperMapper.selectById(5)).thenReturn(paper);
         PracticeHistorySummaryDTO summary = new PracticeHistorySummaryDTO();
         summary.setTotalCount(40L);
         summary.setInProgressCount(3L);

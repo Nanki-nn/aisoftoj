@@ -10,6 +10,7 @@ import com.nan.aisoftoj.consts.PaperCate;
 import com.nan.aisoftoj.consts.PaperStatus;
 import com.nan.aisoftoj.consts.PracticeSessionState;
 import com.nan.aisoftoj.dto.Option;
+import com.nan.aisoftoj.dto.PracticeHistoryDTO;
 import com.nan.aisoftoj.dto.ai.AiPaperDTO;
 import com.nan.aisoftoj.dto.ai.AiProfileDTO;
 import com.nan.aisoftoj.dto.ai.AiQuestionDTO;
@@ -40,6 +41,9 @@ import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
+import java.time.LocalDateTime;
+import java.time.ZoneId;
+import java.time.format.DateTimeFormatter;
 import java.util.stream.Collectors;
 
 @Service
@@ -199,16 +203,8 @@ public class AiPlatformReadServiceImpl implements AiPlatformReadService {
             throw new IllegalArgumentException("page 必须大于等于 1，pageSize 必须在 1 到 20 之间");
         }
         int offset = (page - 1) * pageSize;
-        List<PracticeSession> sessions = practiceSessionMapper.selectList(
-                Wrappers.lambdaQuery(PracticeSession.class)
-                        .eq(PracticeSession::getUserId, userId)
-                        .eq(PracticeSession::getIsDeleted, false)
-                        .in(PracticeSession::getStatus,
-                                PracticeSessionState.DOING.getCode(),
-                                PracticeSessionState.FINISHED.getCode())
-                        .orderByDesc(PracticeSession::getCreateTime)
-                        .orderByDesc(PracticeSession::getId)
-                        .last("LIMIT " + pageSize + " OFFSET " + offset));
+        List<PracticeHistoryDTO> sessions = practiceSessionMapper.selectPracticeHistoryByUserId(
+                userId, pageSize, offset);
         List<AiPracticeHistoryItemDTO> records = sessions.stream()
                 .map(this::toHistoryItem)
                 .collect(Collectors.toList());
@@ -224,22 +220,19 @@ public class AiPlatformReadServiceImpl implements AiPlatformReadService {
         return result;
     }
 
-    private AiPracticeHistoryItemDTO toHistoryItem(PracticeSession session) {
-        Paper paper = paperMapper.selectById(session.getPaperId());
-        if (paper == null || Boolean.TRUE.equals(paper.getIsDeleted())) {
-            throw new IllegalStateException("练习历史关联的试卷不存在");
-        }
+    private AiPracticeHistoryItemDTO toHistoryItem(PracticeHistoryDTO session) {
         AiPracticeHistoryItemDTO dto = new AiPracticeHistoryItemDTO();
-        dto.setSessionId(session.getId());
-        dto.setPaperName(paper.getName());
+        dto.setSessionId(session.getSessionId());
+        dto.setPaperName(session.getExamName());
         dto.setExamMode(session.getExamMode());
-        PaperCate category = PaperCate.fromCode(paper.getPaperCateId());
-        dto.setExamType(category == null ? "综合知识" : category.getDescription());
-        dto.setCreatedAt(session.getCreateTime() == null ? null : session.getCreateTime().toInstant());
+        dto.setExamType(session.getExamType());
+        dto.setCreatedAt(session.getCreateTime() == null ? null : LocalDateTime
+                .parse(session.getCreateTime(), DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"))
+                .atZone(ZoneId.of("Asia/Shanghai"))
+                .toInstant());
         dto.setAnsweredCount(session.getAnsweredCount() == null ? 0 : session.getAnsweredCount());
-        dto.setQuestionCount(paper.getQuestionTotal() == null ? 0 : paper.getQuestionTotal());
-        dto.setStatus(Integer.valueOf(PracticeSessionState.FINISHED.getCode())
-                .equals(session.getStatus()) ? "completed" : "in_progress");
+        dto.setQuestionCount(session.getTotalCount() == null ? 0 : session.getTotalCount());
+        dto.setStatus("completed".equals(session.getStatus()) ? "completed" : "in_progress");
         return dto;
     }
 
