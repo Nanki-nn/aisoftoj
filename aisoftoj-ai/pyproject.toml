@@ -1,0 +1,49 @@
+[project]
+name = "aisoftoj-ai"
+version = "0.1.0"
+description = "Read-only AI assistant runtime for aisoftoj"
+requires-python = ">=3.12,<3.13"
+dependencies = [
+  "alembic>=1.16,<2",
+  "asyncmy>=0.2.10,<0.3",
+  "deepagents==0.7.6",
+  "fastapi>=0.116,<1",
+  "httpx>=0.28,<1",
+  "langchain-openai>=0.3,<2",
+  "pydantic>=2.11,<3",
+  "pyyaml>=6,<7",
+  "sqlalchemy>=2.0,<3",
+  "uvicorn[standard]>=0.35,<1",
+]
+
+[dependency-groups]
+dev = [
+  "mypy>=1.17,<2",
+  "pytest>=8.4,<10",
+  "pytest-asyncio>=1.1,<2",
+  "respx>=0.22,<1",
+  "ruff>=0.12,<1",
+  "types-pyyaml>=6.0,<7",
+]
+
+[tool.uv]
+package = false
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
+testpaths = ["tests"]
+pythonpath = ["."]
+
+[tool.ruff]
+target-version = "py312"
+line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "ASYNC"]
+
+[tool.mypy]
+python_version = "3.12"
+strict = true
+plugins = ["pydantic.mypy"]
+exclude = ["packages/harness/aisoftoj_agent/persistence/migrations"]

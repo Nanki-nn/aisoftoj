@@ -1,0 +1,28 @@
+database_url: mysql+asyncmy://aisoftoj_ai:change-me@127.0.0.1:3306/aisoftoj_ai
+
+platform_base_url: http://127.0.0.1:8080
+platform_service_key: change-me
+platform_connect_timeout_seconds: 2
+platform_read_timeout_seconds: 5
+platform_max_response_bytes: 2097152
+
+llm_base_url: https://api.openai.com/v1
+llm_api_key: change-me
+llm_default_model: gpt-5-mini
+llm_request_timeout_seconds: 60
+llm_max_retries: 1
+
+agent_max_run_tokens: 32000
+agent_max_run_seconds: 180
+agent_summary_trigger_tokens: 24000
+agent_summary_keep_messages: 12
+agent_max_concurrent_runs: 4
+agent_max_user_concurrent_runs: 2
+agent_max_user_message_chars: 20000
+agent_loop_warn_repetitions: 3
+agent_loop_hard_repetitions: 5
+shutdown_drain_seconds: 15
+
+host: 127.0.0.1
+port: 8000
+log_level: info
