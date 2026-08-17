@@ -11,7 +11,8 @@ non-overlapping table sets.
 
 - Preserve all existing AI threads, messages, runs, events, and summaries.
 - Do not create or retain a backup of `aisoftoj_ai`.
-- Drop `aisoftoj_ai` immediately after the moved tables are verified.
+- Drop `aisoftoj_ai` only after destination data, permissions, Alembic state,
+  service readiness, and source emptiness are verified.
 - Keep the `aisoftoj_ai` MySQL account, but grant it access only to
   `aisoftoj.*` so the AI service does not use the root account.
 - Configure `/Users/bytedance/aisoftoj/aisoftoj-ai/config.yaml` to target
