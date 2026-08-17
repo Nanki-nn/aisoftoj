@@ -621,7 +621,7 @@ ongoingSessionId: integer > 0 | null
 lastPracticeTime: UTC datetime | null
 ```
 
-Python 输出使用同名 `snake_case` 字段。试卷按 `year DESC NULLS LAST、month DESC NULLS LAST、paperId DESC` 稳定排序。会话活动时间定义为 `updateTime`，缺失时依次回退 `endTime`、`createTime`；多个进行中会话按该时间降序、`sessionId` 降序选取。`completed_question_count` 在进行中时取所选会话的非负 `answeredCount`，只有已完成会话时取试卷 `questionCount`，未开始时为 0，且不得超过 `questionCount`。
+Python 工具输出包装为 `{total, records}`：`total` 是 `records` 的准确长度，`records` 中每项使用上述字段的同名 `snake_case` 形式，避免模型自行统计长数组。试卷按 `year DESC NULLS LAST、month DESC NULLS LAST、paperId DESC` 稳定排序。会话活动时间定义为 `updateTime`，缺失时依次回退 `endTime`、`createTime`；多个进行中会话按该时间降序、`sessionId` 降序选取。`completed_question_count` 在进行中时取所选会话的非负 `answeredCount`，只有已完成会话时取试卷 `questionCount`，未开始时为 0，且不得超过 `questionCount`。
 
 #### Question
 
