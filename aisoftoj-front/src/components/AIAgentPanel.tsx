@@ -126,7 +126,7 @@ export function AIAgentPanel() {
         id="ai-agent-panel"
         aria-label="AI 备考助手"
         aria-hidden={!isOpen}
-        inert={!isOpen}
+        inert={isOpen ? undefined : ''}
         className={`fixed inset-y-0 right-0 z-[60] flex w-full flex-col border-l border-slate-200 bg-white shadow-2xl transition-transform duration-300 ease-out sm:w-[400px] xl:shadow-lg ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
