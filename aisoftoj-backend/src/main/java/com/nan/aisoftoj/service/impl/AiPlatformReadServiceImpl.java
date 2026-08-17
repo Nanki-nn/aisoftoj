@@ -103,6 +103,14 @@ public class AiPlatformReadServiceImpl implements AiPlatformReadService {
                 .orderByDesc(Paper::getId));
         List<PracticeSession> sessions = practiceSessionMapper.selectList(
                 Wrappers.lambdaQuery(PracticeSession.class)
+                        .select(
+                                PracticeSession::getId,
+                                PracticeSession::getPaperId,
+                                PracticeSession::getStatus,
+                                PracticeSession::getAnsweredCount,
+                                PracticeSession::getEndTime,
+                                PracticeSession::getCreateTime,
+                                PracticeSession::getUpdateTime)
                         .eq(PracticeSession::getUserId, userId)
                         .eq(PracticeSession::getIsDeleted, false)
                         .in(PracticeSession::getStatus,

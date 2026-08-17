@@ -1,5 +1,8 @@
 package com.nan.aisoftoj.service.impl;
 
+import com.baomidou.mybatisplus.core.conditions.Wrapper;
+import com.baomidou.mybatisplus.core.MybatisConfiguration;
+import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nan.aisoftoj.entity.Paper;
 import com.nan.aisoftoj.entity.PracticeSession;
 import com.nan.aisoftoj.entity.Question;
@@ -12,9 +15,11 @@ import com.nan.aisoftoj.dto.ai.AiPaperDTO;
 import com.nan.aisoftoj.dto.ai.AiQuestionDTO;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.apache.ibatis.builder.MapperBuilderAssistant;
 
 import java.util.Arrays;
 import java.util.Collections;
@@ -22,8 +27,11 @@ import java.util.Date;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -44,6 +52,9 @@ class AiPlatformCatalogReadServiceTest {
 
     @Test
     void paperAggregationSelectsMostActiveOngoingSessionDeterministically() {
+        TableInfoHelper.initTableInfo(
+                new MapperBuilderAssistant(new MybatisConfiguration(), ""),
+                PracticeSession.class);
         Paper paper = new Paper();
         paper.setId(3);
         paper.setName("2026 综合知识");
@@ -63,6 +74,14 @@ class AiPlatformCatalogReadServiceTest {
         assertEquals("in_progress", result.get(0).getPracticeStatus());
         assertEquals(12, result.get(0).getOngoingSessionId());
         assertEquals(50, result.get(0).getCompletedQuestionCount());
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<Wrapper<PracticeSession>> queryCaptor =
+                ArgumentCaptor.forClass(Wrapper.class);
+        verify(practiceSessionMapper).selectList(queryCaptor.capture());
+        String selectedColumns = queryCaptor.getValue().getSqlSelect();
+        assertTrue(selectedColumns.contains("paper_id"));
+        assertFalse(selectedColumns.contains("merged_into_session_id"));
     }
 
     @Test
