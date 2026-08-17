@@ -1,0 +1,31 @@
+services:
+  ai:
+    build:
+      context: ../../aisoftoj-ai
+      dockerfile: Dockerfile
+    image: aisoftoj-ai:${RELEASE_SHA:?RELEASE_SHA is required}
+    container_name: aisoftoj-ai
+    network_mode: host
+    env_file:
+      - /etc/aisoftoj/aisoftoj.env
+    environment:
+      AGENT_CONFIG_FILE: /etc/aisoftoj/ai-config.yaml
+    volumes:
+      - /etc/aisoftoj/ai-config.yaml:/etc/aisoftoj/ai-config.yaml:ro
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m,mode=1777
+    restart: unless-stopped
+    stop_grace_period: 30s
+    mem_limit: 1g
+    mem_reservation: 256m
+    cpus: 2
+    pids_limit: 128
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "/app/.venv/bin/python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/readyz', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 30s
