@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Navigate, Route, Routes, useNavigate, useParams } from 'react-router-dom';
+import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { LearningLanding } from './components/LearningLanding';
 import { FoundationPage } from './components/FoundationPage';
 import { EssaySprintPage } from './components/EssaySprintPage';
@@ -17,6 +17,7 @@ import { EssayEditor } from './components/EssayEditor';
 import { EssayResult } from './components/EssayResult';
 import { EssayHistory } from './components/EssayHistory';
 import { AppHeader } from './components/AppHeader';
+import { AIAgentPanel } from './components/AIAgentPanel';
 import { AdminLayout } from './components/admin/AdminLayout';
 import { AdminDashboard } from './components/admin/AdminDashboard';
 import { AdminUsers } from './components/admin/AdminUsers';
@@ -25,6 +26,7 @@ import { AdminOssUpload } from './components/admin/AdminOssUpload';
 import { AdminRouteGuard } from './components/admin/AdminRouteGuard';
 import { useExamSession } from './hooks/useExamSession';
 import { useAuth } from './hooks/useAuth';
+import { useAgentPanel } from './hooks/useAgentPanel';
 import { ExamConfig as ExamConfigType, ExamPaper } from './types/exam';
 import { PracticeRecord, PracticeSessionRecord } from './types/record';
 import {
@@ -227,12 +229,23 @@ export default function App() {
     setSession,
   } = useExamSession();
   const { checkAuthStatus } = useAuth();
+  const { isOpen: isAgentOpen, close: closeAgent } = useAgentPanel();
   const navigate = useNavigate();
+  const location = useLocation();
+  const agentAvailable = !location.pathname.startsWith('/admin')
+    && location.pathname !== ROUTES.auth
+    && location.pathname !== ROUTES.forgotPassword;
 
   // 检查用户登录状态
   useEffect(() => {
     checkAuthStatus();
   }, [checkAuthStatus]);
+
+  useEffect(() => {
+    if (!agentAvailable && isAgentOpen) {
+      closeAgent();
+    }
+  }, [agentAvailable, closeAgent, isAgentOpen]);
 
   const handleStartPaper = async (paper: ExamPaper, mode: 'practice' | 'exam') => {
     try {
@@ -406,7 +419,11 @@ export default function App() {
   };
 
   return (
-    <div className="min-h-screen bg-background text-foreground">
+    <div
+      className={`min-h-screen bg-background text-foreground transition-[padding] duration-300 ease-out ${
+        agentAvailable && isAgentOpen ? 'xl:pr-[400px]' : ''
+      }`}
+    >
       <Routes>
         <Route
           path={ROUTES.home}
@@ -533,6 +550,7 @@ export default function App() {
         />
         <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
       </Routes>
+      {agentAvailable && <AIAgentPanel />}
     </div>
   );
 }
