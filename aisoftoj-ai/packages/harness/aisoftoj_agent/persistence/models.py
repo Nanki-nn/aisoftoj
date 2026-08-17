@@ -104,7 +104,10 @@ class AiRunEvent(Base):
     __tablename__ = "ai_run_events"
     __table_args__ = (UniqueConstraint("run_id", "sequence", name="uq_ai_run_events_sequence"),)
 
-    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    # SQLite only auto-increments an INTEGER PRIMARY KEY; keep BIGINT on MySQL.
+    id: Mapped[int] = mapped_column(
+        BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True
+    )
     run_id: Mapped[str] = mapped_column(
         CHAR(36), ForeignKey("ai_runs.id", ondelete="CASCADE"), nullable=False
     )
