@@ -9,6 +9,7 @@ import {
   LogOut,
   Menu,
   Shield,
+  Sparkles,
   User,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
@@ -29,6 +30,7 @@ import {
 } from './ui/dialog';
 import { useAuth } from '../hooks/useAuth';
 import { CommunityQrHoverCard } from './CommunityQrHoverCard';
+import { useAgentPanel } from '../hooks/useAgentPanel';
 
 interface AppHeaderProps {
   onShowAuth: () => void;
@@ -70,6 +72,7 @@ function isCurrentRoute(currentPath: string, path: string) {
 
 export function AppHeader({ onShowAuth, onShowProfile }: AppHeaderProps) {
   const { user, logout, isAuthenticated } = useAuth();
+  const { isOpen: isAgentOpen, toggle: toggleAgent } = useAgentPanel();
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -171,6 +174,23 @@ export function AppHeader({ onShowAuth, onShowProfile }: AppHeaderProps) {
               </>
             )}
           </div>
+
+          <Button
+            type="button"
+            onClick={toggleAgent}
+            variant={isAgentOpen ? 'default' : 'outline'}
+            className={`h-10 gap-2 rounded-lg px-2.5 font-medium sm:px-3 ${
+              isAgentOpen
+                ? 'bg-blue-600 text-white shadow-sm shadow-blue-600/20 hover:bg-blue-700'
+                : 'border-slate-300 bg-white text-blue-700 shadow-sm hover:border-blue-200 hover:bg-blue-50'
+            }`}
+            aria-label={isAgentOpen ? '关闭 AI 助手' : '打开 AI 助手'}
+            aria-expanded={isAgentOpen}
+            aria-controls="ai-agent-panel"
+          >
+            <Sparkles className="h-4 w-4" aria-hidden="true" />
+            <span className="hidden sm:inline">AI 助手</span>
+          </Button>
 
           <a
             href="https://github.com/Nanki-nn/aisoftoj"
