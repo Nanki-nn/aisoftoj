@@ -27,6 +27,7 @@ class Base(DeclarativeBase):
 
 class AiThread(Base):
     __tablename__ = "ai_threads"
+    __mapper_args__ = {"eager_defaults": True}
     __table_args__ = (
         Index("ix_ai_threads_owner_list", "user_id", "is_deleted", "update_time", "id"),
     )
@@ -46,6 +47,7 @@ class AiThread(Base):
 
 class AiMessage(Base):
     __tablename__ = "ai_messages"
+    __mapper_args__ = {"eager_defaults": True}
     __table_args__ = (
         UniqueConstraint("thread_id", "sequence", name="uq_ai_messages_thread_sequence"),
         UniqueConstraint("run_id", "role", name="uq_ai_messages_run_role"),
@@ -66,6 +68,7 @@ class AiMessage(Base):
 
 class AiRun(Base):
     __tablename__ = "ai_runs"
+    __mapper_args__ = {"eager_defaults": True}
     __table_args__ = (
         UniqueConstraint("thread_id", "idempotency_key", name="uq_ai_runs_idempotency"),
         UniqueConstraint("thread_id", "active_marker", name="uq_ai_runs_active"),
@@ -102,6 +105,7 @@ class AiRun(Base):
 
 class AiRunEvent(Base):
     __tablename__ = "ai_run_events"
+    __mapper_args__ = {"eager_defaults": True}
     __table_args__ = (UniqueConstraint("run_id", "sequence", name="uq_ai_run_events_sequence"),)
 
     # SQLite only auto-increments an INTEGER PRIMARY KEY; keep BIGINT on MySQL.
@@ -121,6 +125,7 @@ class AiRunEvent(Base):
 
 class AiThreadSummary(Base):
     __tablename__ = "ai_thread_summaries"
+    __mapper_args__ = {"eager_defaults": True}
 
     thread_id: Mapped[str] = mapped_column(
         CHAR(36), ForeignKey("ai_threads.id", ondelete="CASCADE"), primary_key=True
