@@ -3,14 +3,18 @@ package com.nan.aisoftoj.controller;
 import com.nan.aisoftoj.ai.AiInternalAuthenticator;
 import com.nan.aisoftoj.dto.ResultDTO;
 import com.nan.aisoftoj.dto.ai.AiProfileDTO;
+import com.nan.aisoftoj.dto.ai.AiPaperDTO;
+import com.nan.aisoftoj.dto.ai.AiQuestionDTO;
 import com.nan.aisoftoj.service.AiPlatformReadService;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.PathVariable;
 
 import javax.servlet.http.HttpServletRequest;
+import java.util.List;
 
 @RestController
 @RequestMapping("/internal/ai")
@@ -30,6 +34,20 @@ public class AiInternalController {
     public ResponseEntity<ResultDTO<AiProfileDTO>> getProfile(HttpServletRequest request) {
         Integer userId = authenticate(request);
         return noStore(ResultDTO.success(readService.getProfile(userId)));
+    }
+
+    @GetMapping("/papers")
+    public ResponseEntity<ResultDTO<List<AiPaperDTO>>> listPapers(HttpServletRequest request) {
+        Integer userId = authenticate(request);
+        return noStore(ResultDTO.success(readService.listPapers(userId)));
+    }
+
+    @GetMapping("/questions/{questionId}")
+    public ResponseEntity<ResultDTO<AiQuestionDTO>> getQuestion(
+            @PathVariable Integer questionId,
+            HttpServletRequest request) {
+        authenticate(request);
+        return noStore(ResultDTO.success(readService.getQuestion(questionId)));
     }
 
     private Integer authenticate(HttpServletRequest request) {
