@@ -17,7 +17,12 @@ from packages.harness.aisoftoj_agent.contracts.api import (
     RunPageResponse,
     RunResponse,
 )
-from packages.harness.aisoftoj_agent.contracts.events import PersistedEvent, StreamEnd, StreamReset
+from packages.harness.aisoftoj_agent.contracts.events import (
+    EventPage,
+    PersistedEvent,
+    StreamEnd,
+    StreamReset,
+)
 from packages.harness.aisoftoj_agent.persistence.models import AiRun
 from packages.harness.aisoftoj_agent.persistence.repositories.messages import MessageRepository
 from packages.harness.aisoftoj_agent.persistence.repositories.runs import (
@@ -183,6 +188,36 @@ async def cancel_run(
     return run_response(run)
 
 
+@router.get("/{run_id}/events", response_model=EventPage)
+async def list_run_events(
+    thread_id: str,
+    run_id: str,
+    user: CurrentUser,
+    session: DatabaseSession,
+    after_sequence: int = Query(default=0, ge=0),
+    limit: int = Query(default=200, ge=1, le=500),
+) -> EventPage:
+    await owned_run(thread_id, run_id, user, session)
+    items, has_more = await RunRepository(session).list_event_page(
+        run_id, after_sequence, limit
+    )
+    events = [
+        PersistedEvent(
+            run_id=item.run_id,
+            sequence=item.sequence,
+            type=item.event_type,
+            created_at=item.create_time.replace(tzinfo=UTC),
+            data=item.payload,
+        )
+        for item in items
+    ]
+    return EventPage(
+        items=events,
+        next_after_sequence=events[-1].sequence if has_more and events else None,
+        has_more=has_more,
+    )
+
+
 @router.get("/{run_id}/stream")
 async def stream_run(
     request: Request,
@@ -194,7 +229,7 @@ async def stream_run(
     after_seq: int = Query(default=0, ge=0),
     last_event_id: Annotated[str | None, Header(alias="Last-Event-ID")] = None,
 ) -> StreamingResponse:
-    run = await owned_run(thread_id, run_id, user, session)
+    await owned_run(thread_id, run_id, user, session)
     if last_event_id is not None:
         try:
             header_sequence = int(last_event_id)
@@ -221,7 +256,10 @@ async def stream_run(
                         data=stored_event.payload,
                     )
                 )
-            current = run
+            async with container.session_factory() as current_session:
+                current = await RunRepository(current_session).get(run_id)
+            if current is None:
+                return
             if current.status in TERMINAL_STATUSES:
                 yield format_control(
                     "stream.end",

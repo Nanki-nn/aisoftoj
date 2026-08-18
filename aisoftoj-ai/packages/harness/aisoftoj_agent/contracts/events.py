@@ -41,3 +41,9 @@ class StreamReset(BaseModel):
     run_id: str
     reason: Literal["slow_consumer"]
     last_sequence: int = Field(ge=0)
+
+
+class EventPage(BaseModel):
+    items: list[PersistedEvent]
+    next_after_sequence: int | None
+    has_more: bool

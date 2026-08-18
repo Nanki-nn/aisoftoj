@@ -8,16 +8,15 @@ import {
   History,
   Loader2,
   Plus,
-  RotateCcw,
   Send,
   Sparkles,
   Square,
   X,
 } from 'lucide-react';
-import ReactMarkdown from 'react-markdown';
-import remarkGfm from 'remark-gfm';
 import { useAgentPanel } from '../hooks/useAgentPanel';
 import { useAIConversation } from '../hooks/useAIConversation';
+import { getMessageGroups } from '../lib/aiMessageGroups';
+import { AIMessageList } from './AIMessageList';
 
 const QUICK_PROMPTS = [
   {
@@ -86,6 +85,7 @@ export function AIAgentPanel() {
     threads,
     currentThread,
     messages,
+    runStates,
     isLoading,
     isGenerating,
     error,
@@ -269,7 +269,7 @@ export function AIAgentPanel() {
         id="ai-agent-panel"
         aria-label="AI 备考助手"
         aria-hidden={!isOpen}
-        inert={isOpen ? undefined : ''}
+        inert={isOpen ? undefined : true}
         className={`fixed inset-y-0 right-0 z-[60] flex w-full flex-col border-l border-slate-200 bg-white shadow-2xl transition-transform duration-300 ease-out sm:w-[400px] xl:shadow-lg ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
@@ -398,45 +398,14 @@ export function AIAgentPanel() {
               </div>
             </div>
           ) : (
-            <div className="space-y-5 px-4 py-5">
-              {messages.map(message => (
-                <div
-                  key={message.id}
-                  className={`flex gap-2.5 ${message.role === 'user' ? 'justify-end' : 'justify-start'}`}
-                >
-                  {message.role === 'assistant' && (
-                    <span className="mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white">
-                      <Sparkles className="h-4 w-4" aria-hidden="true" />
-                    </span>
-                  )}
-                  <div
-                    className={`max-w-[82%] whitespace-pre-wrap px-3.5 py-2.5 text-sm leading-6 ${
-                      message.role === 'user'
-                        ? 'rounded-2xl rounded-tr-md bg-blue-600 text-white'
-                        : 'rounded-2xl rounded-tl-md bg-slate-100 text-slate-800'
-                    }`}
-                  >
-                    {message.role === 'assistant' ? (
-                      <div className="prose prose-sm max-w-none text-slate-800 prose-p:my-1 prose-table:my-2">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{message.content}</ReactMarkdown>
-                      </div>
-                    ) : message.content}
-                    {message.status === 'failed' && (
-                      <button
-                        type="button"
-                        onClick={() => retryMessage(message.id)}
-                        className="mt-2 flex items-center gap-1 text-xs font-medium text-red-100 underline underline-offset-2"
-                      >
-                        <RotateCcw className="h-3 w-3" aria-hidden="true" />
-                        重试
-                      </button>
-                    )}
-                  </div>
-                </div>
-              ))}
+            <>
+              <AIMessageList
+                groups={getMessageGroups(messages, runStates)}
+                onRetry={retryMessage}
+              />
 
-              {isGenerating && !messages.some(message => message.status === 'streaming') && (
-                <div className="flex items-center gap-2.5">
+              {isGenerating && !Object.values(runStates).some(run => run.tools.length > 0 || run.answer) && (
+                <div className="flex items-center gap-2.5 px-4 pb-5">
                   <span className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-blue-600 text-white">
                     <Sparkles className="h-4 w-4" aria-hidden="true" />
                   </span>
@@ -451,7 +420,7 @@ export function AIAgentPanel() {
                   </div>
                 </div>
               )}
-            </div>
+            </>
           )}
         </div>
 

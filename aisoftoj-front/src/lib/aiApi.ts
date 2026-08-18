@@ -56,6 +56,20 @@ export type AIStreamEvent = {
   data: Record<string, unknown>;
 };
 
+export type AIRunEvent = {
+  run_id: string;
+  sequence: number;
+  type: string;
+  created_at: string;
+  data: Record<string, unknown>;
+};
+
+export type AIEventPage = {
+  items: AIRunEvent[];
+  next_after_sequence: number | null;
+  has_more: boolean;
+};
+
 type ErrorEnvelope = {
   error?: { code?: string; message?: string; request_id?: string };
 };
@@ -132,6 +146,18 @@ export function listAIRuns(threadId: string, page = 1, pageSize = 20): Promise<P
 export function getAIRun(threadId: string, runId: string): Promise<AIRun> {
   return aiRequest(
     `/api/ai/threads/${encodeURIComponent(threadId)}/runs/${encodeURIComponent(runId)}`,
+  );
+}
+
+export function listAIRunEvents(
+  threadId: string,
+  runId: string,
+  afterSequence = 0,
+  limit = 200,
+): Promise<AIEventPage> {
+  return aiRequest(
+    `/api/ai/threads/${encodeURIComponent(threadId)}/runs/${encodeURIComponent(runId)}`
+      + `/events?after_sequence=${afterSequence}&limit=${limit}`,
   );
 }
 

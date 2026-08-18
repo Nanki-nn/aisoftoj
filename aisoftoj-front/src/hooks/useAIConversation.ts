@@ -1,27 +1,29 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AIApiError,
-  AIMessage,
   AIRun,
-  AIStreamEvent,
   AIThread,
   cancelAIRun,
   createAIRun,
   createAIThread,
   getAIRun,
   listAIMessages,
+  listAIRunEvents,
   listAIRuns,
   listAIThreads,
-  streamAIRun,
 } from '../lib/aiApi';
+import {
+  ConversationMessage,
+  RunViewState,
+  applyEvent,
+  applyRunSnapshot,
+  createRunViewState,
+  normalizeEvent,
+  toConversationMessage,
+} from '../lib/aiEvents';
+import { runAIStreamSession } from '../lib/aiRunSession';
 
-export type ConversationMessage = {
-  id: string;
-  role: 'user' | 'assistant';
-  content: string;
-  status: 'sent' | 'streaming' | 'failed';
-  idempotencyKey?: string;
-};
+export type { ConversationMessage } from '../lib/aiEvents';
 
 const ACTIVE_STATUSES = new Set(['queued', 'running']);
 const TERMINAL_STATUSES = new Set(['completed', 'failed', 'cancelled', 'interrupted']);
@@ -35,10 +37,6 @@ function storageKey(): string {
   }
 }
 
-function toConversationMessage(message: AIMessage): ConversationMessage {
-  return { id: message.id, role: message.role, content: message.content, status: 'sent' };
-}
-
 function errorMessage(error: unknown): string {
   if (error instanceof AIApiError) {
     if (error.status === 401 || error.code === 'AUTH_EXPIRED') return '登录状态已失效，请重新登录';
@@ -48,10 +46,35 @@ function errorMessage(error: unknown): string {
   return 'AI 服务暂时不可用，请稍后重试';
 }
 
+async function replayRunEvents(
+  threadId: string,
+  run: AIRun,
+): Promise<{ state: RunViewState; transportSequence: number }> {
+  let state = createRunViewState(run.id);
+  let transportSequence = 0;
+  let hasMore = true;
+  while (hasMore) {
+    const page = await listAIRunEvents(threadId, run.id, transportSequence);
+    page.items.forEach(raw => {
+      transportSequence = Math.max(transportSequence, raw.sequence);
+      const normalized = normalizeEvent(raw);
+      if (normalized?.event) state = applyEvent(state, normalized.event);
+    });
+    hasMore = page.has_more;
+    if (hasMore && page.next_after_sequence !== null) {
+      transportSequence = Math.max(transportSequence, page.next_after_sequence);
+    } else if (hasMore && page.items.length === 0) {
+      break;
+    }
+  }
+  return { state: applyRunSnapshot(state, run), transportSequence };
+}
+
 export function useAIConversation(enabled: boolean) {
   const [threads, setThreads] = useState<AIThread[]>([]);
   const [currentThread, setCurrentThread] = useState<AIThread | null>(null);
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
+  const [runStates, setRunStates] = useState<Record<string, RunViewState>>({});
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -64,86 +87,41 @@ export function useAIConversation(enabled: boolean) {
     setMessages(page.items.map(toConversationMessage));
   }, []);
 
-  const followRun = useCallback(async (threadId: string, run: AIRun) => {
+  const followRun = useCallback(async (
+    threadId: string,
+    run: AIRun,
+    initialSequence = 0,
+  ) => {
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
     activeRunRef.current = run;
     setIsGenerating(true);
     setError(null);
-    let sequence = 0;
-    let retries = 0;
-    let terminal = false;
-
-    const applyEvent = (event: AIStreamEvent) => {
-      if (event.id !== null) {
-        if (event.id <= sequence) return;
-        sequence = event.id;
-      }
-      const payload = (event.data.data || {}) as Record<string, unknown>;
-      if (event.event === 'message.delta' && typeof payload.delta === 'string') {
-        const assistantId = `assistant-${run.id}`;
-        setMessages(previous => {
-          const existing = previous.find(item => item.id === assistantId);
-          if (existing) {
-            return previous.map(item => item.id === assistantId
-              ? { ...item, content: item.content + payload.delta, status: 'streaming' }
-              : item);
-          }
-          return [...previous, {
-            id: assistantId,
-            role: 'assistant',
-            content: payload.delta as string,
-            status: 'streaming',
-          }];
-        });
-      }
-      if (event.event === 'run.failed') {
-        terminal = true;
-        const code = typeof payload.error_code === 'string' ? payload.error_code : undefined;
-        setError(code === 'AUTH_EXPIRED'
-          ? '登录状态已失效，请重新登录'
-          : 'AI 回答生成失败，请重试');
-      }
-      if (event.event === 'run.cancelled' || event.event === 'run.interrupted') {
-        terminal = true;
-        setError(event.event === 'run.interrupted' ? 'AI 服务已重启，请重新发送' : null);
-      }
-      if (event.event === 'run.completed') terminal = true;
-      if (event.event === 'stream.end') terminal = true;
-      if (event.event === 'stream.reset') {
-        const resetSequence = Number(event.data.last_sequence);
-        if (Number.isFinite(resetSequence)) sequence = Math.max(sequence, resetSequence);
-      }
-    };
+    setRunStates(previous => ({
+      ...previous,
+      [run.id]: applyRunSnapshot(previous[run.id] || createRunViewState(run.id), run),
+    }));
 
     try {
-      while (!controller.signal.aborted && retries <= 2 && !terminal) {
-        try {
-          await streamAIRun(threadId, run.id, sequence, controller.signal, applyEvent);
-        } catch (streamError) {
-          if (controller.signal.aborted) return;
-          if (streamError instanceof AIApiError && streamError.status === 401) throw streamError;
-        }
-        if (terminal) break;
-        const current = await getAIRun(threadId, run.id);
-        if (TERMINAL_STATUSES.has(current.status)) {
-          terminal = true;
-          if (current.status !== 'completed') {
-            setError(current.error_code === 'AUTH_EXPIRED'
-              ? '登录状态已失效，请重新登录'
-              : 'AI 回答未能完成，请重试');
-          }
-          break;
-        }
-        retries += 1;
-      }
-      const finalRun = await getAIRun(threadId, run.id);
-      if (finalRun.status === 'completed') {
-        await refreshMessages(threadId);
-      } else if (ACTIVE_STATUSES.has(finalRun.status) && retries > 2) {
-        setError('连接已中断，重新打开面板后可继续接收回答');
-      }
+      const result = await runAIStreamSession(
+        threadId,
+        run,
+        initialSequence,
+        controller.signal,
+        event => setRunStates(previous => ({
+          ...previous,
+          [run.id]: applyEvent(previous[run.id] || createRunViewState(run.id), event),
+        })),
+      );
+      setRunStates(previous => ({
+        ...previous,
+        [run.id]: applyRunSnapshot(previous[run.id] || createRunViewState(run.id), result.run),
+      }));
+      setError(ACTIVE_STATUSES.has(result.run.status)
+        ? '连接已中断，重新打开面板后可继续接收回答'
+        : null);
+      if (result.run.status === 'completed') await refreshMessages(threadId);
     } catch (followError) {
       if (!controller.signal.aborted) setError(errorMessage(followError));
     } finally {
@@ -163,12 +141,46 @@ export function useAIConversation(enabled: boolean) {
     try {
       const [messagePage, runPage] = await Promise.all([
         listAIMessages(thread.id),
-        listAIRuns(thread.id),
+        listAIRuns(thread.id, 1, 100),
       ]);
       if (generation !== loadGenerationRef.current) return;
-      setMessages(messagePage.items.map(toConversationMessage));
-      const activeRun = runPage.items.find(item => ACTIVE_STATUSES.has(item.status));
-      if (activeRun) void followRun(thread.id, activeRun);
+      const nextMessages = messagePage.items.map(toConversationMessage);
+      setMessages(nextMessages);
+
+      const visibleRunIds = Array.from(new Set(
+        nextMessages.map(message => message.runId).filter((runId): runId is string => Boolean(runId)),
+      ));
+      const runMap = new Map(runPage.items.map(run => [run.id, run]));
+      const missingRuns = await Promise.all(
+        visibleRunIds.filter(runId => !runMap.has(runId)).map(runId => getAIRun(thread.id, runId)),
+      );
+      missingRuns.forEach(run => runMap.set(run.id, run));
+      const visibleRuns = visibleRunIds.map(runId => runMap.get(runId)).filter((run): run is AIRun => Boolean(run));
+      const histories = await Promise.allSettled(
+        visibleRuns.map(run => replayRunEvents(thread.id, run)),
+      );
+      if (generation !== loadGenerationRef.current) return;
+
+      const nextRunStates: Record<string, RunViewState> = {};
+      const transportSequences = new Map<string, number>();
+      histories.forEach((history, index) => {
+        const run = visibleRuns[index];
+        if (history.status === 'fulfilled') {
+          nextRunStates[run.id] = history.value.state;
+          transportSequences.set(run.id, history.value.transportSequence);
+        } else {
+          nextRunStates[run.id] = applyRunSnapshot(createRunViewState(run.id), run);
+        }
+      });
+      setRunStates(nextRunStates);
+      if (histories.some(history => history.status === 'rejected')) {
+        setError('部分历史执行过程暂时无法加载，最终回答仍可查看');
+      }
+
+      const activeRun = Array.from(runMap.values()).find(item => ACTIVE_STATUSES.has(item.status));
+      if (activeRun) {
+        void followRun(thread.id, activeRun, transportSequences.get(activeRun.id) || 0);
+      }
     } catch (loadError) {
       if (generation === loadGenerationRef.current) setError(errorMessage(loadError));
     } finally {
@@ -185,7 +197,10 @@ export function useAIConversation(enabled: boolean) {
       const savedId = localStorage.getItem(storageKey());
       const selected = page.items.find(item => item.id === savedId) || page.items[0];
       if (selected) await loadThread(selected);
-      else setMessages([]);
+      else {
+        setMessages([]);
+        setRunStates({});
+      }
     } catch (initializationError) {
       setError(errorMessage(initializationError));
     } finally {
@@ -239,6 +254,13 @@ export function useAIConversation(enabled: boolean) {
         if (!active) throw creationError;
         run = active;
       }
+      setMessages(previous => previous.map(item => item.id === userMessageId
+        ? { ...item, runId: run.id }
+        : item));
+      setRunStates(previous => ({
+        ...previous,
+        [run.id]: applyRunSnapshot(createRunViewState(run.id), run),
+      }));
       await followRun(thread.id, run);
       const refreshed = await listAIThreads();
       setThreads(refreshed.items);
@@ -293,6 +315,7 @@ export function useAIConversation(enabled: boolean) {
     activeRunRef.current = null;
     setCurrentThread(null);
     setMessages([]);
+    setRunStates({});
     setIsGenerating(false);
     setError(null);
     localStorage.removeItem(storageKey());
@@ -302,6 +325,7 @@ export function useAIConversation(enabled: boolean) {
     threads,
     currentThread,
     messages,
+    runStates,
     isLoading,
     isGenerating,
     error,

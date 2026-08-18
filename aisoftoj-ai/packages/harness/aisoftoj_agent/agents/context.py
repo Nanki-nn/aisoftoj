@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
+from typing import Any
 
 
 @dataclass(frozen=True, slots=True)
@@ -11,3 +12,4 @@ class AgentContext:
     thread_id: str
     run_id: str
     bearer_token: str = field(repr=False)
+    event_sink: Any = field(default=None, repr=False, compare=False)

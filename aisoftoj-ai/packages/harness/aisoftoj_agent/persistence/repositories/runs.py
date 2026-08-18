@@ -1,11 +1,10 @@
 from __future__ import annotations
 
 from datetime import UTC, datetime
-from typing import Any, cast
+from typing import Any
 from uuid import uuid4
 
-from sqlalchemy import func, select, update
-from sqlalchemy.engine import CursorResult
+from sqlalchemy import func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models import AiRun, AiRunEvent
@@ -112,17 +111,34 @@ class RunRepository:
         )
         return list((await self.session.scalars(statement)).all())
 
-    async def interrupt_unfinished(self) -> int:
-        result = cast(
-            CursorResult[Any],
-            await self.session.execute(
-                update(AiRun)
-                .where(AiRun.status.in_(ACTIVE_STATUSES))
-                .values(
-                    status="interrupted",
-                    error_code="SERVICE_RESTARTED",
-                    finished_at=datetime.now(UTC).replace(tzinfo=None),
-                )
-            ),
+    async def list_event_page(
+        self, run_id: str, sequence: int, limit: int
+    ) -> tuple[list[AiRunEvent], bool]:
+        statement = (
+            select(AiRunEvent)
+            .where(AiRunEvent.run_id == run_id, AiRunEvent.sequence > sequence)
+            .order_by(AiRunEvent.sequence)
+            .limit(limit + 1)
         )
-        return int(result.rowcount or 0)
+        items = list((await self.session.scalars(statement)).all())
+        return items[:limit], len(items) > limit
+
+    async def interrupt_unfinished(self) -> int:
+        runs = list(
+            (
+                await self.session.scalars(
+                    select(AiRun)
+                    .where(AiRun.status.in_(ACTIVE_STATUSES))
+                    .order_by(AiRun.id)
+                    .with_for_update()
+                )
+            ).all()
+        )
+        for run in runs:
+            await self.transition(run, "interrupted", error_code="SERVICE_RESTARTED")
+            await self.append_event(
+                run.id,
+                "run.interrupted",
+                {"status": "interrupted", "error_code": "SERVICE_RESTARTED"},
+            )
+        return len(runs)

@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+from dataclasses import replace
 from datetime import UTC, datetime
 from typing import Any
 
@@ -21,6 +22,7 @@ from ..persistence.models import AiRunEvent
 from ..persistence.repositories.messages import MessageRepository
 from ..persistence.repositories.runs import RunRepository
 from ..persistence.repositories.summaries import SummaryRepository
+from .event_sink import RunEventSink, ToolEventPersistenceError
 from .stream_bridge import StreamBridge
 
 
@@ -47,6 +49,8 @@ class Worker:
             raise
         except TimeoutError:
             await self._finish_failure(run_id, "failed", "MODEL_TIMEOUT")
+        except ToolEventPersistenceError:
+            await self._finish_failure(run_id, "failed", "EVENT_PERSISTENCE_FAILED")
         except PlatformError as exc:
             await self._finish_failure(run_id, "failed", exc.code)
         except Exception:
@@ -59,10 +63,14 @@ class Worker:
         await self._transition_and_event(run_id, "running", "run.started", {})
         messages = await self._load_messages(context.thread_id)
         await self._append_event(run_id, "message.started", {"role": "assistant"})
+        runtime_context = replace(
+            context,
+            event_sink=RunEventSink(self.session_factory, self.stream_bridge, run_id),
+        )
         final_text = ""
         async for chunk in self.agent.graph.astream(
             {"messages": messages, "todos": [], "files": {}},
-            context=context,
+            context=runtime_context,
             config={"configurable": {"thread_id": run_id}},
             stream_mode="messages",
         ):

@@ -16,6 +16,7 @@ from app.main import create_app
 from packages.harness.aisoftoj_agent.integrations.aisoftoj.client import PlatformClient
 from packages.harness.aisoftoj_agent.integrations.aisoftoj.context import TrustedUser
 from packages.harness.aisoftoj_agent.persistence.models import Base
+from packages.harness.aisoftoj_agent.persistence.repositories.runs import RunRepository
 from packages.harness.aisoftoj_agent.runtime.run_manager import RunManager
 from packages.harness.aisoftoj_agent.runtime.stream_bridge import StreamBridge
 
@@ -103,3 +104,70 @@ async def test_run_creation_is_idempotent(
     assert first.status_code == 202
     assert second.status_code == 200
     assert first.json()["id"] == second.json()["id"]
+
+
+async def test_run_events_are_owner_scoped_and_paginated(
+    api_client: tuple[httpx.AsyncClient, PlatformClient, Any],
+) -> None:
+    client, _platform, app = api_client
+    thread_id = (await client.post("/api/ai/threads", json={})).json()["id"]
+    created = await client.post(
+        f"/api/ai/threads/{thread_id}/runs",
+        json={"message": "查看我的错题"},
+        headers={"Idempotency-Key": "event-page"},
+    )
+    run_id = created.json()["id"]
+    async with app.state.container.session_factory.begin() as session:
+        repository = RunRepository(session)
+        await repository.append_event(run_id, "message.delta", {"delta": "一"})
+        await repository.append_event(run_id, "message.delta", {"delta": "二"})
+
+    first = await client.get(
+        f"/api/ai/threads/{thread_id}/runs/{run_id}/events?limit=1"
+    )
+    assert first.status_code == 200
+    assert first.json()["has_more"] is True
+    cursor = first.json()["next_after_sequence"]
+    second = await client.get(
+        f"/api/ai/threads/{thread_id}/runs/{run_id}/events"
+        f"?after_sequence={cursor}&limit=10"
+    )
+    assert second.status_code == 200
+    assert all(item["sequence"] > cursor for item in second.json()["items"])
+    assert second.json()["has_more"] is False
+
+
+async def test_stream_finishes_when_run_completes_during_subscription(
+    api_client: tuple[httpx.AsyncClient, PlatformClient, Any],
+) -> None:
+    client, _platform, app = api_client
+    thread_id = (await client.post("/api/ai/threads", json={})).json()["id"]
+    created = await client.post(
+        f"/api/ai/threads/{thread_id}/runs",
+        json={"message": "查看练习历史"},
+        headers={"Idempotency-Key": "subscription-race"},
+    )
+    run_id = created.json()["id"]
+
+    class CompletingBridge(StreamBridge):
+        async def subscribe(self, subscribed_run_id: str):  # type: ignore[no-untyped-def]
+            subscription = await super().subscribe(subscribed_run_id)
+            async with app.state.container.session_factory.begin() as session:
+                repository = RunRepository(session)
+                run = await repository.get(subscribed_run_id)
+                assert run is not None
+                await repository.transition(run, "completed")
+                await repository.append_event(
+                    subscribed_run_id,
+                    "run.completed",
+                    {"status": "completed", "error_code": None},
+                )
+            await self.close(subscribed_run_id)
+            return subscription
+
+    app.state.container.stream_bridge = CompletingBridge()
+    response = await client.get(f"/api/ai/threads/{thread_id}/runs/{run_id}/stream")
+
+    assert response.status_code == 200
+    assert "event: run.completed" in response.text
+    assert "event: stream.end" in response.text
