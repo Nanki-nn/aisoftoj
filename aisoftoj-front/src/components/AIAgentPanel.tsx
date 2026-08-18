@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useRef, useState } from 'react';
 import {
   BookOpenCheck,
   Brain,
@@ -42,6 +42,37 @@ const QUICK_PROMPTS = [
   },
 ] as const;
 
+const DEFAULT_PANEL_WIDTH = 400;
+const MAX_PANEL_WIDTH = 720;
+const MIN_VISIBLE_PAGE_WIDTH = 320;
+const PANEL_WIDTH_STEP = 24;
+const DESKTOP_MEDIA_QUERY = '(min-width: 1280px)';
+
+type ResizeSession = {
+  pointerId: number;
+  startX: number;
+  startWidth: number;
+  target: HTMLDivElement;
+  previousCursor: string;
+  previousUserSelect: string;
+};
+
+function getMaxPanelWidth(viewportWidth: number) {
+  return Math.max(
+    DEFAULT_PANEL_WIDTH,
+    Math.min(MAX_PANEL_WIDTH, viewportWidth - MIN_VISIBLE_PAGE_WIDTH),
+  );
+}
+
+function clampPanelWidth(width: number, viewportWidth: number) {
+  return Math.round(
+    Math.min(
+      getMaxPanelWidth(viewportWidth),
+      Math.max(DEFAULT_PANEL_WIDTH, width),
+    ),
+  );
+}
+
 function greeting() {
   const hour = new Date().getHours();
   if (hour < 12) return '早上好';
@@ -66,8 +97,30 @@ export function AIAgentPanel() {
   } = useAIConversation(isOpen);
   const [input, setInput] = useState('');
   const [historyOpen, setHistoryOpen] = useState(false);
+  const [isDesktop, setIsDesktop] = useState(() => (
+    typeof window !== 'undefined' && window.matchMedia(DESKTOP_MEDIA_QUERY).matches
+  ));
+  const [panelWidth, setPanelWidth] = useState(DEFAULT_PANEL_WIDTH);
+  const [maxPanelWidth, setMaxPanelWidth] = useState(() => (
+    typeof window === 'undefined' ? MAX_PANEL_WIDTH : getMaxPanelWidth(window.innerWidth)
+  ));
+  const [isResizing, setIsResizing] = useState(false);
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const resizeSessionRef = useRef<ResizeSession | null>(null);
+
+  const finishResize = useCallback((pointerId?: number) => {
+    const session = resizeSessionRef.current;
+    if (!session || (pointerId !== undefined && session.pointerId !== pointerId)) return;
+
+    resizeSessionRef.current = null;
+    if (session.target.hasPointerCapture(session.pointerId)) {
+      session.target.releasePointerCapture(session.pointerId);
+    }
+    document.body.style.cursor = session.previousCursor;
+    document.body.style.userSelect = session.previousUserSelect;
+    setIsResizing(false);
+  }, []);
 
   useEffect(() => {
     if (isOpen) {
@@ -91,6 +144,62 @@ export function AIAgentPanel() {
     }
   }, [isGenerating, messages]);
 
+  useEffect(() => {
+    const desktopQuery = window.matchMedia(DESKTOP_MEDIA_QUERY);
+    const updateResponsiveWidth = () => {
+      const desktop = desktopQuery.matches;
+      const nextMaxWidth = getMaxPanelWidth(window.innerWidth);
+
+      setIsDesktop(desktop);
+      setMaxPanelWidth(nextMaxWidth);
+      if (desktop) {
+        setPanelWidth(width => clampPanelWidth(width, window.innerWidth));
+      }
+    };
+
+    updateResponsiveWidth();
+    desktopQuery.addEventListener('change', updateResponsiveWidth);
+    window.addEventListener('resize', updateResponsiveWidth);
+
+    return () => {
+      desktopQuery.removeEventListener('change', updateResponsiveWidth);
+      window.removeEventListener('resize', updateResponsiveWidth);
+    };
+  }, []);
+
+  useEffect(() => {
+    if (!isDesktop || !isOpen) finishResize();
+  }, [finishResize, isDesktop, isOpen]);
+
+  useEffect(() => {
+    const handlePointerMove = (event: PointerEvent) => {
+      const session = resizeSessionRef.current;
+      if (!session || session.pointerId !== event.pointerId) return;
+
+      const nextWidth = session.startWidth + session.startX - event.clientX;
+      setPanelWidth(clampPanelWidth(nextWidth, window.innerWidth));
+    };
+    const handlePointerEnd = (event: PointerEvent) => finishResize(event.pointerId);
+    const handleWindowBlur = () => finishResize();
+
+    window.addEventListener('pointermove', handlePointerMove);
+    window.addEventListener('pointerup', handlePointerEnd);
+    window.addEventListener('pointercancel', handlePointerEnd);
+    window.addEventListener('blur', handleWindowBlur);
+
+    return () => {
+      window.removeEventListener('pointermove', handlePointerMove);
+      window.removeEventListener('pointerup', handlePointerEnd);
+      window.removeEventListener('pointercancel', handlePointerEnd);
+      window.removeEventListener('blur', handleWindowBlur);
+
+      const session = resizeSessionRef.current;
+      if (!session) return;
+      document.body.style.cursor = session.previousCursor;
+      document.body.style.userSelect = session.previousUserSelect;
+    };
+  }, [finishResize]);
+
   const resetConversation = () => {
     void newConversation();
     setInput('');
@@ -109,6 +218,40 @@ export function AIAgentPanel() {
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
     handleSendMessage(input);
+  };
+
+  const handleResizeStart = (event: React.PointerEvent<HTMLDivElement>) => {
+    if (
+      !isDesktop
+      || !event.isPrimary
+      || resizeSessionRef.current
+      || (event.pointerType === 'mouse' && event.button !== 0)
+    ) return;
+
+    event.preventDefault();
+    resizeSessionRef.current = {
+      pointerId: event.pointerId,
+      startX: event.clientX,
+      startWidth: panelWidth,
+      target: event.currentTarget,
+      previousCursor: document.body.style.cursor,
+      previousUserSelect: document.body.style.userSelect,
+    };
+    event.currentTarget.setPointerCapture(event.pointerId);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
+    setIsResizing(true);
+  };
+
+  const handleResizeKeyDown = (event: React.KeyboardEvent<HTMLDivElement>) => {
+    if (event.key !== 'ArrowLeft' && event.key !== 'ArrowRight') return;
+
+    event.preventDefault();
+    const direction = event.key === 'ArrowLeft' ? 1 : -1;
+    setPanelWidth(width => clampPanelWidth(
+      width + direction * PANEL_WIDTH_STEP,
+      window.innerWidth,
+    ));
   };
 
   return (
@@ -130,7 +273,29 @@ export function AIAgentPanel() {
         className={`fixed inset-y-0 right-0 z-[60] flex w-full flex-col border-l border-slate-200 bg-white shadow-2xl transition-transform duration-300 ease-out sm:w-[400px] xl:shadow-lg ${
           isOpen ? 'translate-x-0' : 'translate-x-full'
         }`}
+        style={isDesktop ? { width: panelWidth } : undefined}
       >
+        <div
+          role="separator"
+          aria-label="调整 AI 助手宽度"
+          aria-orientation="vertical"
+          aria-valuemin={DEFAULT_PANEL_WIDTH}
+          aria-valuemax={maxPanelWidth}
+          aria-valuenow={panelWidth}
+          tabIndex={isOpen ? 0 : -1}
+          className="group absolute inset-y-0 z-20 hidden cursor-col-resize outline-none xl:block"
+          style={{ left: -5, width: 10, touchAction: 'none' }}
+          onPointerDown={handleResizeStart}
+          onLostPointerCapture={event => finishResize(event.pointerId)}
+          onKeyDown={handleResizeKeyDown}
+        >
+          <span
+            className={`pointer-events-none absolute inset-y-0 left-1/2 w-0.5 -translate-x-1/2 transition-colors group-hover:bg-blue-500 group-focus-visible:bg-blue-600 ${
+              isResizing ? 'bg-blue-600' : 'bg-transparent'
+            }`}
+          />
+        </div>
+
         <header className="relative flex h-16 shrink-0 items-center justify-between border-b border-slate-200 px-4">
           <button
             type="button"
