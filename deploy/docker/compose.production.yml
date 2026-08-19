@@ -1,0 +1,70 @@
+name: aisoftoj
+
+services:
+  backend:
+    image: aisoftoj-backend:${RELEASE_SHA:?RELEASE_SHA is required}
+    container_name: aisoftoj-backend
+    network_mode: host
+    user: "${APP_UID:?APP_UID is required}:${APP_GID:?APP_GID is required}"
+    env_file:
+      - /etc/aisoftoj/aisoftoj.env
+    environment:
+      SERVER_ADDRESS: 127.0.0.1
+      SERVER_PORT: "8080"
+      FILE_UPLOAD_PATH: /app/uploads/
+      FLYWAY_ENABLED: "true"
+      FLYWAY_BASELINE_ON_MIGRATE: "true"
+      FLYWAY_BASELINE_VERSION: "${FLYWAY_BASELINE_VERSION:?FLYWAY_BASELINE_VERSION is required}"
+      JAVA_TOOL_OPTIONS: -Xms128m -Xmx512m -XX:+ExitOnOutOfMemoryError
+    volumes:
+      - /opt/aisoftoj/uploads:/app/uploads
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m,mode=1777
+    restart: unless-stopped
+    stop_grace_period: 30s
+    mem_limit: 700m
+    mem_reservation: 384m
+    cpus: 1.5
+    pids_limit: 256
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--show-error", "http://127.0.0.1:8080/actuator/health/readiness"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 60s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+  frontend:
+    image: aisoftoj-frontend:${RELEASE_SHA:?RELEASE_SHA is required}
+    container_name: aisoftoj-frontend
+    ports:
+      - 127.0.0.1:8081:8080
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=16m,mode=1777
+    restart: unless-stopped
+    stop_grace_period: 10s
+    mem_limit: 128m
+    mem_reservation: 32m
+    cpus: 0.5
+    pids_limit: 64
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--output-document=-", "http://127.0.0.1:8080/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 4
+      start_period: 5s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
