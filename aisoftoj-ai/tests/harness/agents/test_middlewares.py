@@ -96,7 +96,42 @@ async def test_error_tool_message_is_a_failed_event() -> None:
 
     assert sink.events[-1][0] == "tool.failed"
     assert sink.events[-1][1]["message"] == "tool_unavailable"
+    assert sink.events[-1][1]["reason"] == {
+        "code": "TOOL_EXECUTION_FAILED",
+        "status_code": None,
+        "retryable": False,
+    }
     assert "secret" not in json.dumps(sink.events)
+
+
+async def test_platform_failure_event_keeps_only_diagnostic_metadata() -> None:
+    sink = CapturingSink()
+    request = tool_request(sink, "get_question", {"question_id": 7, "token": "secret"})
+
+    async def handler(_request: object) -> ToolMessage:
+        return ToolMessage(
+            content="response body with token=secret",
+            artifact={
+                "error": {
+                    "code": "PLATFORM_INVALID_RESPONSE",
+                    "status_code": 502,
+                    "response_body": "must-not-pass",
+                }
+            },
+            tool_call_id="call-1",
+            status="error",
+        )
+
+    await ToolEventMiddleware().awrap_tool_call(request, handler)  # type: ignore[arg-type]
+
+    payload = sink.events[-1][1]
+    assert payload["reason"] == {
+        "code": "PLATFORM_INVALID_RESPONSE",
+        "status_code": 502,
+        "retryable": False,
+    }
+    assert "secret" not in json.dumps(payload)
+    assert "must-not-pass" not in json.dumps(payload)
 
 
 def test_tool_event_sanitizers_are_strict_and_bounded() -> None:

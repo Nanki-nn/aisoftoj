@@ -223,6 +223,51 @@ async def test_run_events_are_owner_scoped_and_paginated(
     assert second.json()["has_more"] is False
 
 
+async def test_live_deltas_are_not_persisted_and_terminal_sequence_stays_newer(
+    api_client: tuple[httpx.AsyncClient, PlatformClient, Any],
+) -> None:
+    client, _platform, app = api_client
+    thread_id = (await client.post("/api/ai/threads", json={})).json()["id"]
+    created = await client.post(
+        f"/api/ai/threads/{thread_id}/runs",
+        json={"message": "解释这道题"},
+        headers={"Idempotency-Key": "ephemeral-delta"},
+    )
+    run_id = created.json()["id"]
+    worker = Worker(
+        app.state.container.session_factory,
+        cast(Any, SimpleNamespace()),
+        app.state.container.stream_bridge,
+        max_run_seconds=30,
+    )
+    subscription = await app.state.container.stream_bridge.subscribe(run_id)
+
+    await worker._initialize_event_sequence(run_id)
+    await worker._publish_delta(run_id, "第一段")
+    await worker._publish_delta(run_id, "第二段")
+    await worker._complete(run_id, thread_id, "第一段第二段")
+
+    live_events = [await subscription.receive() for _ in range(4)]
+    assert [event.type for event in live_events if event is not None] == [
+        "message.delta",
+        "message.delta",
+        "message.completed",
+        "run.completed",
+    ]
+    live_sequences = [event.sequence for event in live_events if event is not None]
+    assert live_sequences == sorted(set(live_sequences))
+    assert live_sequences[-1] > live_sequences[-2]
+
+    async with app.state.container.session_factory() as session:
+        stored = await RunRepository(session).list_events_after(run_id, 0)
+    assert [event.event_type for event in stored] == [
+        "run.created",
+        "message.completed",
+        "run.completed",
+    ]
+    assert [event.sequence for event in stored] == [1, 4, 5]
+
+
 async def test_stream_finishes_when_run_completes_during_subscription(
     api_client: tuple[httpx.AsyncClient, PlatformClient, Any],
 ) -> None:

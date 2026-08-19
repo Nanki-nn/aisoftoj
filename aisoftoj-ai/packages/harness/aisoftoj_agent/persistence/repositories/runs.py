@@ -89,21 +89,31 @@ class RunRepository:
         await self.session.flush()
 
     async def append_event(
-        self, run_id: str, event_type: str, payload: dict[str, Any]
+        self,
+        run_id: str,
+        event_type: str,
+        payload: dict[str, Any],
+        *,
+        sequence: int | None = None,
     ) -> AiRunEvent:
         await self.session.scalar(select(AiRun.id).where(AiRun.id == run_id).with_for_update())
-        current = await self.session.scalar(
-            select(func.max(AiRunEvent.sequence)).where(AiRunEvent.run_id == run_id)
-        )
+        if sequence is None:
+            sequence = await self.max_event_sequence(run_id) + 1
         event = AiRunEvent(
             run_id=run_id,
-            sequence=int(current or 0) + 1,
+            sequence=sequence,
             event_type=event_type,
             payload=payload,
         )
         self.session.add(event)
         await self.session.flush()
         return event
+
+    async def max_event_sequence(self, run_id: str) -> int:
+        current = await self.session.scalar(
+            select(func.max(AiRunEvent.sequence)).where(AiRunEvent.run_id == run_id)
+        )
+        return int(current or 0)
 
     async def list_events_after(self, run_id: str, sequence: int) -> list[AiRunEvent]:
         statement = (

@@ -42,6 +42,10 @@ tool.failed
   call_id: string
   tool_name: string
   message: stable user-safe string
+  reason:
+    code: stable diagnostic code
+    status_code: integer 400..599 or null
+    retryable: boolean
   duration_ms: non-negative integer
 ```
 
@@ -59,7 +63,7 @@ tool.failed
 
 `question_type` 和 `difficulty` 只接受集成模型已声明的有限枚举，非法或缺失结果统一降级成 `unknown`。已知工具结果只从通过 Pydantic 校验的对象提取上述标量，任何嵌套对象、列表和额外字段均丢弃。`importance` 只保留前 32 个 Unicode code point。
 
-未知工具名只允许 ASCII `[A-Za-z0-9_.-]` 且最长 64 字符，否则写为 `unknown_tool`；其 `input` 固定为 `{}`，完成 `summary` 固定为 `{ status: "completed" }`。失败事件的 `message` 只能是 `tool_unavailable`、`authentication_expired`、`access_denied` 或 `tool_execution_failed` 四个稳定代码之一。
+未知工具名只允许 ASCII `[A-Za-z0-9_.-]` 且最长 64 字符，否则写为 `unknown_tool`；其 `input` 固定为 `{}`，完成 `summary` 固定为 `{ status: "completed" }`。失败事件的 `message` 只能是 `tool_unavailable`、`authentication_expired`、`access_denied` 或 `tool_execution_failed` 四个稳定代码之一。`reason` 只从平台错误白名单提取稳定错误码、HTTP 状态和可重试标记；未知异常统一退化为 `TOOL_EXECUTION_FAILED`，不复制异常字符串或响应正文。
 
 事件不得包含 JWT、服务密钥、模型 reasoning、完整 ToolMessage、答案/解析正文、堆栈、任意异常文本或未经白名单处理的业务响应。安全测试使用嵌套 secret、答案正文、超长集合、恶意工具名和任意异常文本，并断言完整持久 JSON 不包含这些值。
 
@@ -85,7 +89,9 @@ GET /api/ai/threads/{thread_id}/runs/{run_id}/events?after_sequence=0&limit=200
 
 接口复用 Thread 所有权检查，按 `sequence ASC` 返回严格大于游标的事件。`after_sequence` 必须大于等于 0；`limit` 默认 200、范围 1..500。响应为 `{ items, next_after_sequence, has_more }`，前端循环取完当前消息页涉及的 Run，不会让长 Run 永久无法回放。
 
-响应项与 SSE 持久事件数据结构一致：`run_id`、`sequence`、`type`、`created_at`、`data`。控制事件 `stream.end`、`stream.reset` 不落库，也不由历史接口返回。现有回答 delta 暂不改名或迁移历史行；分页消除了回答 chunk 数量不确定的问题。
+响应项与 SSE 事件数据结构一致：`run_id`、`sequence`、`type`、`created_at`、`data`。控制事件 `stream.end`、`stream.reset` 不落库，也不由历史接口返回。`message.delta` 仅走实时 SSE，不写入 `ai_run_events`；最终回答仍以 Assistant Message 为事实来源。旧数据库中的 delta 行继续兼容读取，但新 Run 的历史接口不返回回答增量。
+
+Worker 启动 Run 时用当前持久事件最大序号初始化内存序号器。实时 delta、工具事件和 Run 终态共用该序号器，因此 SSE ID 严格递增且不重复；持久事件允许出现由实时 delta 占用的序号空洞。终态事件取得的序号始终大于此前 delta，前端 reducer 不会把它当作重复事件丢弃。数据库事件写入路径接受显式序号，未参与实时 Run 的启动恢复和兼容调用仍按数据库最大序号自增。
 
 ## 前端五层架构
 
@@ -97,7 +103,7 @@ GET /api/ai/threads/{thread_id}/runs/{run_id}/events?after_sequence=0&limit=200
 
 `normalizeEvent(rawEvent)` 将 SSE 和历史 DTO 转为 `{ sequence, event }`，其中 `event` 是带判别字段的 `NormalizedRunEvent` 或 `null`。持久事件名不迁移，映射固定为：
 
-| 持久事件 | 归一化事件 |
+| 传输事件 | 归一化事件 |
 |---|---|
 | `run.started` | `run.started` |
 | `message.delta` | `answer.delta` |
@@ -105,7 +111,7 @@ GET /api/ai/threads/{thread_id}/runs/{run_id}/events?after_sequence=0&limit=200
 | `run.completed/failed/cancelled/interrupted` | 同名 |
 | `run.created`、`message.started`、`message.completed` | `null` |
 
-旧数据库行继续按此表解释，并通过兼容测试覆盖。核心归一化类型包括：
+旧数据库行继续按此表解释，实时 delta 也按同一表归一化，并通过兼容测试覆盖。核心归一化类型包括：
 
 - `run.started`
 - `tool.started` / `tool.completed` / `tool.failed`
@@ -166,7 +172,7 @@ sequence 小于等于 `lastAppliedSequence` 的已识别事件直接忽略。工
 
 1. 加载 Thread 的 Messages 和 Runs。
 2. Run 列表以 `page_size=100` 读取，并为当前消息页中仍缺失的每个 `run_id` 调用单 Run 接口，保证所有可见消息都有快照；不能假设默认 20 条 Run 覆盖消息页。
-3. 对消息页涉及的 Run 批量请求历史事件并回放，然后调用 `applyRunSnapshot` 为旧数据补终态。
+3. 对消息页涉及的 Run 批量请求持久历史事件并回放，然后调用 `applyRunSnapshot` 为旧数据补终态；已完成回答直接使用 Assistant Message，不依赖 delta 回放。
 4. 如发现活跃 Run，从历史分页得到的 `transportSequence` 接入 SSE。
 5. 新 Run 创建后初始化 RunState，SSE 每个原始事件先归一化再 dispatch。
 6. Run 成功后刷新消息，以服务端最终文本校正 answer。
@@ -190,6 +196,8 @@ sequence 小于等于 `lastAppliedSequence` 的已识别事件直接忽略。工
 - 工具开始/完成/失败使用相同 `call_id` 且顺序持久化。
 - 五个工具的精确输入和结果摘要白名单，不泄露嵌套 secret、答案正文、reasoning、令牌、超长集合或任意异常。
 - 被 `ToolErrorMiddleware` 转换成 error ToolMessage 的平台错误写为 `tool.failed`。
+- `tool.failed.reason` 保留白名单诊断码、HTTP 状态和可重试标记，但不包含 token、响应正文、题目正文或任意异常文本。
+- `message.delta` 只实时发布且不进入 `ai_run_events`；delta 与随后持久化的消息/Run 终态序号唯一、递增，终态不会被前端去重。
 - 历史事件接口的所有权、游标分页、排序和不存在资源行为。
 - EventSink 开始/终态写入失败时 Run 以 `EVENT_PERSISTENCE_FAILED` 收敛。
 - 启动恢复同时转换 Run 行并写 `run.interrupted`。

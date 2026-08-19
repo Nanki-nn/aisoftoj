@@ -25,6 +25,17 @@ _QUESTION_TYPES = {
     "unknown",
 }
 _DIFFICULTIES = {"easy", "medium", "hard", "unknown"}
+_PLATFORM_ERROR_CODES = {
+    "AUTH_EXPIRED",
+    "PLATFORM_FORBIDDEN",
+    "PLATFORM_NOT_FOUND",
+    "PLATFORM_CONFLICT",
+    "PLATFORM_UNAVAILABLE",
+    "PLATFORM_BAD_REQUEST",
+    "PLATFORM_RESPONSE_TOO_LARGE",
+    "PLATFORM_INVALID_RESPONSE",
+}
+_RETRYABLE_ERROR_CODES = {"PLATFORM_UNAVAILABLE"}
 
 
 def _non_negative_int(value: object, default: int = 0) -> int:
@@ -136,6 +147,36 @@ def _failure_code(error: BaseException | None) -> str:
     return "tool_execution_failed"
 
 
+def safe_failure_reason(
+    error: BaseException | None = None,
+    message: ToolMessage | None = None,
+) -> dict[str, object]:
+    code = "TOOL_EXECUTION_FAILED"
+    status_code: int | None = None
+    if isinstance(error, PlatformError):
+        code = error.code if error.code in _PLATFORM_ERROR_CODES else "PLATFORM_ERROR"
+        status_code = error.status_code
+    elif message is not None:
+        artifact = message.artifact if isinstance(message.artifact, dict) else {}
+        detail = artifact.get("error")
+        detail = detail if isinstance(detail, dict) else {}
+        raw_code = detail.get("code")
+        if isinstance(raw_code, str) and raw_code in _PLATFORM_ERROR_CODES:
+            code = raw_code
+        raw_status = detail.get("status_code")
+        if (
+            isinstance(raw_status, int)
+            and not isinstance(raw_status, bool)
+            and 400 <= raw_status <= 599
+        ):
+            status_code = raw_status
+    return {
+        "code": code,
+        "status_code": status_code,
+        "retryable": code in _RETRYABLE_ERROR_CODES,
+    }
+
+
 class ToolEventMiddleware(AgentMiddleware[Any, Any, Any]):
     async def awrap_tool_call(
         self,
@@ -172,6 +213,7 @@ class ToolEventMiddleware(AgentMiddleware[Any, Any, Any]):
                     "call_id": call_id,
                     "tool_name": tool_name,
                     "message": _failure_code(exc),
+                    "reason": safe_failure_reason(error=exc),
                     "duration_ms": max(0, int((time.monotonic() - started) * 1000)),
                 },
             )
@@ -186,6 +228,7 @@ class ToolEventMiddleware(AgentMiddleware[Any, Any, Any]):
                     "call_id": call_id,
                     "tool_name": tool_name,
                     "message": "tool_unavailable",
+                    "reason": safe_failure_reason(message=message),
                     "duration_ms": duration_ms,
                 },
             )

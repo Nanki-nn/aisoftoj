@@ -22,6 +22,7 @@ from ..persistence.models import AiRunEvent
 from ..persistence.repositories.messages import MessageRepository
 from ..persistence.repositories.runs import RunRepository
 from ..persistence.repositories.summaries import SummaryRepository
+from .event_sequence import RunEventSequence
 from .event_sink import RunEventSink, ToolEventPersistenceError
 from .stream_bridge import StreamBridge
 
@@ -38,9 +39,11 @@ class Worker:
         self.session_factory = session_factory
         self.agent = agent
         self.stream_bridge = stream_bridge
+        self.event_sequence = RunEventSequence()
         self.max_run_seconds = max_run_seconds
 
     async def execute(self, run_id: str, context: AgentContext) -> None:
+        await self._initialize_event_sequence(run_id)
         try:
             async with asyncio.timeout(self.max_run_seconds):
                 await self._execute(run_id, context)
@@ -58,6 +61,7 @@ class Worker:
         finally:
             await self.agent.checkpointer.adelete_thread(run_id)
             await self.stream_bridge.close(run_id)
+            await self.event_sequence.close(run_id)
 
     async def _execute(self, run_id: str, context: AgentContext) -> None:
         question_id = await self._load_question_id(run_id)
@@ -68,7 +72,12 @@ class Worker:
         runtime_context = replace(
             context,
             question_id=question_id,
-            event_sink=RunEventSink(self.session_factory, self.stream_bridge, run_id),
+            event_sink=RunEventSink(
+                self.session_factory,
+                self.stream_bridge,
+                self.event_sequence,
+                run_id,
+            ),
         )
         final_text = ""
         async for chunk in self.agent.graph.astream(
@@ -84,7 +93,7 @@ class Worker:
             if not delta:
                 continue
             final_text += delta
-            await self._append_event(run_id, "message.delta", {"delta": delta})
+            await self._publish_delta(run_id, delta)
         await self._complete(run_id, context.thread_id, final_text)
 
     async def _load_question_id(self, run_id: str) -> int | None:
@@ -93,6 +102,11 @@ class Worker:
             if run is None:
                 raise LookupError("run not found")
             return run.question_id
+
+    async def _initialize_event_sequence(self, run_id: str) -> None:
+        async with self.session_factory() as session:
+            persisted_sequence = await RunRepository(session).max_event_sequence(run_id)
+        await self.event_sequence.initialize(run_id, persisted_sequence)
 
     async def _load_messages(self, thread_id: str) -> list[BaseMessage]:
         async with self.session_factory() as session:
@@ -110,6 +124,8 @@ class Worker:
         return messages
 
     async def _complete(self, run_id: str, thread_id: str, content: str) -> None:
+        message_sequence = await self.event_sequence.next(run_id)
+        run_sequence = await self.event_sequence.next(run_id)
         async with self.session_factory.begin() as session:
             run_repository = RunRepository(session)
             run = await run_repository.get(run_id)
@@ -120,16 +136,23 @@ class Worker:
             )
             await run_repository.transition(run, "completed", output_message_id=message.id)
             message_event = await run_repository.append_event(
-                run_id, "message.completed", {"message_id": message.id}
+                run_id,
+                "message.completed",
+                {"message_id": message.id},
+                sequence=message_sequence,
             )
             run_event = await run_repository.append_event(
-                run_id, "run.completed", {"status": "completed", "error_code": None}
+                run_id,
+                "run.completed",
+                {"status": "completed", "error_code": None},
+                sequence=run_sequence,
             )
         await self._publish(message_event)
         await self._publish(run_event)
 
     async def _finish_failure(self, run_id: str, status: str, error_code: str | None) -> None:
         event: AiRunEvent | None = None
+        sequence = await self.event_sequence.next(run_id)
         async with self.session_factory.begin() as session:
             repository = RunRepository(session)
             run = await repository.get(run_id)
@@ -140,6 +163,7 @@ class Worker:
                 run_id,
                 f"run.{status}",
                 {"status": status, "error_code": error_code},
+                sequence=sequence,
             )
         if event is not None:
             await self._publish(event)
@@ -147,19 +171,36 @@ class Worker:
     async def _transition_and_event(
         self, run_id: str, status: str, event_type: str, payload: dict[str, Any]
     ) -> None:
+        sequence = await self.event_sequence.next(run_id)
         async with self.session_factory.begin() as session:
             repository = RunRepository(session)
             run = await repository.get(run_id)
             if run is None:
                 raise LookupError("run not found")
             await repository.transition(run, status)
-            event = await repository.append_event(run_id, event_type, payload)
+            event = await repository.append_event(
+                run_id, event_type, payload, sequence=sequence
+            )
         await self._publish(event)
 
     async def _append_event(self, run_id: str, event_type: str, payload: dict[str, Any]) -> None:
+        sequence = await self.event_sequence.next(run_id)
         async with self.session_factory.begin() as session:
-            event = await RunRepository(session).append_event(run_id, event_type, payload)
+            event = await RunRepository(session).append_event(
+                run_id, event_type, payload, sequence=sequence
+            )
         await self._publish(event)
+
+    async def _publish_delta(self, run_id: str, delta: str) -> None:
+        await self.stream_bridge.publish(
+            PersistedEvent(
+                run_id=run_id,
+                sequence=await self.event_sequence.next(run_id),
+                type="message.delta",
+                created_at=datetime.now(UTC),
+                data={"delta": delta},
+            )
+        )
 
     async def _publish(self, event: AiRunEvent) -> None:
         await self.stream_bridge.publish(

@@ -41,4 +41,10 @@ class ToolErrorMiddleware(AgentMiddleware[Any, Any, Any]):
                 name=str(request.tool_call.get("name", "platform_tool")),
                 tool_call_id=str(request.tool_call.get("id", "unknown")),
                 status="error",
+                artifact={
+                    "error": {
+                        "code": exc.code,
+                        "status_code": exc.status_code,
+                    }
+                },
             )
