@@ -1,0 +1,10 @@
+#!/usr/bin/env bash
+set -Eeuo pipefail
+
+requested_sha="${SSH_ORIGINAL_COMMAND:-}"
+if [[ ! "$requested_sha" =~ ^[0-9a-f]{40}$ ]]; then
+  echo 'Only a full lowercase Git SHA can be deployed' >&2
+  exit 2
+fi
+
+exec sudo -n /usr/local/sbin/aisoftoj-deploy "$requested_sha"

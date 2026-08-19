@@ -1,0 +1,11 @@
+[Unit]
+Description=Recover an interrupted AisoftOJ deployment
+After=docker.service nginx.service mysql.service network-online.target
+Wants=docker.service nginx.service mysql.service network-online.target
+
+[Service]
+Type=oneshot
+ExecStart=/usr/local/sbin/aisoftoj-deploy-recover
+
+[Install]
+WantedBy=multi-user.target
