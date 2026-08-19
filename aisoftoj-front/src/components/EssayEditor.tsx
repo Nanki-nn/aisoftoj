@@ -5,6 +5,7 @@ import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { GraduationCap, FileText, ArrowLeft, Clock, Save, Loader2, CheckCircle } from 'lucide-react';
 import { getEssayQuestions, submitEssay, EssayQuestion } from '../lib/api';
+import { useAgentPanel } from '../hooks/useAgentPanel';
 
 function formatTime(seconds: number): string {
   const mm = Math.floor(seconds / 60)
@@ -27,10 +28,11 @@ function getContentBadgeStyle(count: number): { background: string; color: strin
 }
 
 export function EssayEditor() {
+  const { publishQuestion, clearQuestion } = useAgentPanel();
   const navigate = useNavigate();
   const { questionId } = useParams<{ questionId: string }>();
 
-  const parsedId = parseInt(questionId || '0', 10);
+  const parsedId = Number(questionId || 0);
   const draftKey = `essay-draft-${parsedId}`;
 
   const [question, setQuestion] = useState<EssayQuestion | null>(null);
@@ -41,6 +43,12 @@ export function EssayEditor() {
   const [lastSaveTime, setLastSaveTime] = useState<Date | null>(null);
   const [showRestoreNotice, setShowRestoreNotice] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (!Number.isSafeInteger(parsedId) || parsedId <= 0) return;
+    publishQuestion(parsedId);
+    return () => clearQuestion(parsedId);
+  }, [clearQuestion, parsedId, publishQuestion]);
 
   // Fetch question data from API
   useEffect(() => {

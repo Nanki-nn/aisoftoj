@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSearchParams } from 'react-router-dom';
+import { useAgentPanel } from '../hooks/useAgentPanel';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
@@ -115,6 +116,7 @@ export function ExamSession({
   onCompleteExam, 
   onBackToConfig 
 }: ExamSessionProps) {
+  const { publishQuestion, clearQuestion } = useAgentPanel();
   const questionCardRef = useRef<HTMLDivElement | null>(null);
   const hasMountedRef = useRef(false);
   const [searchParams] = useSearchParams();
@@ -132,6 +134,13 @@ export function ExamSession({
   const [isConfirming, setIsConfirming] = useState(false);
 
   const currentQuestion = session.questions[currentQuestionIndex];
+
+  useEffect(() => {
+    const questionId = Number(currentQuestion?.id);
+    if (!Number.isSafeInteger(questionId) || questionId <= 0) return;
+    publishQuestion(questionId);
+    return () => clearQuestion(questionId);
+  }, [clearQuestion, currentQuestion?.id, publishQuestion]);
   const isReadOnly = session.isCompleted;
   const isCurrentQuestionLocked = isReadOnly || Boolean(currentQuestion.confirmedAt);
   const shouldRevealAnswer = isReadOnly || Boolean(currentQuestion.confirmedAt);
