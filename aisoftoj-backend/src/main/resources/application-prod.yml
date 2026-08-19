@@ -47,3 +47,14 @@ auth:
     from: ${MAIL_FROM}
     from-name: ${MAIL_FROM_NAME:知构软考}
     worker-delay-ms: ${AUTH_EMAIL_WORKER_DELAY_MS:1000}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true

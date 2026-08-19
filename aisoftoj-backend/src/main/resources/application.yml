@@ -2,6 +2,8 @@ server:
   port: ${SERVER_PORT:8080}
 
 spring:
+  flyway:
+    enabled: ${FLYWAY_ENABLED:false}
   datasource:
     url: jdbc:mysql://localhost:3306/aisoftoj?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
     username: root
@@ -60,6 +62,17 @@ logging:
   level:
     com.nan.aisoftoj: ${APP_LOG_LEVEL:info}
 
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+
 claude:
   api-key: ${CLAUDE_API_KEY:}
   model: claude-sonnet-4-6
@@ -75,3 +88,7 @@ aliyun:
     base-url: ${OSS_BASE_URL:}
     # 上传目录前缀
     dir-prefix: ${OSS_DIR_PREFIX:aisoftoj/}
+
+ai:
+  internal:
+    service-key: ${AI_INTERNAL_SERVICE_KEY:eqwasd121dasdasio}
