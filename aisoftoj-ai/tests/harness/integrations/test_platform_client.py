@@ -16,6 +16,26 @@ def response(data: object, status_code: int = 200) -> httpx.Response:
     )
 
 
+async def test_client_does_not_use_system_proxy(monkeypatch: pytest.MonkeyPatch) -> None:
+    captured: dict[str, object] = {}
+    async_client = httpx.AsyncClient
+
+    def create_client(*args: object, **kwargs: object) -> httpx.AsyncClient:
+        captured.update(kwargs)
+        return async_client(*args, **kwargs)
+
+    monkeypatch.setattr(httpx, "AsyncClient", create_client)
+
+    client = PlatformClient(
+        base_url="http://127.0.0.1:8080/",
+        service_key="service-key",
+    )
+    await client.close()
+
+    assert captured["base_url"] == "http://127.0.0.1:8080"
+    assert captured["trust_env"] is False
+
+
 async def test_profile_forwards_both_credentials_and_validates_contract() -> None:
     async def handler(request: httpx.Request) -> httpx.Response:
         assert request.headers["Authorization"] == "Bearer jwt-value"

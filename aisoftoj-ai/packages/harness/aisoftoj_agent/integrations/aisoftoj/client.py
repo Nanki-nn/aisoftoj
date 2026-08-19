@@ -41,6 +41,7 @@ class PlatformClient:
             timeout=httpx.Timeout(read_timeout, connect=connect_timeout),
             transport=transport,
             headers={"Accept": "application/json"},
+            trust_env=False,
         )
 
     async def close(self) -> None:
