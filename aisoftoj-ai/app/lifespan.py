@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
+from app.logging_config import configure_application_logging
 from config import Settings, load_settings
 from packages.harness.aisoftoj_agent.agents.factory import AgentGraph, build_agent_graph
 from packages.harness.aisoftoj_agent.integrations.aisoftoj.client import PlatformClient
@@ -33,6 +34,7 @@ class AppState:
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = load_settings()
+    configure_application_logging(settings.log_level)
     engine = create_engine(settings.database_url.get_secret_value())
     session_factory = create_session_factory(engine)
     platform_client = PlatformClient(

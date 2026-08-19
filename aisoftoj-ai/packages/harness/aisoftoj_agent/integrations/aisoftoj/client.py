@@ -1,7 +1,9 @@
 from __future__ import annotations
 
 import asyncio
-from typing import Any, cast
+import logging
+import time
+from typing import Any, NoReturn, cast
 
 import httpx
 from pydantic import TypeAdapter, ValidationError
@@ -14,6 +16,22 @@ from .models import (
     ResultEnvelope,
     WrongQuestionReview,
 )
+
+logger = logging.getLogger(__name__)
+
+
+def _safe_text(value: object, limit: int = 128) -> str:
+    return " ".join(str(value).split())[:limit]
+
+
+def _validation_summary(error: BaseException) -> str:
+    if not isinstance(error, ValidationError):
+        return _safe_text(type(error).__name__)
+    parts: list[str] = []
+    for item in error.errors(include_url=False, include_context=False, include_input=False)[:5]:
+        location = ".".join(str(part) for part in item.get("loc", ())) or "response"
+        parts.append(f"{_safe_text(location, 96)}:{_safe_text(item.get('type', 'invalid'), 48)}")
+    return _safe_text(",".join(parts), 384)
 
 
 class PlatformError(RuntimeError):
@@ -96,6 +114,7 @@ class PlatformClient:
             "Authorization": f"Bearer {bearer_token}",
             "X-AI-Service-Key": self._service_key,
         }
+        started = time.monotonic()
         response: httpx.Response | None = None
         for attempt in range(2):
             try:
@@ -104,31 +123,101 @@ class PlatformClient:
                 if attempt == 0:
                     await asyncio.sleep(0.1)
                     continue
-                raise PlatformError("PLATFORM_UNAVAILABLE", 503) from exc
+                self._raise_failure(
+                    path,
+                    "PLATFORM_UNAVAILABLE",
+                    503,
+                    attempt + 1,
+                    started,
+                    cause=exc,
+                )
             if response.status_code >= 500 and attempt == 0:
                 await asyncio.sleep(0.1)
                 continue
             break
         assert response is not None
         if len(response.content) > self._max_response_bytes:
-            raise PlatformError("PLATFORM_RESPONSE_TOO_LARGE")
+            self._raise_failure(
+                path, "PLATFORM_RESPONSE_TOO_LARGE", 502, attempt + 1, started, response
+            )
         if response.status_code == 401:
-            raise PlatformError("AUTH_EXPIRED", 401)
+            self._raise_failure(path, "AUTH_EXPIRED", 401, attempt + 1, started, response)
         if response.status_code == 403:
-            raise PlatformError("PLATFORM_FORBIDDEN", 403)
+            self._raise_failure(path, "PLATFORM_FORBIDDEN", 403, attempt + 1, started, response)
         if response.status_code == 404:
-            raise PlatformError("PLATFORM_NOT_FOUND", 404)
+            self._raise_failure(path, "PLATFORM_NOT_FOUND", 404, attempt + 1, started, response)
         if response.status_code == 409:
-            raise PlatformError("PLATFORM_CONFLICT", 409)
+            self._raise_failure(path, "PLATFORM_CONFLICT", 409, attempt + 1, started, response)
         if response.status_code >= 500:
-            raise PlatformError("PLATFORM_UNAVAILABLE", 503)
+            self._raise_failure(
+                path, "PLATFORM_UNAVAILABLE", 503, attempt + 1, started, response
+            )
         if response.status_code >= 400:
-            raise PlatformError("PLATFORM_BAD_REQUEST", response.status_code)
+            self._raise_failure(
+                path,
+                "PLATFORM_BAD_REQUEST",
+                response.status_code,
+                attempt + 1,
+                started,
+                response,
+            )
         try:
             envelope_type = ResultEnvelope[data_type]
             envelope = TypeAdapter(envelope_type).validate_json(response.content)
         except (ValidationError, ValueError, TypeError) as exc:
-            raise PlatformError("PLATFORM_INVALID_RESPONSE") from exc
+            self._raise_failure(
+                path,
+                "PLATFORM_INVALID_RESPONSE",
+                502,
+                attempt + 1,
+                started,
+                response,
+                validation=_validation_summary(exc),
+                cause=exc,
+            )
         if envelope.code != 200:
-            raise PlatformError("PLATFORM_INVALID_RESPONSE")
+            self._raise_failure(
+                path,
+                "PLATFORM_INVALID_RESPONSE",
+                502,
+                attempt + 1,
+                started,
+                response,
+                validation="envelope.code:not_200",
+            )
         return envelope.data
+
+    def _raise_failure(
+        self,
+        path: str,
+        code: str,
+        status_code: int,
+        attempts: int,
+        started: float,
+        response: httpx.Response | None = None,
+        *,
+        validation: str = "none",
+        cause: BaseException | None = None,
+    ) -> NoReturn:
+        content_type = "none"
+        response_bytes = 0
+        http_status: int | str = "none"
+        if response is not None:
+            http_status = response.status_code
+            response_bytes = len(response.content)
+            content_type = _safe_text(response.headers.get("content-type", "none"), 64)
+        logger.warning(
+            "event=platform_request_failed method=GET path=%s http_status=%s code=%s "
+            "attempts=%d duration_ms=%d response_bytes=%d content_type=%s "
+            "validation=%s exception=%s",
+            _safe_text(path, 256),
+            http_status,
+            code,
+            attempts,
+            max(0, int((time.monotonic() - started) * 1000)),
+            response_bytes,
+            content_type,
+            validation,
+            type(cause).__name__ if cause is not None else "none",
+        )
+        raise PlatformError(code, status_code) from cause

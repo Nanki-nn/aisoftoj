@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import json
+import logging
 from types import SimpleNamespace
 
 import pytest
@@ -14,12 +15,15 @@ from packages.harness.aisoftoj_agent.agents.middlewares.token_budget import (
     TokenBudgetExceeded,
     TokenBudgetMiddleware,
 )
+from packages.harness.aisoftoj_agent.agents.middlewares.tool_audit import ToolAuditMiddleware
+from packages.harness.aisoftoj_agent.agents.middlewares.tool_errors import ToolErrorMiddleware
 from packages.harness.aisoftoj_agent.agents.middlewares.tool_events import (
     ToolEventMiddleware,
     safe_tool_input,
     safe_tool_name,
     safe_tool_summary,
 )
+from packages.harness.aisoftoj_agent.integrations.aisoftoj.client import PlatformError
 
 
 async def test_token_budget_fails_before_an_unbounded_model_call() -> None:
@@ -54,7 +58,7 @@ class CapturingSink:
 def tool_request(sink: CapturingSink, name: str, args: dict[str, object]) -> object:
     return SimpleNamespace(
         tool_call={"id": "call-1", "name": name, "args": args},
-        runtime=SimpleNamespace(context=SimpleNamespace(event_sink=sink)),
+        runtime=SimpleNamespace(context=SimpleNamespace(event_sink=sink, run_id="run-123")),
     )
 
 
@@ -121,3 +125,62 @@ def test_tool_event_sanitizers_are_strict_and_bounded() -> None:
     }
     assert "must-not-pass" not in json.dumps(summary)
     assert "secret" not in json.dumps(summary)
+
+
+class LogCapture(logging.Handler):
+    def __init__(self) -> None:
+        super().__init__()
+        self.records: list[logging.LogRecord] = []
+
+    def emit(self, record: logging.LogRecord) -> None:
+        self.records.append(record)
+
+
+async def test_tool_error_logs_run_and_safe_tool_context() -> None:
+    logger = logging.getLogger(
+        "packages.harness.aisoftoj_agent.agents.middlewares.tool_errors"
+    )
+    capture = LogCapture()
+    logger.addHandler(capture)
+    logger.setLevel(logging.WARNING)
+    request = tool_request(CapturingSink(), "get_question", {"question_id": 7})
+
+    async def handler(_request: object) -> ToolMessage:
+        raise PlatformError("PLATFORM_INVALID_RESPONSE")
+
+    try:
+        result = await ToolErrorMiddleware().awrap_tool_call(  # type: ignore[arg-type]
+            request, handler
+        )
+    finally:
+        logger.removeHandler(capture)
+
+    assert isinstance(result, ToolMessage)
+    assert result.status == "error"
+    rendered = "\n".join(record.getMessage() for record in capture.records)
+    assert "event=agent_tool_platform_error" in rendered
+    assert "run_id=run-123" in rendered
+    assert "tool=get_question" in rendered
+    assert "code=PLATFORM_INVALID_RESPONSE" in rendered
+
+
+async def test_tool_audit_marks_error_messages_as_failed() -> None:
+    logger = logging.getLogger(
+        "packages.harness.aisoftoj_agent.agents.middlewares.tool_audit"
+    )
+    capture = LogCapture()
+    logger.addHandler(capture)
+    logger.setLevel(logging.INFO)
+    request = tool_request(CapturingSink(), "get_question", {"question_id": 7})
+
+    async def handler(_request: object) -> ToolMessage:
+        return ToolMessage(content="failed", tool_call_id="call-1", status="error")
+
+    try:
+        await ToolAuditMiddleware().awrap_tool_call(request, handler)  # type: ignore[arg-type]
+    finally:
+        logger.removeHandler(capture)
+
+    rendered = "\n".join(record.getMessage() for record in capture.records)
+    assert "agent tool failed" in rendered
+    assert "agent tool completed" not in rendered
