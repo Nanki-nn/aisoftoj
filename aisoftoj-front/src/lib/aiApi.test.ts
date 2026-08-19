@@ -1,4 +1,4 @@
-import { parseSSEStream } from './aiApi';
+import { buildRunRequestBody, parseSSEStream } from './aiApi';
 
 function chunkedStream(parts: string[]): ReadableStream<Uint8Array> {
   const encoder = new TextEncoder();
@@ -34,5 +34,18 @@ describe('AI SSE parser', () => {
         data: { status: 'completed', last_sequence: 4 },
       },
     ]);
+  });
+});
+
+describe('AI run request', () => {
+  it('keeps page context separate from the user message', () => {
+    expect(buildRunRequestBody('讲讲这题', { questionId: 123 })).toEqual({
+      message: '讲讲这题',
+      context: { question_id: 123 },
+    });
+  });
+
+  it('omits context outside question pages', () => {
+    expect(buildRunRequestBody('今天学什么')).toEqual({ message: '今天学什么' });
   });
 });

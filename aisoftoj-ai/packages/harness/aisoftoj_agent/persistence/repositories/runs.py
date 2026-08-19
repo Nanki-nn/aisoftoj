@@ -23,6 +23,7 @@ class RunRepository:
         idempotency_key: str,
         input_message_id: str,
         model_name: str,
+        question_id: int | None = None,
     ) -> AiRun:
         run = AiRun(
             id=str(uuid4()),
@@ -31,6 +32,7 @@ class RunRepository:
             status="queued",
             input_message_id=input_message_id,
             model_name=model_name,
+            question_id=question_id,
         )
         self.session.add(run)
         await self.session.flush()

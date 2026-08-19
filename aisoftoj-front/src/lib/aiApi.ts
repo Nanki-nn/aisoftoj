@@ -37,6 +37,17 @@ export type AIRun = {
   updated_at: string;
 };
 
+export type AIRunContext = {
+  questionId: number;
+};
+
+export function buildRunRequestBody(message: string, context?: AIRunContext) {
+  return {
+    message,
+    ...(context ? { context: { question_id: context.questionId } } : {}),
+  };
+}
+
 export type Page<T> = {
   items: T[];
   total: number;
@@ -129,11 +140,12 @@ export function createAIRun(
   threadId: string,
   message: string,
   idempotencyKey: string,
+  context?: AIRunContext,
 ): Promise<AIRun> {
   return aiRequest(`/api/ai/threads/${encodeURIComponent(threadId)}/runs`, {
     method: 'POST',
     headers: { 'Idempotency-Key': idempotencyKey },
-    body: JSON.stringify({ message }),
+    body: JSON.stringify(buildRunRequestBody(message, context)),
   });
 }
 

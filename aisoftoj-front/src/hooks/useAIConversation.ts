@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   AIApiError,
+  AIRunContext,
   AIRun,
   AIThread,
   cancelAIRun,
@@ -218,6 +219,7 @@ export function useAIConversation(enabled: boolean) {
     content: string,
     idempotencyKey: string,
     existingMessageId?: string,
+    context?: AIRunContext,
   ) => {
     if (isGenerating) return;
     setIsGenerating(true);
@@ -235,6 +237,7 @@ export function useAIConversation(enabled: boolean) {
         content,
         status: 'sent',
         idempotencyKey,
+        context,
       }]);
     }
     try {
@@ -246,7 +249,7 @@ export function useAIConversation(enabled: boolean) {
       }
       let run: AIRun;
       try {
-        run = await createAIRun(thread.id, content, idempotencyKey);
+        run = await createAIRun(thread.id, content, idempotencyKey, context);
       } catch (creationError) {
         if (!(creationError instanceof AIApiError) || creationError.status !== 409) throw creationError;
         const runs = await listAIRuns(thread.id);
@@ -273,16 +276,16 @@ export function useAIConversation(enabled: boolean) {
     }
   }, [currentThread, followRun, isGenerating]);
 
-  const sendMessage = useCallback((content: string) => {
+  const sendMessage = useCallback((content: string, context?: AIRunContext) => {
     const trimmed = content.trim();
     if (!trimmed) return;
-    void submitMessage(trimmed, crypto.randomUUID());
+    void submitMessage(trimmed, crypto.randomUUID(), undefined, context);
   }, [submitMessage]);
 
   const retryMessage = useCallback((messageId: string) => {
     const message = messages.find(item => item.id === messageId);
     if (!message?.idempotencyKey) return;
-    void submitMessage(message.content, message.idempotencyKey, message.id);
+    void submitMessage(message.content, message.idempotencyKey, message.id, message.context);
   }, [messages, submitMessage]);
 
   const cancelCurrentRun = useCallback(async () => {

@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, Field, field_validator
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 def trim_title(value: str) -> str:
@@ -64,8 +64,17 @@ class MessagePageResponse(BaseModel):
     has_more: bool
 
 
+class RunContext(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    question_id: int | None = Field(default=None, strict=True, gt=0, le=2_147_483_647)
+
+
 class RunCreateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
     message: str = Field(min_length=1)
+    context: RunContext | None = None
 
     @field_validator("message")
     @classmethod

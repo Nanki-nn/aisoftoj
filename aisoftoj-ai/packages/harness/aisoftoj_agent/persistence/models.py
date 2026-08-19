@@ -87,6 +87,7 @@ class AiRun(Base):
     output_message_id: Mapped[str | None] = mapped_column(CHAR(36), ForeignKey("ai_messages.id"))
     error_code: Mapped[str | None] = mapped_column(String(64))
     model_name: Mapped[str] = mapped_column(String(128), nullable=False)
+    question_id: Mapped[int | None] = mapped_column(Integer)
     prompt_tokens: Mapped[int | None] = mapped_column(Integer)
     completion_tokens: Mapped[int | None] = mapped_column(Integer)
     started_at: Mapped[datetime | None] = mapped_column(DateTime)

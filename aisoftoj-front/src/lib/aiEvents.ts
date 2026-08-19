@@ -1,4 +1,4 @@
-import { AIMessage, AIRun, AIRunEvent, AIStreamEvent } from './aiApi';
+import { AIMessage, AIRun, AIRunContext, AIRunEvent, AIStreamEvent } from './aiApi';
 
 export type ToolStepState = {
   callId: string;
@@ -75,6 +75,7 @@ export type ConversationMessage = {
   status: 'sent' | 'streaming' | 'failed';
   sequence?: number;
   idempotencyKey?: string;
+  context?: AIRunContext;
 };
 
 const TERMINAL_EVENT_TYPES = new Set([

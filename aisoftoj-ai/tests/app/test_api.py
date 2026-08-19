@@ -19,6 +19,7 @@ from packages.harness.aisoftoj_agent.persistence.models import Base
 from packages.harness.aisoftoj_agent.persistence.repositories.runs import RunRepository
 from packages.harness.aisoftoj_agent.runtime.run_manager import RunManager
 from packages.harness.aisoftoj_agent.runtime.stream_bridge import StreamBridge
+from packages.harness.aisoftoj_agent.runtime.worker import Worker
 
 
 class IdleWorker:
@@ -104,6 +105,91 @@ async def test_run_creation_is_idempotent(
     assert first.status_code == 202
     assert second.status_code == 200
     assert first.json()["id"] == second.json()["id"]
+
+
+async def test_run_persists_first_question_context_across_idempotent_replay(
+    api_client: tuple[httpx.AsyncClient, PlatformClient, Any],
+) -> None:
+    client, _platform, app = api_client
+    thread_id = (await client.post("/api/ai/threads", json={})).json()["id"]
+    headers = {"Idempotency-Key": "question-snapshot"}
+    first = await client.post(
+        f"/api/ai/threads/{thread_id}/runs",
+        json={"message": "讲讲这题", "context": {"question_id": 123}},
+        headers=headers,
+    )
+    second = await client.post(
+        f"/api/ai/threads/{thread_id}/runs",
+        json={"message": "讲讲这题", "context": {"question_id": 456}},
+        headers=headers,
+    )
+
+    assert first.status_code == 202
+    assert second.status_code == 200
+    async with app.state.container.session_factory() as session:
+        run = await RunRepository(session).get(first.json()["id"])
+        assert run is not None
+        assert run.question_id == 123
+    worker = Worker(
+        app.state.container.session_factory,
+        cast(Any, SimpleNamespace()),
+        app.state.container.stream_bridge,
+        max_run_seconds=30,
+    )
+    assert await worker._load_question_id(first.json()["id"]) == 123
+
+
+@pytest.mark.parametrize(
+    "context",
+    [
+        {"question_id": "123"},
+        {"question_id": True},
+        {"question_id": 1.5},
+        {"question_id": 0},
+        {"question_id": -1},
+        {"question_id": 2_147_483_648},
+        {"question_id": 1, "unknown": "value"},
+    ],
+)
+async def test_run_rejects_invalid_question_context_without_creating_message(
+    api_client: tuple[httpx.AsyncClient, PlatformClient, Any],
+    context: object,
+) -> None:
+    client, _platform, app = api_client
+    thread_id = (await client.post("/api/ai/threads", json={})).json()["id"]
+    response = await client.post(
+        f"/api/ai/threads/{thread_id}/runs",
+        json={"message": "讲讲这题", "context": context},
+        headers={"Idempotency-Key": "invalid-context"},
+    )
+
+    assert response.status_code == 422
+    messages = await client.get(f"/api/ai/threads/{thread_id}/messages")
+    assert messages.json()["items"] == []
+    async with app.state.container.session_factory() as session:
+        runs, total = await RunRepository(session).list_for_thread(thread_id, 1, 20)
+        assert runs == []
+        assert total == 0
+
+
+@pytest.mark.parametrize("context", [None, {}])
+async def test_run_accepts_empty_question_context(
+    api_client: tuple[httpx.AsyncClient, PlatformClient, Any],
+    context: object,
+) -> None:
+    client, _platform, app = api_client
+    thread_id = (await client.post("/api/ai/threads", json={})).json()["id"]
+    response = await client.post(
+        f"/api/ai/threads/{thread_id}/runs",
+        json={"message": "继续", "context": context},
+        headers={"Idempotency-Key": f"empty-context-{context!s}"},
+    )
+
+    assert response.status_code == 202
+    async with app.state.container.session_factory() as session:
+        run = await RunRepository(session).get(response.json()["id"])
+        assert run is not None
+        assert run.question_id is None
 
 
 async def test_run_events_are_owner_scoped_and_paginated(

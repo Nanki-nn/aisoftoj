@@ -112,6 +112,7 @@ async def create_run(
                     key,
                     message.id,
                     container.settings.llm_default_model,
+                    body.context.question_id if body.context is not None else None,
                 )
                 message.run_id = run.id
                 if locked_thread.title is None:

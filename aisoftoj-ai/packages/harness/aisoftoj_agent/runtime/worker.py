@@ -60,11 +60,14 @@ class Worker:
             await self.stream_bridge.close(run_id)
 
     async def _execute(self, run_id: str, context: AgentContext) -> None:
+        question_id = await self._load_question_id(run_id)
         await self._transition_and_event(run_id, "running", "run.started", {})
         messages = await self._load_messages(context.thread_id)
+        messages = with_current_question_context(messages, question_id)
         await self._append_event(run_id, "message.started", {"role": "assistant"})
         runtime_context = replace(
             context,
+            question_id=question_id,
             event_sink=RunEventSink(self.session_factory, self.stream_bridge, run_id),
         )
         final_text = ""
@@ -83,6 +86,13 @@ class Worker:
             final_text += delta
             await self._append_event(run_id, "message.delta", {"delta": delta})
         await self._complete(run_id, context.thread_id, final_text)
+
+    async def _load_question_id(self, run_id: str) -> int | None:
+        async with self.session_factory() as session:
+            run = await RunRepository(session).get(run_id)
+            if run is None:
+                raise LookupError("run not found")
+            return run.question_id
 
     async def _load_messages(self, thread_id: str) -> list[BaseMessage]:
         async with self.session_factory() as session:
@@ -161,3 +171,22 @@ class Worker:
                 data=event.payload,
             )
         )
+
+
+def with_current_question_context(
+    messages: list[BaseMessage], question_id: int | None
+) -> list[BaseMessage]:
+    if question_id is None:
+        return messages
+    instruction = SystemMessage(
+        content=(
+            f"可信页面上下文：用户发送本次消息时正在查看题目 ID {question_id}。"
+            "当本次消息涉及‘这题’、‘当前题’、选项或题目讲解时，"
+            f"必须先调用 get_question(question_id={question_id})，再依据工具结果回答。"
+            "该 ID 只用于理解本次最新用户消息，不得重新解释更早消息中的指代。"
+        )
+    )
+    result = list(messages)
+    insert_at = len(result) - 1 if result and isinstance(result[-1], HumanMessage) else len(result)
+    result.insert(insert_at, instruction)
+    return result

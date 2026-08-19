@@ -80,7 +80,7 @@ function greeting() {
 }
 
 export function AIAgentPanel() {
-  const { isOpen, close } = useAgentPanel();
+  const { isOpen, close, currentQuestionId } = useAgentPanel();
   const {
     threads,
     currentThread,
@@ -212,7 +212,7 @@ export function AIAgentPanel() {
     if (!content || isGenerating) return;
 
     setInput('');
-    sendMessage(content);
+    sendMessage(content, currentQuestionId ? { questionId: currentQuestionId } : undefined);
   };
 
   const handleSubmit = (event: React.FormEvent) => {

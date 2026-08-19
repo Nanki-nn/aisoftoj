@@ -19,3 +19,9 @@ def test_active_run_uses_generated_marker_unique_constraint() -> None:
     assert "queued" in str(table.c.active_marker.computed.sqltext)
     constraint_names = {constraint.name for constraint in table.constraints}
     assert "uq_ai_runs_active" in constraint_names
+
+
+def test_run_has_nullable_question_snapshot() -> None:
+    column = Base.metadata.tables["ai_runs"].c.question_id
+    assert column.nullable is True
+    assert column.type.python_type is int
