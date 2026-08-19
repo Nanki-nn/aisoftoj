@@ -39,7 +39,7 @@
 
 ## 日志输出
 
-应用启动时配置 `aisoftoj_agent` 包 logger，级别沿用 `settings.log_level`，输出到标准错误流并复用 Uvicorn 的统一格式。不得重复添加 handler，避免测试或重复建 app 时输出多份日志。
+应用启动时配置实际模块命名空间 `packages.harness.aisoftoj_agent` 的 logger，级别沿用 `settings.log_level`，输出到标准错误流并复用 Uvicorn 的统一格式。不得重复添加 handler，避免测试或重复建 app 时输出多份日志。配置测试必须证明该命名空间下的 `INFO` 与 `WARNING` 都能被捕获。
 
 ## 脱敏
 
