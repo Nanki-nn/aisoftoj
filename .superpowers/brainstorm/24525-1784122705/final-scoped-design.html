@@ -1,0 +1,70 @@
+<style>
+  .stage{background:linear-gradient(180deg,#eef5ff 0%,#f6f8fc 100%);border:1px solid #dbe5f2;border-radius:20px;padding:26px;box-shadow:0 18px 50px rgba(35,65,110,.08)}
+  .filter{background:#fff;border:1px solid #dfe7f1;border-radius:15px;padding:21px 24px;box-shadow:0 3px 10px rgba(15,23,42,.05)}
+  .filter-group+.filter-group{margin-top:20px;padding-top:19px;border-top:1px solid #edf1f6}
+  .filter-title{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:750;color:#17243a}
+  .filter-title .ico{font-size:16px}
+  .pills{display:flex;flex-wrap:wrap;gap:9px;margin-top:13px}
+  .pill{padding:9px 14px;border:1px solid #dbe4ef;border-radius:9px;background:#fff;color:#53627a;font-size:12px;font-weight:650}
+  .pill.blue{background:#2563eb;border-color:#2563eb;color:#fff;box-shadow:0 5px 12px rgba(37,99,235,.2)}
+  .pill.dark{background:#111c32;border-color:#111c32;color:#fff}
+  .list-head{display:flex;align-items:center;justify-content:space-between;margin:28px 0 15px;color:#16233a}
+  .list-head h3{margin:0;font-size:16px;display:flex;gap:8px;align-items:center}
+  .count{padding:5px 9px;border:1px solid #dbe4ef;border-radius:8px;background:#fff;color:#617087;font-size:10px;font-weight:700}
+  .papers{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:18px}
+  .paper{display:flex;min-width:0;min-height:270px;flex-direction:column;background:#fff;border:1px solid #dfe7f1;border-radius:14px;box-shadow:0 2px 8px rgba(15,23,42,.045);overflow:hidden}
+  .paper-inner{display:flex;flex:1;flex-direction:column;padding:20px}
+  .paper-head{display:flex;align-items:flex-start;justify-content:space-between;gap:12px}
+  .paper-title{font-size:15px;font-weight:800;color:#101a2d;letter-spacing:-.01em}
+  .paper-sub{margin-top:6px;color:#6c7c93;font-size:11px}
+  .tag{flex:none;padding:4px 7px;border:1px solid #cfe2ff;border-radius:7px;background:#edf5ff;color:#2563eb;font-size:9px;font-weight:750}
+  .metrics{display:grid;gap:12px;margin-top:27px}
+  .metric{display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#5c6c83}
+  .metric strong{color:#17243a;font-size:11px;font-weight:750;font-variant-numeric:tabular-nums}
+  .track{height:7px;border-radius:999px;background:#edf1f6;overflow:hidden}
+  .fill{height:100%;border-radius:999px;background:#0f172a}
+  .paper-foot{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-top:auto;padding-top:16px;border-top:1px solid #edf1f6;color:#708096;font-size:9px}
+  .button{display:inline-flex;align-items:center;gap:5px;padding:8px 10px;border-radius:8px;background:#2563eb;color:#fff;font-size:9px;font-weight:750;box-shadow:0 5px 12px rgba(37,99,235,.18)}
+  .button.outline{background:#fff;color:#059669;border:1px solid #a7f3d0;box-shadow:none}
+  .button.neutral{background:#fff;color:#334155;border:1px solid #cbd5e1;box-shadow:none}
+  .notes{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px;margin-top:18px}
+  .note{padding:13px 14px;border-radius:12px;background:#fff;border:1px solid #dfe7f1}
+  .note strong{display:block;color:#17243a;font-size:11px;margin-bottom:4px}.note span{display:block;color:#65758c;font-size:10px;line-height:1.5}
+  .approval{display:flex;gap:12px;margin-top:24px}.approval .option{flex:1}
+  @media(max-width:900px){.papers{grid-template-columns:1fr}.notes{grid-template-columns:1fr 1fr}}
+</style>
+
+<h2>A 方案 · 最终设计确认</h2>
+<p class="subtitle">仅调整筛选区与试卷列表；页头、标题、Tab、登录逻辑和答题流程保持不变。</p>
+
+<div class="stage">
+  <div class="filter">
+    <div class="filter-group">
+      <div class="filter-title"><span class="ico">▣</span>科目筛选</div>
+      <div class="pills"><span class="pill blue">系统架构设计师</span><span class="pill">系统分析师</span><span class="pill">软件设计师</span><span class="pill">网络工程师</span><span class="pill">数据库系统工程师</span><span class="pill">信息系统项目管理师</span></div>
+    </div>
+    <div class="filter-group">
+      <div class="filter-title"><span class="ico">▤</span>题型分类</div>
+      <div class="pills"><span class="pill dark">综合知识</span><span class="pill">案例分析</span><span class="pill">论文</span></div>
+    </div>
+  </div>
+
+  <div class="list-head"><h3>▣ 系统架构设计师 · 综合知识</h3><span class="count">共 12 套试卷</span></div>
+  <div class="papers">
+    <div class="paper"><div class="paper-inner"><div class="paper-head"><div><div class="paper-title">2025年5月真题</div><div class="paper-sub">系统架构设计师</div></div><span class="tag">综合知识</span></div><div class="metrics"><div class="metric"><span>题目数量</span><strong>75 题</strong></div><div class="metric"><span>练习次数</span><strong>1414</strong></div><div class="metric"><span>练习进度</span><strong>45/75</strong></div><div class="track"><div class="fill" style="width:60%"></div></div></div><div class="paper-foot"><span>更新：2025/10/03</span><span class="button">▷ 继续刷题</span></div></div></div>
+    <div class="paper"><div class="paper-inner"><div class="paper-head"><div><div class="paper-title">2024年11月真题</div><div class="paper-sub">系统架构设计师</div></div><span class="tag">综合知识</span></div><div class="metrics"><div class="metric"><span>题目数量</span><strong>76 题</strong></div><div class="metric"><span>练习次数</span><strong>1071</strong></div><div class="metric"><span>练习进度</span><strong>76/76</strong></div><div class="track"><div class="fill" style="width:100%"></div></div></div><div class="paper-foot"><span>更新：2025/10/03</span><span class="button outline">↻ 重新刷题</span></div></div></div>
+    <div class="paper"><div class="paper-inner"><div class="paper-head"><div><div class="paper-title">2024年5月真题</div><div class="paper-sub">系统架构设计师</div></div><span class="tag">综合知识</span></div><div class="metrics"><div class="metric"><span>题目数量</span><strong>62 题</strong></div><div class="metric"><span>练习次数</span><strong>0</strong></div><div class="metric"><span>练习进度</span><strong>0/62</strong></div><div class="track"><div class="fill" style="width:0%"></div></div></div><div class="paper-foot"><span>更新：2025/10/02</span><span class="button neutral">▷ 开始刷题</span></div></div></div>
+  </div>
+
+  <div class="notes">
+    <div class="note"><strong>响应式</strong><span>桌面三列、平板两列、手机单列；筛选按钮自动换行。</span></div>
+    <div class="note"><strong>数据</strong><span>科目与题型继续来自 API；没有的数据不伪造。</span></div>
+    <div class="note"><strong>状态</strong><span>未开始、进行中、已完成分别保留对应按钮与交互。</span></div>
+    <div class="note"><strong>验证</strong><span>同步更新骨架屏，并检查桌面、平板、手机与构建结果。</span></div>
+  </div>
+</div>
+
+<div class="approval options">
+  <div class="option" data-choice="approve" onclick="toggleSelect(this)"><div class="letter">✓</div><div class="content"><h3>批准这个设计</h3><p>按以上视觉与规则写入规格。</p></div></div>
+  <div class="option" data-choice="revise" onclick="toggleSelect(this)"><div class="letter">↺</div><div class="content"><h3>需要调整</h3><p>先在终端说明要改的细节。</p></div></div>
+</div>

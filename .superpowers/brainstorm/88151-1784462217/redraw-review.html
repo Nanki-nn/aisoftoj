@@ -1,0 +1,55 @@
+<style>
+  .metrics { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin:18px 0 24px; }
+  .metric { padding:16px; border:1px solid #dbeafe; border-radius:14px; background:#eff6ff; }
+  .metric strong { display:block; font-size:28px; color:#1d4ed8; }
+  .metric span { color:#475569; font-size:13px; }
+  .notice { padding:14px 16px; border-radius:12px; background:#f8fafc; border:1px solid #cbd5e1; margin:16px 0; }
+  .overview { width:100%; border:1px solid #cbd5e1; border-radius:12px; background:white; }
+  details { border:1px solid #e2e8f0; border-radius:12px; margin:14px 0; background:white; overflow:hidden; }
+  summary { cursor:pointer; padding:14px 16px; font-weight:600; background:#f8fafc; }
+  .pair { display:grid; grid-template-columns:1fr 1fr; gap:10px; padding:10px; }
+  .pair figure { margin:0; }
+  .pair figcaption { font-size:13px; color:#64748b; margin-bottom:6px; }
+  .pair img { width:100%; border:1px solid #e2e8f0; }
+  .digest { font-family:ui-monospace,SFMono-Regular,Menlo,monospace; word-break:break-all; font-size:12px; }
+  @media (max-width:900px) { .metrics { grid-template-columns:repeat(2,1fr); } .pair { grid-template-columns:1fr; } }
+</style>
+
+<h2>题库图片重绘 · 第一阶段审核</h2>
+<p class="subtitle">当前仅生成本地 SVG/PNG，没有上传 OSS，也没有修改数据库。</p>
+
+<div class="metrics">
+  <div class="metric"><strong>28</strong><span>唯一图片</span></div>
+  <div class="metric"><strong>33</strong><span>数据库引用</span></div>
+  <div class="metric"><strong>28/28</strong><span>自动 QA 通过</span></div>
+  <div class="metric"><strong>0</strong><span>数据库改动</span></div>
+</div>
+
+<div class="notice">
+  <strong>统一规范：</strong>白底、黑线、灰色辅助线、Noto Sans CJK SC；保留题目节点、编号、空白与关系，不嵌入原图，不显示答案。<br>
+  <span class="digest">Manifest SHA-256: fe60a016652c9e1263e3d2120a4673f544709bc30c24b6dce0a1ca4f7674ddfd</span>
+</div>
+
+<h3>全部 28 张总览</h3>
+<img class="overview" src="contact-sheet.png" alt="28 张重绘图片总览">
+
+<h3>原图与重绘逐组对比</h3>
+<p class="subtitle">展开每组可放大检查。左侧为原图，右侧为无水印黑白重绘。</p>
+
+<details open><summary>第 1 组 · q2728–q2823</summary><div class="pair"><figure><figcaption>原图</figcaption><img src="source-sheet-01.png"></figure><figure><figcaption>重绘</figcaption><img src="redraw-sheet-01.png"></figure></div></details>
+<details><summary>第 2 组 · q2829–q2848</summary><div class="pair"><figure><figcaption>原图</figcaption><img src="source-sheet-02.png"></figure><figure><figcaption>重绘</figcaption><img src="redraw-sheet-02.png"></figure></div></details>
+<details><summary>第 3 组 · q2856–q2860</summary><div class="pair"><figure><figcaption>原图</figcaption><img src="source-sheet-03.png"></figure><figure><figcaption>重绘</figcaption><img src="redraw-sheet-03.png"></figure></div></details>
+<details><summary>第 4 组 · q2861–q2869</summary><div class="pair"><figure><figcaption>原图</figcaption><img src="source-sheet-04.png"></figure><figure><figcaption>重绘</figcaption><img src="redraw-sheet-04.png"></figure></div></details>
+<details><summary>第 5 组 · q2872–q2884</summary><div class="pair"><figure><figcaption>原图</figcaption><img src="source-sheet-05.png"></figure><figure><figcaption>重绘</figcaption><img src="redraw-sheet-05.png"></figure></div></details>
+<details><summary>第 6 组 · q2886–q2891</summary><div class="pair"><figure><figcaption>原图</figcaption><img src="source-sheet-06.png"></figure><figure><figcaption>重绘</figcaption><img src="redraw-sheet-06.png"></figure></div></details>
+<details><summary>第 7 组 · q2896–q3062</summary><div class="pair"><figure><figcaption>原图</figcaption><img src="source-sheet-07.png"></figure><figure><figcaption>重绘</figcaption><img src="redraw-sheet-07.png"></figure></div></details>
+
+<h3>审核结论</h3>
+<div class="options">
+  <div class="option" data-choice="approve-redraws" onclick="toggleSelect(this)">
+    <div class="letter">A</div><div class="content"><h3>批准 28 张重绘图</h3><p>下一阶段上传 OSS，并在迁移前再次进行数据库漂移检查和备份。</p></div>
+  </div>
+  <div class="option" data-choice="request-changes" onclick="toggleSelect(this)">
+    <div class="letter">B</div><div class="content"><h3>需要修改</h3><p>请在终端告诉我具体题目 ID 和要调整的内容。</p></div>
+  </div>
+</div>
