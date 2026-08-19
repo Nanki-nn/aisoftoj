@@ -1,0 +1,87 @@
+<style>
+  .direction-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:18px; margin-top:24px; }
+  .direction { border:1px solid #dbe3ef; border-radius:16px; overflow:hidden; background:#f5f8fc; cursor:pointer; transition:.2s ease; }
+  .direction:hover { transform:translateY(-2px); border-color:#7aa7ff; box-shadow:0 14px 32px rgba(37,99,235,.12); }
+  .direction.selected { outline:3px solid #2563eb; outline-offset:2px; }
+  .direction-head { padding:16px 18px 13px; background:#fff; border-bottom:1px solid #e8eef6; }
+  .direction-head h3 { margin:0; display:flex; align-items:center; gap:8px; font-size:16px; color:#13213a; }
+  .direction-head p { margin:7px 0 0; font-size:12px; line-height:1.55; color:#64748b; }
+  .rec { display:inline-flex; padding:3px 7px; border-radius:999px; background:#dbeafe; color:#1d4ed8; font-size:10px; font-weight:700; }
+  .canvas { padding:14px; min-height:310px; }
+  .section-title { display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; font-size:10px; font-weight:700; color:#25334c; }
+  .count { padding:3px 6px; border-radius:6px; border:1px solid #dce5f0; background:white; color:#64748b; font-weight:600; }
+  .mini-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:8px; }
+  .paper { min-width:0; border:1px solid #e0e7f0; border-radius:10px; background:#fff; box-shadow:0 2px 5px rgba(15,23,42,.04); }
+  .paper-body { padding:10px; }
+  .paper-title { font-size:9px; font-weight:800; color:#14213a; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .paper-sub { margin-top:4px; font-size:7px; color:#718198; }
+  .tag { float:right; padding:2px 4px; border-radius:5px; background:#eff6ff; color:#2563eb; font-size:6px; font-weight:700; }
+  .rows { margin-top:13px; display:grid; gap:7px; }
+  .row { display:flex; justify-content:space-between; gap:6px; font-size:7px; color:#617086; }
+  .row strong { color:#1b2940; }
+  .track { height:4px; border-radius:999px; background:#eef2f7; overflow:hidden; }
+  .fill { height:100%; width:60%; background:#0b1025; }
+  .footer { margin-top:10px; padding-top:8px; border-top:1px solid #eef2f6; display:flex; align-items:center; justify-content:space-between; gap:5px; font-size:6px; color:#718198; }
+  .action { padding:5px 7px; border-radius:6px; background:#2563eb; color:#fff; font-size:6px; font-weight:700; white-space:nowrap; }
+  .metric-band { margin-top:13px; padding:8px; border-radius:8px; background:#f7f9fb; display:grid; grid-template-columns:1fr 1fr; gap:6px; }
+  .metric-band span { display:block; font-size:6px; color:#718198; }
+  .metric-band strong { display:block; margin-top:3px; font-size:8px; color:#1b2940; }
+  .compact .paper-body { padding:9px; }
+  .compact .rows { margin-top:9px; gap:5px; }
+  .compact .footer { margin-top:7px; padding-top:6px; }
+  .tradeoff { padding:12px 16px 16px; font-size:11px; line-height:1.55; color:#55657a; background:#fff; border-top:1px solid #e8eef6; }
+  @media (max-width:900px) { .direction-grid { grid-template-columns:1fr; } }
+</style>
+
+<h2>题库卡片采用哪种密度？</h2>
+<p class="subtitle">三种方案都保留真实 API、练习次数语义和状态按钮；差异只在信息结构与视觉贴近程度。</p>
+
+<div class="direction-grid">
+  <div class="direction option" data-choice="a" onclick="toggleSelect(this)">
+    <div class="direction-head">
+      <h3>A · Figma 结构对齐 <span class="rec">推荐</span></h3>
+      <p>三列、线性指标、始终可见的进度条，最接近右侧参考。</p>
+    </div>
+    <div class="canvas">
+      <div class="section-title"><span>系统架构设计师 · 综合知识</span><span class="count">共 12 套</span></div>
+      <div class="mini-grid">
+        <div class="paper"><div class="paper-body"><span class="tag">综合知识</span><div class="paper-title">2025年5月真题</div><div class="paper-sub">系统架构设计师</div><div class="rows"><div class="row"><span>题目数量</span><strong>75 题</strong></div><div class="row"><span>练习次数</span><strong>1414</strong></div><div class="row"><span>练习进度</span><strong>45/75</strong></div><div class="track"><div class="fill"></div></div></div><div class="footer"><span>更新 2025/10/03</span><span class="action">继续刷题</span></div></div></div>
+        <div class="paper"><div class="paper-body"><span class="tag">综合知识</span><div class="paper-title">2024年11月真题</div><div class="paper-sub">系统架构设计师</div><div class="rows"><div class="row"><span>题目数量</span><strong>76 题</strong></div><div class="row"><span>练习次数</span><strong>1071</strong></div><div class="row"><span>练习进度</span><strong>32/76</strong></div><div class="track"><div class="fill" style="width:42%"></div></div></div><div class="footer"><span>更新 2025/10/03</span><span class="action">继续刷题</span></div></div></div>
+        <div class="paper"><div class="paper-body"><span class="tag">综合知识</span><div class="paper-title">2024年5月真题</div><div class="paper-sub">系统架构设计师</div><div class="rows"><div class="row"><span>题目数量</span><strong>62 题</strong></div><div class="row"><span>练习次数</span><strong>611</strong></div><div class="row"><span>练习进度</span><strong>15/62</strong></div><div class="track"><div class="fill" style="width:24%"></div></div></div><div class="footer"><span>更新 2025/10/02</span><span class="action">继续刷题</span></div></div></div>
+      </div>
+    </div>
+    <div class="tradeoff">优点：与 Figma 的层级、留白、卡片宽度最一致。代价：需要重排卡片内容和骨架屏。</div>
+  </div>
+
+  <div class="direction option" data-choice="b" onclick="toggleSelect(this)">
+    <div class="direction-head">
+      <h3>B · 保留现状的混合版</h3>
+      <p>改成三列，但继续使用当前灰色统计块与状态提示。</p>
+    </div>
+    <div class="canvas">
+      <div class="section-title"><span>系统架构设计师 · 综合知识</span><span class="count">共 12 套</span></div>
+      <div class="mini-grid">
+        <div class="paper"><div class="paper-body"><span class="tag">综合知识</span><div class="paper-title">2025年5月真题</div><div class="paper-sub">系统架构设计师</div><div class="metric-band"><div><span>题目数量</span><strong>75题</strong></div><div><span>练习次数</span><strong>1414</strong></div></div><div class="rows"><div class="row"><span>练习进度</span><strong>45/75</strong></div><div class="track"><div class="fill"></div></div></div><div class="footer"><span>更新 2025/10/03</span><span class="action">继续刷题</span></div></div></div>
+        <div class="paper"><div class="paper-body"><span class="tag">综合知识</span><div class="paper-title">2024年11月真题</div><div class="paper-sub">系统架构设计师</div><div class="metric-band"><div><span>题目数量</span><strong>76题</strong></div><div><span>练习次数</span><strong>1071</strong></div></div><div class="rows"><div class="row"><span>练习进度</span><strong>32/76</strong></div><div class="track"><div class="fill" style="width:42%"></div></div></div><div class="footer"><span>更新 2025/10/03</span><span class="action">继续刷题</span></div></div></div>
+        <div class="paper"><div class="paper-body"><span class="tag">综合知识</span><div class="paper-title">2024年5月真题</div><div class="paper-sub">系统架构设计师</div><div class="metric-band"><div><span>题目数量</span><strong>62题</strong></div><div><span>练习次数</span><strong>611</strong></div></div><div class="rows"><div class="row"><span>练习进度</span><strong>15/62</strong></div><div class="track"><div class="fill" style="width:24%"></div></div></div><div class="footer"><span>更新 2025/10/02</span><span class="action">继续刷题</span></div></div></div>
+      </div>
+    </div>
+    <div class="tradeoff">优点：改动较小，延续当前风格。代价：灰色统计块偏重，仍会明显不同于 Figma。</div>
+  </div>
+
+  <div class="direction option" data-choice="c" onclick="toggleSelect(this)">
+    <div class="direction-head">
+      <h3>C · 更紧凑的高密度版</h3>
+      <p>减少纵向留白，在一屏里展示更多试卷。</p>
+    </div>
+    <div class="canvas compact">
+      <div class="section-title"><span>系统架构设计师 · 综合知识</span><span class="count">共 12 套</span></div>
+      <div class="mini-grid">
+        <div class="paper"><div class="paper-body"><span class="tag">综合知识</span><div class="paper-title">2025年5月真题</div><div class="paper-sub">系统架构设计师</div><div class="rows"><div class="row"><span>75 题 · 练习 1414</span><strong>45/75</strong></div><div class="track"><div class="fill"></div></div></div><div class="footer"><span>10/03</span><span class="action">继续</span></div></div></div>
+        <div class="paper"><div class="paper-body"><span class="tag">综合知识</span><div class="paper-title">2024年11月真题</div><div class="paper-sub">系统架构设计师</div><div class="rows"><div class="row"><span>76 题 · 练习 1071</span><strong>32/76</strong></div><div class="track"><div class="fill" style="width:42%"></div></div></div><div class="footer"><span>10/03</span><span class="action">继续</span></div></div></div>
+        <div class="paper"><div class="paper-body"><span class="tag">综合知识</span><div class="paper-title">2024年5月真题</div><div class="paper-sub">系统架构设计师</div><div class="rows"><div class="row"><span>62 题 · 练习 611</span><strong>15/62</strong></div><div class="track"><div class="fill" style="width:24%"></div></div></div><div class="footer"><span>10/02</span><span class="action">继续</span></div></div></div>
+      </div>
+    </div>
+    <div class="tradeoff">优点：浏览效率最高。代价：信息标签被压缩，和 Figma 参考的舒展感不一致。</div>
+  </div>
+</div>

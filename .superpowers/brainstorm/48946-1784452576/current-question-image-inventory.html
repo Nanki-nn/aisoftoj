@@ -1,0 +1,58 @@
+<style>
+  .inventory-summary { display:grid; grid-template-columns:repeat(4,minmax(0,1fr)); gap:12px; margin:18px 0 24px; }
+  .metric { padding:16px; border:1px solid #dbeafe; border-radius:14px; background:#eff6ff; }
+  .metric strong { display:block; font-size:28px; color:#1d4ed8; }
+  .metric span { color:#475569; font-size:13px; }
+  .notice { padding:14px 16px; border-radius:12px; background:#fff7ed; border:1px solid #fed7aa; color:#9a3412; margin-bottom:22px; }
+  .image-grid { display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px; }
+  .image-card { border:1px solid #e2e8f0; border-radius:14px; overflow:hidden; background:white; box-shadow:0 4px 14px rgba(15,23,42,.05); }
+  .image-card a { display:block; background:#f8fafc; }
+  .image-card img { display:block; width:100%; height:220px; object-fit:contain; }
+  .image-meta { padding:11px 13px; }
+  .image-meta strong { display:block; color:#0f172a; font-size:14px; }
+  .image-meta span { color:#64748b; font-size:12px; }
+  @media (max-width: 900px) { .inventory-summary { grid-template-columns:repeat(2,1fr); } .image-grid { grid-template-columns:1fr; } }
+</style>
+
+<h2>当前题库图片盘点</h2>
+<p class="subtitle">数据直接读取自本机正在运行的 aisoftoj 数据库；点击图片可打开原始大图。</p>
+
+<div class="inventory-summary">
+  <div class="metric"><strong>1163</strong><span>当前有效题目</span></div>
+  <div class="metric"><strong>33</strong><span>引用图片的题目</span></div>
+  <div class="metric"><strong>28</strong><span>唯一图片 URL</span></div>
+  <div class="metric"><strong>0</strong><span>系统分析师图片引用</span></div>
+</div>
+
+<div class="notice">图片均来自外部 fangcaicoding.cn OSS。现有样本中，大多数带有绿色或浅灰色斜向水印；同一图片可能被多道连续小题复用。</div>
+
+<div class="image-grid">
+  <div class="image-card"><a href="https://fangcaicoding.cn/oss/rk_option_img/1910644287619928064.png" target="_blank"><img referrerpolicy="no-referrer" src="https://fangcaicoding.cn/oss/rk_option_img/1910644287619928064.png"></a><div class="image-meta"><strong>#2728 · 题干</strong><span>前趋图</span></div></div>
+  <div class="image-card"><a href="https://fangcaicoding.cn/oss/01_papers/architect/%E8%A7%A3%E9%87%8A%E5%99%A8-%E5%A1%AB%E5%9B%BE.png" target="_blank"><img referrerpolicy="no-referrer" src="https://fangcaicoding.cn/oss/01_papers/architect/%E8%A7%A3%E9%87%8A%E5%99%A8-%E5%A1%AB%E5%9B%BE.png"></a><div class="image-meta"><strong>#2803 · 题干</strong><span>解释器结构填图</span></div></div>
+  <div class="image-card"><a href="https://fangcaicoding.cn/oss/rk_images_2/1898727281703596032.png" target="_blank"><img referrerpolicy="no-referrer" src="https://fangcaicoding.cn/oss/rk_images_2/1898727281703596032.png"></a><div class="image-meta"><strong>#2822 · 题干</strong><span>缓存读写流程</span></div></div>
+  <div class="image-card"><a href="https://fangcaicoding.cn/oss/rk_images_2/1898727281779093504.png" target="_blank"><img referrerpolicy="no-referrer" src="https://fangcaicoding.cn/oss/rk_images_2/1898727281779093504.png"></a><div class="image-meta"><strong>#2823 · 题干</strong><span>缓存更新流程</span></div></div>
+  <div class="image-card"><a href="https://fangcaicoding.cn/oss/rk_images_2/1898727282257244160.png" target="_blank"><img referrerpolicy="no-referrer" src="https://fangcaicoding.cn/oss/rk_images_2/1898727282257244160.png"></a><div class="image-meta"><strong>#2829 · 题干</strong><span>移动端 Web 架构</span></div></div>
+  <div class="image-card"><a href="https://fangcaicoding.cn/oss/rk_images_2/1898727284908044288.png" target="_blank"><img referrerpolicy="no-referrer" src="https://fangcaicoding.cn/oss/rk_images_2/1898727284908044288.png"></a><div class="image-meta"><strong>#2832 · 题干</strong><span>质量属性树</span></div></div>
+  <div class="image-card"><a href="https://fangcaicoding.cn/oss/rk_images_2/1898727295699988480.png" target="_blank"><img referrerpolicy="no-referrer" src="https://fangcaicoding.cn/oss/rk_images_2/1898727295699988480.png"></a><div class="image-meta"><strong>#2841–2844 · 题干</strong><span>时序图，4 道题复用</span></div></div>
+  <div class="image-card"><a href="https://fangcaicoding.cn/oss/rk_images_2/1898727295867760640.png" target="_blank"><img referrerpolicy="no-referrer" src="https://fangcaicoding.cn/oss/rk_images_2/1898727295867760640.png"></a><div class="image-meta"><strong>#2848–2850 · 题干</strong><span>NoSQL 架构，3 道题复用</span></div></div>
+  <div class="image-card"><a href="https://fangcaicoding.cn/oss/rk_images_2/1898727305107812352.png" target="_blank"><img referrerpolicy="no-referrer" src="https://fangcaicoding.cn/oss/rk_images_2/1898727305107812352.png"></a><div class="image-meta"><strong>#2856 · 题干</strong><span>架构方法对照表</span></div></div>
+  <div class="image-card"><a href="https://fangcaicoding.cn/oss/rk_images_2/image-20250413210244586.png" target="_blank"><img referrerpolicy="no-referrer" src="https://fangcaicoding.cn/oss/rk_images_2/image-20250413210244586.png"></a><div class="image-meta"><strong>#2857 · 题干</strong><span>微服务技术栈</span></div></div>
+  <div class="image-card"><a href="https://fangcaicoding.cn/oss/rk_images_2/DFD123456.jpg" target="_blank"><img referrerpolicy="no-referrer" src="https://fangcaicoding.cn/oss/rk_images_2/DFD123456.jpg"></a><div class="image-meta"><strong>#2859 · 题干</strong><span>数据流图</span></div></div>
+  <div class="image-card"><a href="https://fangcaicoding.cn/oss/rk_images_2/Nosql02113.jpg" target="_blank"><img referrerpolicy="no-referrer" src="https://fangcaicoding.cn/oss/rk_images_2/Nosql02113.jpg"></a><div class="image-meta"><strong>#2860 · 题干</strong><span>NoSQL 类型对照表</span></div></div>
+  <div class="image-card"><a href="https://fangcaicoding.cn/oss/rk_images_2/26e442e7bb5041a39142477ed0823bba.jpg" target="_blank"><img referrerpolicy="no-referrer" src="https://fangcaicoding.cn/oss/rk_images_2/26e442e7bb5041a39142477ed0823bba.jpg"></a><div class="image-meta"><strong>#2861 · 题干</strong><span>数据采集架构</span></div></div>
+  <div class="image-card"><a href="https://fangcaicoding.cn/oss/rk_images_2/1898727308899463168.png" target="_blank"><img referrerpolicy="no-referrer" src="https://fangcaicoding.cn/oss/rk_images_2/1898727308899463168.png"></a><div class="image-meta"><strong>#2866 · 题干</strong><span>质量属性分类</span></div></div>
+  <div class="image-card"><a href="https://fangcaicoding.cn/oss/rk_images_2/1898727308966572032.png" target="_blank"><img referrerpolicy="no-referrer" src="https://fangcaicoding.cn/oss/rk_images_2/1898727308966572032.png"></a><div class="image-meta"><strong>#2868 · 题干</strong><span>业务关系图</span></div></div>
+  <div class="image-card"><a href="https://fangcaicoding.cn/oss/rk_images_2/1898727309104984064.png" target="_blank"><img referrerpolicy="no-referrer" src="https://fangcaicoding.cn/oss/rk_images_2/1898727309104984064.png"></a><div class="image-meta"><strong>#2869 · 题干</strong><span>流程图</span></div></div>
+  <div class="image-card"><a href="https://fangcaicoding.cn/oss/rk_images_2/1898727309205647360.png" target="_blank"><img referrerpolicy="no-referrer" src="https://fangcaicoding.cn/oss/rk_images_2/1898727309205647360.png"></a><div class="image-meta"><strong>#2872 · 题干 A</strong><span>架构图</span></div></div>
+  <div class="image-card"><a href="https://fangcaicoding.cn/oss/rk_images_2/1898727309289533440.png" target="_blank"><img referrerpolicy="no-referrer" src="https://fangcaicoding.cn/oss/rk_images_2/1898727309289533440.png"></a><div class="image-meta"><strong>#2872 · 题干 B</strong><span>缓存分类表</span></div></div>
+  <div class="image-card"><a href="https://fangcaicoding.cn/oss/rk_images_2/1898727309369225216.png" target="_blank"><img referrerpolicy="no-referrer" src="https://fangcaicoding.cn/oss/rk_images_2/1898727309369225216.png"></a><div class="image-meta"><strong>#2878 · 题干</strong><span>组件结构图</span></div></div>
+  <div class="image-card"><a href="https://fangcaicoding.cn/oss/rk_images_2/1898727319334891520.png" target="_blank"><img referrerpolicy="no-referrer" src="https://fangcaicoding.cn/oss/rk_images_2/1898727319334891520.png"></a><div class="image-meta"><strong>#2884 · 题干</strong><span>软件层次分解图</span></div></div>
+  <div class="image-card"><a href="https://fangcaicoding.cn/oss/rk_images_2/1898727319443943424.png" target="_blank"><img referrerpolicy="no-referrer" src="https://fangcaicoding.cn/oss/rk_images_2/1898727319443943424.png"></a><div class="image-meta"><strong>#2886 · 题干</strong><span>用例关系图</span></div></div>
+  <div class="image-card"><a href="https://fangcaicoding.cn/oss/rk_images_2/1898727319540412416.png" target="_blank"><img referrerpolicy="no-referrer" src="https://fangcaicoding.cn/oss/rk_images_2/1898727319540412416.png"></a><div class="image-meta"><strong>#2887 · 题干</strong><span>交互时序图</span></div></div>
+  <div class="image-card"><a href="https://fangcaicoding.cn/oss/rk_images_2/1898727319645270016.png" target="_blank"><img referrerpolicy="no-referrer" src="https://fangcaicoding.cn/oss/rk_images_2/1898727319645270016.png"></a><div class="image-meta"><strong>#2890 · 题干</strong><span>解释器结构图</span></div></div>
+  <div class="image-card"><a href="https://fangcaicoding.cn/oss/rk_images_2/1898727319834013696.png" target="_blank"><img referrerpolicy="no-referrer" src="https://fangcaicoding.cn/oss/rk_images_2/1898727319834013696.png"></a><div class="image-meta"><strong>#2891 · 题干</strong><span>测试用例表</span></div></div>
+  <div class="image-card"><a href="https://fangcaicoding.cn/oss/rk_images_2/1898727320043728896.png" target="_blank"><img referrerpolicy="no-referrer" src="https://fangcaicoding.cn/oss/rk_images_2/1898727320043728896.png"></a><div class="image-meta"><strong>#2896 · 题干</strong><span>系统分层图</span></div></div>
+  <div class="image-card"><a href="https://fangcaicoding.cn/oss/learn_card/03-%E9%A1%B9%E7%9B%AE%E7%AE%A1%E7%90%86/image-20250629230213056.png" target="_blank"><img referrerpolicy="no-referrer" src="https://fangcaicoding.cn/oss/learn_card/03-%E9%A1%B9%E7%9B%AE%E7%AE%A1%E7%90%86/image-20250629230213056.png"></a><div class="image-meta"><strong>#2969 · 解析</strong><span>项目管理图</span></div></div>
+  <div class="image-card"><a href="https://fangcaicoding.cn/oss/rk_option_img/a92e2d26f35816d9.png" target="_blank"><img referrerpolicy="no-referrer" src="https://fangcaicoding.cn/oss/rk_option_img/a92e2d26f35816d9.png"></a><div class="image-meta"><strong>#3060 · 题干</strong><span>2025 年 11 月新增图</span></div></div>
+  <div class="image-card"><a href="https://fangcaicoding.cn/oss/rk_option_img/f2b2a948af55ed40.png" target="_blank"><img referrerpolicy="no-referrer" src="https://fangcaicoding.cn/oss/rk_option_img/f2b2a948af55ed40.png"></a><div class="image-meta"><strong>#3062 · 题干</strong><span>2025 年 11 月新增图</span></div></div>
+</div>

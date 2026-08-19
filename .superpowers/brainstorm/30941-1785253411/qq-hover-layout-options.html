@@ -1,0 +1,71 @@
+<h2>QQ 交流群悬浮卡片</h2>
+<p class="subtitle">入口固定在 Star 与头像之间。下面只比较悬浮后的卡片样式，点击你更喜欢的一项。</p>
+
+<div class="cards">
+  <div class="card" data-choice="a" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:22px;background:#f8fafc;min-height:360px;display:flex;align-items:flex-start;justify-content:center;">
+      <div style="width:100%;max-width:520px;">
+        <div style="height:58px;background:white;border:1px solid #e2e8f0;border-radius:14px;display:flex;align-items:center;justify-content:flex-end;gap:14px;padding:0 18px;box-shadow:0 4px 14px rgba(15,23,42,.06);font:600 14px system-ui;color:#334155;">
+          <span style="padding:9px 13px;border:1px solid #fde68a;border-radius:12px;color:#92400e;background:#fffbeb;">距离考试还有 88 天</span>
+          <span>☆ Star</span>
+          <span style="width:36px;height:36px;border-radius:10px;background:#eff6ff;color:#2563eb;display:grid;place-items:center;border:1px solid #bfdbfe;font-size:19px;">☵</span>
+          <span style="width:36px;height:36px;border-radius:50%;background:#dbeafe;display:grid;place-items:center;">👤</span>
+        </div>
+        <div style="width:240px;margin:10px 42px 0 auto;background:white;border:1px solid #e2e8f0;border-radius:16px;padding:15px;box-shadow:0 18px 40px rgba(15,23,42,.16);text-align:center;">
+          <div style="font:700 16px system-ui;color:#0f172a;margin-bottom:4px;">加入 QQ 交流群</div>
+          <div style="font:400 12px system-ui;color:#64748b;margin-bottom:12px;">扫码交流备考经验</div>
+          <img src="qq-group-qr.png" alt="QQ交流群二维码" style="display:block;width:190px;height:190px;object-fit:cover;margin:auto;border-radius:10px;" />
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>A · 标准信息卡（推荐）</h3>
+      <p>标题、简短说明和二维码都有，视觉完整，第一次看到也能立刻理解入口用途。</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="b" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:22px;background:#f8fafc;min-height:360px;display:flex;align-items:flex-start;justify-content:center;">
+      <div style="width:100%;max-width:520px;">
+        <div style="height:58px;background:white;border:1px solid #e2e8f0;border-radius:14px;display:flex;align-items:center;justify-content:flex-end;gap:14px;padding:0 18px;box-shadow:0 4px 14px rgba(15,23,42,.06);font:600 14px system-ui;color:#334155;">
+          <span style="padding:9px 13px;border:1px solid #fde68a;border-radius:12px;color:#92400e;background:#fffbeb;">距离考试还有 88 天</span>
+          <span>☆ Star</span>
+          <span style="width:36px;height:36px;border-radius:10px;color:#475569;display:grid;place-items:center;font-size:19px;">☵</span>
+          <span style="width:36px;height:36px;border-radius:50%;background:#dbeafe;display:grid;place-items:center;">👤</span>
+        </div>
+        <div style="width:214px;margin:8px 42px 0 auto;background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:10px;box-shadow:0 12px 28px rgba(15,23,42,.14);text-align:center;">
+          <img src="qq-group-qr.png" alt="QQ交流群二维码" style="display:block;width:194px;height:194px;object-fit:cover;margin:auto;border-radius:8px;" />
+          <div style="font:600 12px system-ui;color:#475569;margin-top:8px;">扫码加入交流群</div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>B · 极简二维码</h3>
+      <p>卡片最小、干扰最少，但入口含义和群用途表达较弱。</p>
+    </div>
+  </div>
+
+  <div class="card" data-choice="c" onclick="toggleSelect(this)">
+    <div class="card-image" style="padding:22px;background:#f8fafc;min-height:360px;display:flex;align-items:flex-start;justify-content:center;">
+      <div style="width:100%;max-width:520px;">
+        <div style="height:58px;background:white;border:1px solid #e2e8f0;border-radius:14px;display:flex;align-items:center;justify-content:flex-end;gap:14px;padding:0 18px;box-shadow:0 4px 14px rgba(15,23,42,.06);font:600 14px system-ui;color:#334155;">
+          <span style="padding:9px 13px;border:1px solid #fde68a;border-radius:12px;color:#92400e;background:#fffbeb;">距离考试还有 88 天</span>
+          <span>☆ Star</span>
+          <span style="width:36px;height:36px;border-radius:50%;background:#2563eb;color:white;display:grid;place-items:center;font-size:19px;box-shadow:0 6px 14px rgba(37,99,235,.25);">☵</span>
+          <span style="width:36px;height:36px;border-radius:50%;background:#dbeafe;display:grid;place-items:center;">👤</span>
+        </div>
+        <div style="width:300px;margin:10px 22px 0 auto;background:linear-gradient(145deg,#eff6ff,#fff);border:1px solid #bfdbfe;border-radius:18px;padding:16px;box-shadow:0 18px 40px rgba(37,99,235,.16);display:flex;gap:14px;align-items:center;">
+          <img src="qq-group-qr.png" alt="QQ交流群二维码" style="display:block;width:132px;height:132px;object-fit:cover;border-radius:10px;" />
+          <div style="font-family:system-ui;text-align:left;">
+            <div style="font-weight:800;color:#1e3a8a;margin-bottom:8px;">知构软考交流群</div>
+            <div style="font-size:12px;line-height:1.65;color:#475569;">交流备考计划<br/>讨论真题解析<br/>分享学习进度</div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="card-body">
+      <h3>C · 品牌介绍卡</h3>
+      <p>信息最丰富、品牌感更强，但弹层更宽，在导航右侧显得更重。</p>
+    </div>
+  </div>
+</div>
