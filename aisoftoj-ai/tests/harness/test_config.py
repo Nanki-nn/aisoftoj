@@ -5,7 +5,7 @@ from pathlib import Path
 import pytest
 from pydantic import ValidationError
 
-from config import Settings
+from config import PROJECT_ROOT, Settings
 
 
 def valid_settings() -> dict[str, object]:
@@ -53,3 +53,32 @@ def test_config_file_must_be_yaml(tmp_path: Path) -> None:
 
     with pytest.raises(ValueError, match="YAML"):
         Settings.from_yaml(path)
+
+
+@pytest.mark.parametrize(
+    ("field", "value"),
+    [
+        ("skills_max_file_bytes", True),
+        ("skills_max_count", 0),
+        ("skills_max_index_chars", -1),
+        ("skills_read_max_chars", False),
+    ],
+)
+def test_skill_limits_are_strict_positive_integers(field: str, value: object) -> None:
+    payload = valid_settings()
+    payload[field] = value
+    with pytest.raises(ValidationError):
+        Settings.model_validate(payload)
+
+
+@pytest.mark.parametrize("path", ["/tmp/skills", "../skills", "skills/../../outside"])
+def test_skill_root_must_stay_inside_project(path: str) -> None:
+    payload = valid_settings()
+    payload["skills_root"] = path
+    with pytest.raises(ValidationError, match="skills_root"):
+        Settings.model_validate(payload)
+
+
+def test_default_skill_root_is_project_relative() -> None:
+    settings = Settings.model_validate(valid_settings())
+    assert settings.resolved_skills_root == PROJECT_ROOT / "skills" / "public"

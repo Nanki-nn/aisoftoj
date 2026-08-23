@@ -34,13 +34,35 @@ The service listens on `127.0.0.1:8000` by default. Readiness is exposed at
 - `GET /api/ai/threads/{thread_id}/runs/{run_id}/stream` provides resumable SSE.
   Use `Last-Event-ID` or `after_seq` to reconnect.
 - `POST /api/ai/threads/{thread_id}/runs/{run_id}/cancel` requests cancellation.
+- `GET /api/ai/skills` lists installed Skill metadata after the same Bearer JWT
+  check. It never returns Skill bodies or host paths.
 
-The agent has exactly five platform tools: `get_my_profile`, `list_papers`,
-`get_question`, `review_wrong_question`, and `list_practice_history`. There are
-no filesystem, shell, subagent, practice-creation, answer-update, submit, or
+The agent has exactly seven read-only tools: five platform tools
+(`get_my_profile`, `list_papers`, `get_question`, `review_wrong_question`, and
+`list_practice_history`) plus `describe_skill` and `load_skill`. There are no
+filesystem, shell, subagent, practice-creation, answer-update, submit, or
 paper-submission tools. The Java internal API and service key are required for
 startup; configure `AI_INTERNAL_SERVICE_KEY` for the Java service and use the
 same value as `platform_service_key` in `config.yaml`.
+
+## Built-in Skills
+
+Repository-bundled Skills live at `skills/public/<skill-name>/SKILL.md`. The
+directory name and frontmatter `name` must match lower-case kebab-case. Each
+file also needs a one-line `description`; `license` is optional. Related UTF-8
+resources can live below the same Skill directory.
+
+At startup the service validates paths, symlinks, names, UTF-8 content and the
+limits under `skills_*` in `config.yaml`, then keeps an immutable in-memory
+snapshot. Invalid Skill deployment content prevents readiness. The model sees
+only the compact name/description catalog by default and can page detailed
+content through the two Skill tools. A user can explicitly activate a Skill
+for the current run by starting the latest message with `/skill-name`.
+
+The bundled `/question-explanation` Skill teaches the assistant to explain a
+question from platform evidence. Because `get_question` does not expose the
+standard answer, the Skill only discusses a correct answer when
+`review_wrong_question` supplied that evidence.
 
 ## Production wiring
 

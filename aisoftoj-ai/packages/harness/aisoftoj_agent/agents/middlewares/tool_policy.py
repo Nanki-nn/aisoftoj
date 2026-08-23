@@ -8,15 +8,9 @@ from langchain.tools.tool_node import ToolCallRequest
 from langchain_core.messages import ToolMessage
 from langgraph.types import Command
 
-ALLOWED_TOOL_NAMES = frozenset(
-    {
-        "get_my_profile",
-        "list_papers",
-        "get_question",
-        "review_wrong_question",
-        "list_practice_history",
-    }
-)
+from ..tools import AGENT_TOOL_NAMES
+
+ALLOWED_TOOL_NAMES = AGENT_TOOL_NAMES
 
 
 class ToolPolicyError(RuntimeError):

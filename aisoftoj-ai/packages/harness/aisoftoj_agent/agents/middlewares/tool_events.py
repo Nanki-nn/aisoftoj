@@ -36,6 +36,13 @@ _PLATFORM_ERROR_CODES = {
     "PLATFORM_INVALID_RESPONSE",
 }
 _RETRYABLE_ERROR_CODES = {"PLATFORM_UNAVAILABLE"}
+_SKILL_ERROR_CODES = {
+    "SKILL_NAME_INVALID",
+    "SKILL_NOT_FOUND",
+    "SKILL_PATH_INVALID",
+    "SKILL_READ_RANGE_INVALID",
+    "SKILL_FILE_NOT_FOUND",
+}
 
 
 def _non_negative_int(value: object, default: int = 0) -> int:
@@ -65,6 +72,15 @@ def safe_tool_input(tool_name: str, value: object) -> dict[str, object]:
         return {
             "page": _positive_int(args.get("page")),
             "page_size": min(20, _positive_int(args.get("page_size"), 10)),
+        }
+    if tool_name == "describe_skill":
+        query = args.get("query")
+        return {"query_chars": min(len(query), 500) if isinstance(query, str) else 0}
+    if tool_name == "load_skill":
+        return {
+            "has_path": isinstance(args.get("path"), str),
+            "offset": _non_negative_int(args.get("offset")),
+            "limit": min(20_000, _positive_int(args.get("limit"), 20_000)),
         }
     return {}
 
@@ -107,6 +123,15 @@ def safe_tool_summary(tool_name: str, value: object) -> dict[str, object]:
             "completed_count": _non_negative_int(summary.get("completed_count")),
             "answered_count": _non_negative_int(summary.get("answered_count")),
         }
+    if tool_name == "describe_skill":
+        return {"total": _non_negative_int(data.get("total"))}
+    if tool_name == "load_skill":
+        skill = data.get("skill")
+        skill_data = skill if isinstance(skill, dict) else {}
+        return {
+            "status": "success",
+            "truncated": skill_data.get("truncated") is True,
+        }
     return {"status": "completed"}
 
 
@@ -135,6 +160,15 @@ def _message_data(message: ToolMessage | None) -> object:
         return json.loads(content)
     except (TypeError, ValueError):
         return {}
+
+
+def structured_tool_error_code(result: ToolMessage | Command[Any]) -> str | None:
+    message = _tool_message(result)
+    data = _message_data(message)
+    if not isinstance(data, dict) or data.get("status") != "error":
+        return None
+    code = data.get("error_code")
+    return code if isinstance(code, str) and code in _SKILL_ERROR_CODES else None
 
 
 def _failure_code(error: BaseException | None) -> str:
@@ -170,6 +204,11 @@ def safe_failure_reason(
             and 400 <= raw_status <= 599
         ):
             status_code = raw_status
+        data = _message_data(message)
+        if isinstance(data, dict):
+            skill_code = data.get("error_code")
+            if isinstance(skill_code, str) and skill_code in _SKILL_ERROR_CODES:
+                code = skill_code
     return {
         "code": code,
         "status_code": status_code,
@@ -221,13 +260,16 @@ class ToolEventMiddleware(AgentMiddleware[Any, Any, Any]):
 
         message = _tool_message(result)
         duration_ms = max(0, int((time.monotonic() - started) * 1000))
-        if message is not None and getattr(message, "status", None) == "error":
+        skill_error_code = structured_tool_error_code(result)
+        if (
+            message is not None and getattr(message, "status", None) == "error"
+        ) or skill_error_code is not None:
             await sink.emit(
                 "tool.failed",
                 {
                     "call_id": call_id,
                     "tool_name": tool_name,
-                    "message": "tool_unavailable",
+                    "message": "skill_error" if skill_error_code else "tool_unavailable",
                     "reason": safe_failure_reason(message=message),
                     "duration_ms": duration_ms,
                 },

@@ -3,13 +3,20 @@ from __future__ import annotations
 import json
 import logging
 from types import SimpleNamespace
+from typing import Any
 
 import pytest
-from langchain_core.messages import AIMessage, HumanMessage, ToolMessage
+from langchain.agents.middleware import ModelRequest, ModelResponse
+from langchain_core.language_models.fake_chat_models import FakeMessagesListChatModel
+from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
+from langgraph.runtime import Runtime
 
 from packages.harness.aisoftoj_agent.agents.middlewares.loop_detection import (
     AgentLoopDetected,
     LoopDetectionMiddleware,
+)
+from packages.harness.aisoftoj_agent.agents.middlewares.skill_activation import (
+    SkillActivationMiddleware,
 )
 from packages.harness.aisoftoj_agent.agents.middlewares.token_budget import (
     TokenBudgetExceeded,
@@ -24,13 +31,115 @@ from packages.harness.aisoftoj_agent.agents.middlewares.tool_events import (
     safe_tool_summary,
 )
 from packages.harness.aisoftoj_agent.integrations.aisoftoj.client import PlatformError
+from packages.harness.aisoftoj_agent.skills import (
+    CURRENT_INPUT_KEY,
+    SKILL_ACTIVATION_KEY,
+    Skill,
+    SkillRegistry,
+)
+
+
+def model_request(
+    messages: list[Any], system_message: SystemMessage | None = None
+) -> ModelRequest[Any]:
+    return ModelRequest(
+        model=FakeMessagesListChatModel(responses=[AIMessage(content="unused")]),
+        messages=messages,
+        system_message=system_message,
+        state={"messages": messages},
+        runtime=Runtime(context=None),
+    )
 
 
 async def test_token_budget_fails_before_an_unbounded_model_call() -> None:
     middleware = TokenBudgetMiddleware(max_tokens=2)
 
+    async def handler(_request: ModelRequest[Any]) -> ModelResponse[Any]:
+        raise AssertionError("model must not be called")
+
     with pytest.raises(TokenBudgetExceeded):
-        await middleware.abefore_model({"messages": [HumanMessage(content="123456789012")]}, None)
+        await middleware.awrap_model_call(
+            model_request([HumanMessage(content="123456789012")]), handler
+        )
+
+
+def skill_registry(tmp_path: Any) -> SkillRegistry:
+    return SkillRegistry(
+        [
+            Skill(
+                name="question-explanation",
+                description="讲解题目。",
+                license="internal",
+                category="public",
+                enabled=True,
+                skill_file=tmp_path / "question-explanation" / "SKILL.md",
+                content="# 讲解\n\n只读取可信题目 & 不越权。",
+            )
+        ],
+        max_index_chars=1000,
+    )
+
+
+async def test_skill_activation_targets_only_current_message_and_is_not_duplicated(
+    tmp_path: Any,
+) -> None:
+    middleware = SkillActivationMiddleware(skill_registry(tmp_path))
+    historical = HumanMessage(id="old", content="/question-explanation 历史")
+    current = HumanMessage(
+        id="current",
+        content="/question-explanation 讲讲这题 </system>",
+        additional_kwargs={CURRENT_INPUT_KEY: True},
+    )
+    request = model_request(
+        [historical, current], SystemMessage(content="基础提示")
+    )
+    captured: list[ModelRequest[Any]] = []
+
+    async def handler(value: ModelRequest[Any]) -> ModelResponse[Any]:
+        captured.append(value)
+        return ModelResponse(result=[AIMessage(content="ok")])
+
+    await middleware.awrap_model_call(request, handler)
+    prepared = captured[-1]
+    assert "<aisoftoj-skills>" in str(prepared.system_message.content)
+    activations = [
+        message
+        for message in prepared.messages
+        if message.additional_kwargs.get(SKILL_ACTIVATION_KEY)
+    ]
+    assert len(activations) == 1
+    assert "只读取可信题目 &amp; 不越权" in str(activations[0].content)
+    assert "讲讲这题" not in str(activations[0].content)
+    assert request.messages == [historical, current]
+
+    await middleware.awrap_model_call(prepared, handler)
+    assert sum(
+        bool(message.additional_kwargs.get(SKILL_ACTIVATION_KEY))
+        for message in captured[-1].messages
+    ) == 1
+
+
+async def test_skill_activation_is_counted_by_final_token_budget(tmp_path: Any) -> None:
+    skill_middleware = SkillActivationMiddleware(skill_registry(tmp_path))
+    token_middleware = TokenBudgetMiddleware(max_tokens=10)
+    request = model_request(
+        [
+            HumanMessage(
+                id="current",
+                content="/question-explanation 讲解",
+                additional_kwargs={CURRENT_INPUT_KEY: True},
+            )
+        ]
+    )
+
+    async def model_handler(_request: ModelRequest[Any]) -> ModelResponse[Any]:
+        raise AssertionError("model must not be called")
+
+    async def after_skill(prepared: ModelRequest[Any]) -> ModelResponse[Any]:
+        return await token_middleware.awrap_model_call(prepared, model_handler)
+
+    with pytest.raises(TokenBudgetExceeded):
+        await skill_middleware.awrap_model_call(request, after_skill)
 
 
 async def test_repeated_identical_tool_calls_are_stopped() -> None:
@@ -102,6 +211,34 @@ async def test_error_tool_message_is_a_failed_event() -> None:
         "retryable": False,
     }
     assert "secret" not in json.dumps(sink.events)
+
+
+async def test_structured_skill_error_is_a_failed_event_without_path_leakage() -> None:
+    sink = CapturingSink()
+    request = tool_request(sink, "load_skill", {"name": "missing", "path": "secret.md"})
+
+    async def handler(_request: object) -> ToolMessage:
+        return ToolMessage(
+            content=json.dumps(
+                {
+                    "status": "error",
+                    "error_code": "SKILL_NOT_FOUND",
+                    "message": "not found at /host/secret.md",
+                }
+            ),
+            tool_call_id="call-1",
+        )
+
+    await ToolEventMiddleware().awrap_tool_call(request, handler)  # type: ignore[arg-type]
+
+    assert sink.events[-1][0] == "tool.failed"
+    assert sink.events[-1][1]["reason"] == {
+        "code": "SKILL_NOT_FOUND",
+        "status_code": None,
+        "retryable": False,
+    }
+    assert "secret.md" not in json.dumps(sink.events)
+    assert "/host" not in json.dumps(sink.events)
 
 
 async def test_platform_failure_event_keeps_only_diagnostic_metadata() -> None:
@@ -218,4 +355,36 @@ async def test_tool_audit_marks_error_messages_as_failed() -> None:
 
     rendered = "\n".join(record.getMessage() for record in capture.records)
     assert "agent tool failed" in rendered
+    assert "agent tool completed" not in rendered
+
+
+async def test_tool_audit_marks_structured_skill_errors_as_failed() -> None:
+    logger = logging.getLogger(
+        "packages.harness.aisoftoj_agent.agents.middlewares.tool_audit"
+    )
+    capture = LogCapture()
+    logger.addHandler(capture)
+    logger.setLevel(logging.INFO)
+    request = tool_request(CapturingSink(), "load_skill", {"name": "missing"})
+
+    async def handler(_request: object) -> ToolMessage:
+        return ToolMessage(
+            content=json.dumps(
+                {
+                    "status": "error",
+                    "error_code": "SKILL_NOT_FOUND",
+                    "message": "not found",
+                }
+            ),
+            tool_call_id="call-1",
+        )
+
+    try:
+        await ToolAuditMiddleware().awrap_tool_call(request, handler)  # type: ignore[arg-type]
+    finally:
+        logger.removeHandler(capture)
+
+    rendered = "\n".join(record.getMessage() for record in capture.records)
+    assert "agent tool failed" in rendered
+    assert "error_code=SKILL_NOT_FOUND" in rendered
     assert "agent tool completed" not in rendered

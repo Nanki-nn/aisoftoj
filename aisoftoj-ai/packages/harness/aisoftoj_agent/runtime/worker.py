@@ -22,6 +22,7 @@ from ..persistence.models import AiRunEvent
 from ..persistence.repositories.messages import MessageRepository
 from ..persistence.repositories.runs import RunRepository
 from ..persistence.repositories.summaries import SummaryRepository
+from ..skills import CURRENT_INPUT_KEY
 from .event_sequence import RunEventSequence
 from .event_sink import RunEventSink, ToolEventPersistenceError
 from .stream_bridge import StreamBridge
@@ -64,9 +65,11 @@ class Worker:
             await self.event_sequence.close(run_id)
 
     async def _execute(self, run_id: str, context: AgentContext) -> None:
-        question_id = await self._load_question_id(run_id)
+        question_id, input_message_id = await self._load_run_context(run_id)
         await self._transition_and_event(run_id, "running", "run.started", {})
-        messages = await self._load_messages(context.thread_id)
+        messages = await self._load_messages(
+            context.thread_id, current_input_id=input_message_id
+        )
         messages = with_current_question_context(messages, question_id)
         await self._append_event(run_id, "message.started", {"role": "assistant"})
         runtime_context = replace(
@@ -97,18 +100,24 @@ class Worker:
         await self._complete(run_id, context.thread_id, final_text)
 
     async def _load_question_id(self, run_id: str) -> int | None:
+        question_id, _input_message_id = await self._load_run_context(run_id)
+        return question_id
+
+    async def _load_run_context(self, run_id: str) -> tuple[int | None, str]:
         async with self.session_factory() as session:
             run = await RunRepository(session).get(run_id)
             if run is None:
                 raise LookupError("run not found")
-            return run.question_id
+            return run.question_id, run.input_message_id
 
     async def _initialize_event_sequence(self, run_id: str) -> None:
         async with self.session_factory() as session:
             persisted_sequence = await RunRepository(session).max_event_sequence(run_id)
         await self.event_sequence.initialize(run_id, persisted_sequence)
 
-    async def _load_messages(self, thread_id: str) -> list[BaseMessage]:
+    async def _load_messages(
+        self, thread_id: str, *, current_input_id: str | None = None
+    ) -> list[BaseMessage]:
         async with self.session_factory() as session:
             summary = await SummaryRepository(session).get(thread_id)
             through = summary.summarized_through_sequence if summary is not None else 0
@@ -118,9 +127,18 @@ class Worker:
             messages.append(SystemMessage(content=f"此前对话摘要：{summary.content}"))
         for item in stored:
             if item.role == "user":
-                messages.append(HumanMessage(content=item.content))
+                additional_kwargs = (
+                    {CURRENT_INPUT_KEY: True} if item.id == current_input_id else {}
+                )
+                messages.append(
+                    HumanMessage(
+                        id=item.id,
+                        content=item.content,
+                        additional_kwargs=additional_kwargs,
+                    )
+                )
             else:
-                messages.append(AIMessage(content=item.content))
+                messages.append(AIMessage(id=item.id, content=item.content))
         return messages
 
     async def _complete(self, run_id: str, thread_id: str, content: str) -> None:

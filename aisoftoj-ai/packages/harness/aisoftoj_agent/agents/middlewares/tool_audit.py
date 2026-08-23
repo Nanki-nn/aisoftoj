@@ -10,7 +10,7 @@ from langchain.tools.tool_node import ToolCallRequest
 from langchain_core.messages import ToolMessage
 from langgraph.types import Command
 
-from .tool_events import safe_tool_input, safe_tool_name
+from .tool_events import safe_tool_input, safe_tool_name, structured_tool_error_code
 
 logger = logging.getLogger(__name__)
 
@@ -35,11 +35,15 @@ class ToolAuditMiddleware(AgentMiddleware[Any, Any, Any]):
                 int((time.monotonic() - started) * 1000),
             )
             raise
-        if isinstance(result, ToolMessage) and getattr(result, "status", None) == "error":
+        skill_error_code = structured_tool_error_code(result)
+        if (
+            isinstance(result, ToolMessage) and getattr(result, "status", None) == "error"
+        ) or skill_error_code is not None:
             logger.warning(
-                "agent tool failed name=%s argument_keys=%s duration_ms=%d",
+                "agent tool failed name=%s argument_keys=%s error_code=%s duration_ms=%d",
                 name,
                 argument_keys,
+                skill_error_code or "TOOL_EXECUTION_FAILED",
                 int((time.monotonic() - started) * 1000),
             )
             return result

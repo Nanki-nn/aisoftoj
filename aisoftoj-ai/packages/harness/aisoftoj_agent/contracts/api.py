@@ -109,3 +109,16 @@ class RunPageResponse(BaseModel):
     total: int = Field(ge=0)
     page: int = Field(ge=1)
     page_size: int = Field(ge=1, le=100)
+
+
+class SkillResponse(BaseModel):
+    name: str
+    description: str
+    category: str
+    enabled: bool
+    license: str | None
+
+
+class SkillListResponse(BaseModel):
+    items: list[SkillResponse]
+    total: int = Field(ge=0)

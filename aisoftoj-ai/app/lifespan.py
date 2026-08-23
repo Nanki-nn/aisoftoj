@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 from contextlib import asynccontextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 
 from fastapi import FastAPI
 from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
@@ -16,6 +16,7 @@ from packages.harness.aisoftoj_agent.persistence.repositories.runs import RunRep
 from packages.harness.aisoftoj_agent.runtime.run_manager import RunManager
 from packages.harness.aisoftoj_agent.runtime.stream_bridge import StreamBridge
 from packages.harness.aisoftoj_agent.runtime.worker import Worker
+from packages.harness.aisoftoj_agent.skills import SkillRegistry, build_skill_tools
 
 
 @dataclass(slots=True)
@@ -29,12 +30,24 @@ class AppState:
     stream_bridge: StreamBridge
     run_manager: RunManager
     worker: Worker
+    skill_registry: SkillRegistry = field(default_factory=SkillRegistry.empty)
 
 
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     settings = load_settings()
     configure_application_logging(settings.log_level)
+    skill_registry = SkillRegistry.from_directory(
+        settings.resolved_skills_root,
+        max_file_bytes=settings.skills_max_file_bytes,
+        max_count=settings.skills_max_count,
+        max_index_chars=settings.skills_max_index_chars,
+        max_resources_per_skill=settings.skills_max_resources_per_skill,
+        max_total_resource_bytes=settings.skills_max_total_resource_bytes,
+    )
+    skill_tools = build_skill_tools(
+        skill_registry, read_max_chars=settings.skills_read_max_chars
+    )
     engine = create_engine(settings.database_url.get_secret_value())
     session_factory = create_session_factory(engine)
     platform_client = PlatformClient(
@@ -44,7 +57,12 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         read_timeout=settings.platform_read_timeout_seconds,
         max_response_bytes=settings.platform_max_response_bytes,
     )
-    agent = build_agent_graph(settings, platform_client)
+    agent = build_agent_graph(
+        settings,
+        platform_client,
+        skill_registry=skill_registry,
+        skill_tools=skill_tools,
+    )
     stream_bridge = StreamBridge()
     run_manager = RunManager(
         max_runs=settings.agent_max_concurrent_runs,
@@ -68,6 +86,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         stream_bridge=stream_bridge,
         run_manager=run_manager,
         worker=worker,
+        skill_registry=skill_registry,
     )
     app.state.container = container
     app.state.platform_client = platform_client

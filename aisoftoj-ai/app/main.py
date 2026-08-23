@@ -8,6 +8,7 @@ from fastapi.responses import JSONResponse
 from app.lifespan import lifespan
 from app.routers.health import router as health_router
 from app.routers.runs import router as runs_router
+from app.routers.skills import router as skills_router
 from app.routers.threads import router as threads_router
 from packages.harness.aisoftoj_agent.contracts.errors import ErrorResponse
 
@@ -17,6 +18,7 @@ def create_app() -> FastAPI:
     application.include_router(health_router)
     application.include_router(threads_router)
     application.include_router(runs_router)
+    application.include_router(skills_router)
 
     @application.exception_handler(Exception)
     async def unhandled_exception(request: Request, exc: Exception) -> JSONResponse:

@@ -12,6 +12,13 @@ from langchain_core.tools import BaseTool
 from config import Settings
 from packages.harness.aisoftoj_agent.agents.context import AgentContext
 from packages.harness.aisoftoj_agent.agents.factory import build_agent_graph
+from packages.harness.aisoftoj_agent.skills import (
+    CURRENT_INPUT_KEY,
+    SKILL_ACTIVATION_KEY,
+    Skill,
+    SkillRegistry,
+    build_skill_tools,
+)
 
 
 def settings() -> Settings:
@@ -56,9 +63,44 @@ class CapturingModel(BaseChatModel):
         return ChatResult(generations=[ChatGeneration(message=AIMessage(content="完成"))])
 
 
-async def test_model_sees_exactly_five_business_tools() -> None:
+class TwoCallCapturingModel(CapturingModel):
+    seen_messages: list[list[BaseMessage]] = []
+
+    def _generate(
+        self,
+        messages: list[BaseMessage],
+        stop: list[str] | None = None,
+        run_manager: CallbackManagerForLLMRun | None = None,
+        **kwargs: Any,
+    ) -> ChatResult:
+        self.seen_messages.append(messages)
+        if len(self.seen_messages) == 1:
+            message = AIMessage(
+                content="",
+                tool_calls=[
+                    {
+                        "name": "describe_skill",
+                        "args": {"query": "题目"},
+                        "id": "call-1",
+                        "type": "tool_call",
+                    }
+                ],
+            )
+        else:
+            message = AIMessage(content="完成")
+        return ChatResult(generations=[ChatGeneration(message=message)])
+
+
+async def test_model_sees_exactly_seven_read_only_tools() -> None:
     model = CapturingModel()
-    agent = build_agent_graph(settings(), Mock(), model=model)
+    registry = SkillRegistry.empty()
+    agent = build_agent_graph(
+        settings(),
+        Mock(),
+        skill_registry=registry,
+        skill_tools=build_skill_tools(registry),
+        model=model,
+    )
     context = AgentContext(
         user_id=7,
         username="reader",
@@ -80,4 +122,58 @@ async def test_model_sees_exactly_five_business_tools() -> None:
         "get_question",
         "review_wrong_question",
         "list_practice_history",
+        "describe_skill",
+        "load_skill",
     }
+
+
+async def test_slash_skill_stays_single_across_tool_followup(tmp_path: Any) -> None:
+    skill = Skill(
+        name="question-explanation",
+        description="讲解题目。",
+        license="internal",
+        category="public",
+        enabled=True,
+        skill_file=tmp_path / "SKILL.md",
+        content="只使用可信题目。",
+    )
+    registry = SkillRegistry([skill], max_index_chars=1000)
+    model = TwoCallCapturingModel()
+    agent = build_agent_graph(
+        settings(),
+        Mock(),
+        skill_registry=registry,
+        skill_tools=build_skill_tools(registry),
+        model=model,
+    )
+    context = AgentContext(
+        user_id=7,
+        username="reader",
+        nickname=None,
+        thread_id="thread",
+        run_id="run",
+        bearer_token="jwt-secret",
+    )
+
+    await agent.graph.ainvoke(
+        {
+            "messages": [
+                HumanMessage(
+                    id="current",
+                    content="/question-explanation 讲讲这题",
+                    additional_kwargs={CURRENT_INPUT_KEY: True},
+                )
+            ],
+            "todos": [],
+            "files": {},
+        },
+        context=context,
+        config={"configurable": {"thread_id": "run"}},
+    )
+
+    assert len(model.seen_messages) == 2
+    for messages in model.seen_messages:
+        assert sum(
+            bool(message.additional_kwargs.get(SKILL_ACTIVATION_KEY))
+            for message in messages
+        ) == 1

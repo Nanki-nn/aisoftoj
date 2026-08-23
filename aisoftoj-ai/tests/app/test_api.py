@@ -13,6 +13,7 @@ from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
 from app.auth.dependencies import get_trusted_user
 from app.lifespan import AppState
 from app.main import create_app
+from config import PROJECT_ROOT
 from packages.harness.aisoftoj_agent.integrations.aisoftoj.client import PlatformClient
 from packages.harness.aisoftoj_agent.integrations.aisoftoj.context import TrustedUser
 from packages.harness.aisoftoj_agent.persistence.models import Base
@@ -20,6 +21,7 @@ from packages.harness.aisoftoj_agent.persistence.repositories.runs import RunRep
 from packages.harness.aisoftoj_agent.runtime.run_manager import RunManager
 from packages.harness.aisoftoj_agent.runtime.stream_bridge import StreamBridge
 from packages.harness.aisoftoj_agent.runtime.worker import Worker
+from packages.harness.aisoftoj_agent.skills import CURRENT_INPUT_KEY, SkillRegistry
 
 
 class IdleWorker:
@@ -90,6 +92,45 @@ async def test_thread_and_message_endpoints_are_owner_scoped(
     assert messages.json()["items"] == []
 
 
+async def test_skill_endpoint_returns_authenticated_metadata_only(
+    api_client: tuple[httpx.AsyncClient, PlatformClient, Any],
+) -> None:
+    client, _platform, app = api_client
+    app.state.container.skill_registry = SkillRegistry.from_directory(
+        PROJECT_ROOT / "skills" / "public",
+        max_file_bytes=256 * 1024,
+        max_count=100,
+        max_index_chars=12_000,
+    )
+
+    identity_override = app.dependency_overrides.pop(get_trusted_user)
+    try:
+        unauthorized = await client.get("/api/ai/skills")
+    finally:
+        app.dependency_overrides[get_trusted_user] = identity_override
+    assert unauthorized.status_code == 401
+
+    response = await client.get("/api/ai/skills")
+
+    assert response.status_code == 200
+    assert response.json()["total"] == 1
+    assert response.json()["items"] == [
+        {
+            "name": "question-explanation",
+            "description": (
+                "基于平台可信题目数据讲解软考题干、考点、选项依据和易错点；"
+                "用于用户要求解析当前题、复盘错题或比较选项时。"
+            ),
+            "category": "public",
+            "enabled": True,
+            "license": "internal",
+        }
+    ]
+    encoded = response.text.lower()
+    assert "skill.md" not in encoded
+    assert "content" not in encoded
+
+
 async def test_run_creation_is_idempotent(
     api_client: tuple[httpx.AsyncClient, PlatformClient, object],
 ) -> None:
@@ -137,6 +178,16 @@ async def test_run_persists_first_question_context_across_idempotent_replay(
         max_run_seconds=30,
     )
     assert await worker._load_question_id(first.json()["id"]) == 123
+    messages = await worker._load_messages(
+        thread_id, current_input_id=run.input_message_id
+    )
+    current = [
+        message
+        for message in messages
+        if message.additional_kwargs.get(CURRENT_INPUT_KEY) is True
+    ]
+    assert len(current) == 1
+    assert str(current[0].id) == run.input_message_id
 
 
 @pytest.mark.parametrize(

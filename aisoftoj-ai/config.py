@@ -5,7 +5,17 @@ from pathlib import Path
 from typing import Any, Literal
 
 import yaml
-from pydantic import BaseModel, Field, HttpUrl, SecretStr, field_validator, model_validator
+from pydantic import (
+    BaseModel,
+    Field,
+    HttpUrl,
+    SecretStr,
+    StrictInt,
+    field_validator,
+    model_validator,
+)
+
+PROJECT_ROOT = Path(__file__).resolve().parent
 
 
 class Settings(BaseModel):
@@ -34,6 +44,14 @@ class Settings(BaseModel):
     agent_loop_hard_repetitions: int = Field(default=5, ge=3)
     shutdown_drain_seconds: int = Field(default=15, ge=0)
 
+    skills_root: str = Field(default="skills/public", min_length=1)
+    skills_max_file_bytes: StrictInt = Field(default=256 * 1024, gt=0)
+    skills_max_count: StrictInt = Field(default=100, gt=0)
+    skills_max_index_chars: StrictInt = Field(default=12_000, gt=0)
+    skills_max_resources_per_skill: StrictInt = Field(default=100, gt=0)
+    skills_max_total_resource_bytes: StrictInt = Field(default=2 * 1024 * 1024, gt=0)
+    skills_read_max_chars: StrictInt = Field(default=20_000, gt=0)
+
     host: str = "127.0.0.1"
     port: int = Field(default=8000, ge=1, le=65_535)
     log_level: str = "info"
@@ -56,6 +74,20 @@ class Settings(BaseModel):
             raise ValueError("platform_base_url must use a loopback host")
         return value
 
+    @field_validator("skills_root")
+    @classmethod
+    def validate_skills_root(cls, value: str) -> str:
+        normalized = value.strip()
+        path = Path(normalized)
+        if not normalized or path.is_absolute() or ".." in path.parts:
+            raise ValueError("skills_root must be a project-relative path")
+        resolved = (PROJECT_ROOT / path).resolve()
+        try:
+            resolved.relative_to(PROJECT_ROOT.resolve())
+        except ValueError:
+            raise ValueError("skills_root must stay within the project root") from None
+        return normalized
+
     @model_validator(mode="after")
     def validate_limits(self) -> Settings:
         if self.agent_max_user_concurrent_runs > self.agent_max_concurrent_runs:
@@ -63,6 +95,10 @@ class Settings(BaseModel):
         if self.agent_loop_warn_repetitions >= self.agent_loop_hard_repetitions:
             raise ValueError("loop warning threshold must be below hard threshold")
         return self
+
+    @property
+    def resolved_skills_root(self) -> Path:
+        return PROJECT_ROOT / self.skills_root
 
     @classmethod
     def from_yaml(cls, path: str | Path) -> Settings:

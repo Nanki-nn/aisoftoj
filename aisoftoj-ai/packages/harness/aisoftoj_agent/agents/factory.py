@@ -11,16 +11,18 @@ from deepagents import (
 )
 from deepagents.backends import StateBackend
 from langchain_core.language_models import BaseChatModel
+from langchain_core.tools import BaseTool
 from langgraph.checkpoint.memory import InMemorySaver
 
 from config import Settings
 
 from ..integrations.aisoftoj.client import PlatformClient
+from ..skills import SkillRegistry
 from .context import AgentContext
 from .middlewares import build_middlewares
 from .models import build_chat_model
 from .prompt import SYSTEM_PROMPT
-from .tools import build_platform_tools
+from .tools import build_agent_tools
 
 EXCLUDED_TOOLS = frozenset(
     {"ls", "read_file", "write_file", "edit_file", "delete", "glob", "grep", "execute", "task"}
@@ -47,15 +49,17 @@ def build_agent_graph(
     settings: Settings,
     platform_client: PlatformClient,
     *,
+    skill_registry: SkillRegistry,
+    skill_tools: list[BaseTool],
     model: BaseChatModel | None = None,
 ) -> AgentGraph:
     register_read_only_harness_profile()
     checkpointer = InMemorySaver()
     graph = create_deep_agent(
         model=model or build_chat_model(settings),
-        tools=build_platform_tools(platform_client),
+        tools=build_agent_tools(platform_client, skill_tools),
         system_prompt=SYSTEM_PROMPT,
-        middleware=build_middlewares(settings),
+        middleware=build_middlewares(settings, skill_registry),
         subagents=[],
         skills=None,
         memory=None,

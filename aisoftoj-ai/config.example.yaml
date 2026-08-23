@@ -24,6 +24,14 @@ agent_loop_warn_repetitions: 3
 agent_loop_hard_repetitions: 5
 shutdown_drain_seconds: 15
 
+skills_root: skills/public
+skills_max_file_bytes: 262144
+skills_max_count: 100
+skills_max_index_chars: 12000
+skills_max_resources_per_skill: 100
+skills_max_total_resource_bytes: 2097152
+skills_read_max_chars: 20000
+
 host: 127.0.0.1
 port: 8000
 log_level: info
