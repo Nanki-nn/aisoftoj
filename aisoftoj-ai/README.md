@@ -20,15 +20,21 @@ business-tool request.
 
 ### 首次启动
 
-在仓库根目录执行：
+先进入本目录：从仓库根目录执行 `cd aisoftoj-ai`；如果终端提示符已经以
+`aisoftoj-ai %` 开头，就说明已经在本目录中，不要再次执行 `cd aisoftoj-ai`。
+然后执行：
 
 ```bash
-cd aisoftoj-ai
-cp config.example.yaml config.yaml
-uv sync
+export PATH="/opt/homebrew/bin:$PATH"
+test -f config.yaml || cp config.example.yaml config.yaml
+uv sync --frozen
 uv run alembic upgrade head
-uv run python server.py
+.venv/bin/python server.py
 ```
+
+`test -f ... || cp ...` 只会在 `config.yaml` 不存在时复制示例文件，不会覆盖
+已经填写的数据库密码或模型 API Key。服务首次启动可能需要数十秒，请等终端出现
+`Uvicorn running on http://127.0.0.1:8000` 后再执行健康检查。
 
 执行命令前需要编辑 `config.yaml`，至少确认以下配置：
 
@@ -63,8 +69,8 @@ Flyway 管理 Java 业务表，Alembic 只管理 `ai_*` 表和
 完成首次初始化后，通常只需：
 
 ```bash
-cd aisoftoj-ai
-uv run alembic upgrade head && uv run python server.py
+export PATH="/opt/homebrew/bin:$PATH"
+uv run alembic upgrade head && .venv/bin/python server.py
 ```
 
 服务默认监听 `http://127.0.0.1:8000`。启动后可在另一个终端检查：
@@ -85,9 +91,10 @@ AGENT_CONFIG_FILE=/绝对路径/ai-config.yaml uv run python server.py
 
 常见问题：
 
-- `uv: command not found`：重新打开终端，或将 Homebrew 的
-  `/opt/homebrew/bin` 加入 `PATH`；也可以临时把上述 `uv` 替换为
-  `/opt/homebrew/bin/uv`。
+- `uv: command not found`：先执行 `export PATH="/opt/homebrew/bin:$PATH"`；
+  也可以临时把 `uv` 替换为 `/opt/homebrew/bin/uv`。
+- `cd: no such file or directory: aisoftoj-ai`：终端提示符若已经是
+  `aisoftoj-ai %`，说明当前就在目标目录，无需再次 `cd`。
 - 启动时报 `config.yaml` 不存在：先复制 `config.example.yaml`。
 - `/readyz` 不通过：确认 MySQL 与 Java 后端已启动，并检查数据库连接信息。
 - 调用 Java 内部接口返回未授权：确认 `platform_service_key` 与
