@@ -6,23 +6,94 @@ The Python service validates that JWT through Java's internal profile endpoint,
 then forwards the same JWT and the private `X-AI-Service-Key` to Java for every
 business-tool request.
 
-## Run locally
+## 本地启动
+
+### 前置条件
+
+- MySQL 中已经创建 `aisoftoj` 数据库。
+- Java 后端已经启动在 `http://127.0.0.1:8080`。
+- 已安装 [uv](https://docs.astral.sh/uv/)。macOS 可执行 `brew install uv`。
+- 已准备可用的 OpenAI 兼容模型 API Key。
+
+项目要求 Python 3.12，`uv sync` 会自动创建 `.venv` 并安装锁定版本的依赖，
+不需要手动创建虚拟环境。
+
+### 首次启动
+
+在仓库根目录执行：
 
 ```bash
-cd /Users/bytedance/aisoftoj/aisoftoj-ai
+cd aisoftoj-ai
 cp config.example.yaml config.yaml
-# Edit config.yaml. The AI tables live in the shared aisoftoj MySQL database.
-/opt/homebrew/bin/uv sync
-/opt/homebrew/bin/uv run alembic upgrade head
-/opt/homebrew/bin/uv run python server.py
+uv sync
+uv run alembic upgrade head
+uv run python server.py
 ```
 
-Flyway owns the Java platform tables and Alembic owns only the `ai_*` tables
-plus `alembic_version`; both migration systems use the shared `aisoftoj`
-database. The AI database account should be restricted to that database.
+执行命令前需要编辑 `config.yaml`，至少确认以下配置：
 
-The service listens on `127.0.0.1:8000` by default. Readiness is exposed at
-`/readyz`; liveness is exposed at `/livez`.
+```yaml
+# AI 表与 Java 业务表共用 aisoftoj 数据库；请替换用户名和密码
+database_url: mysql+asyncmy://aisoftoj_ai:数据库密码@127.0.0.1:3306/aisoftoj
+
+# Java 后端地址
+platform_base_url: http://127.0.0.1:8080
+
+# 必须与 Java 后端的 AI_INTERNAL_SERVICE_KEY 相同
+platform_service_key: 本地服务密钥
+
+# OpenAI 或兼容服务配置
+llm_base_url: https://api.openai.com/v1
+llm_api_key: 模型服务密钥
+llm_default_model: gpt-5-mini
+```
+
+启动 Java 后端时可显式设置同一服务密钥：
+
+```bash
+AI_INTERNAL_SERVICE_KEY=本地服务密钥 mvn -pl aisoftoj-backend spring-boot:run
+```
+
+Flyway 管理 Java 业务表，Alembic 只管理 `ai_*` 表和
+`alembic_version`；两者使用同一个 `aisoftoj` 数据库。建议给 AI 服务使用的
+数据库账号仅授予该数据库所需权限。
+
+### 日常启动
+
+完成首次初始化后，通常只需：
+
+```bash
+cd aisoftoj-ai
+uv run alembic upgrade head && uv run python server.py
+```
+
+服务默认监听 `http://127.0.0.1:8000`。启动后可在另一个终端检查：
+
+```bash
+curl http://127.0.0.1:8000/livez
+curl http://127.0.0.1:8000/readyz
+```
+
+- `/livez`：进程存活检查。
+- `/readyz`：AI 服务已完成数据库初始化与 Skill 加载，可以接收请求。
+
+如需使用其他配置文件，可通过环境变量指定：
+
+```bash
+AGENT_CONFIG_FILE=/绝对路径/ai-config.yaml uv run python server.py
+```
+
+常见问题：
+
+- `uv: command not found`：重新打开终端，或将 Homebrew 的
+  `/opt/homebrew/bin` 加入 `PATH`；也可以临时把上述 `uv` 替换为
+  `/opt/homebrew/bin/uv`。
+- 启动时报 `config.yaml` 不存在：先复制 `config.example.yaml`。
+- `/readyz` 不通过：确认 MySQL 与 Java 后端已启动，并检查数据库连接信息。
+- 调用 Java 内部接口返回未授权：确认 `platform_service_key` 与
+  `AI_INTERNAL_SERVICE_KEY` 完全一致。
+- 模型调用失败：检查 `llm_base_url`、`llm_api_key` 和
+  `llm_default_model` 是否由同一个模型服务支持。
 
 ## API
 
