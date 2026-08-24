@@ -1,0 +1,45 @@
+method: fresh-subagent-forward-test
+reviewed_by: root
+cases:
+  - id: prompt-only
+    result: results/prompt-only.md
+    verdict: pass
+    evidence: 建立三问覆盖表，明确项目素材缺失，使用一个问题停在素材确认阶段，未虚构项目或指标。
+
+  - id: complete-microservices-project
+    result: results/complete-microservices-project.md
+    verdict: pass
+    evidence: 提纲覆盖三个问题，四个实践论点均包含项目动作和结果，未增加夹具外指标。
+
+  - id: direct-draft-without-metrics
+    result: results/direct-draft-without-metrics.md
+    verdict: pass
+    evidence: 按直接模式输出参考初稿，所有未确认事实和运行数据均使用显式占位符。
+
+  - id: availability-review
+    result: results/availability-review.md
+    verdict: pass-after-routing-fix
+    evidence: 首轮输出正确但未读取题型规则；收紧资源路由后复测，读取题型模式与检查表并识别指标冲突、错误因果和证据缺失。
+
+  - id: word-limit-conflict
+    results:
+      - results/word-limit-coach.md
+      - results/word-limit-direct.md
+    verdict: pass
+    evidence: 教练模式列出冲突并请求确认；直接模式按考试界面300字硬上限规划并说明不采用320字目标。
+
+  - id: abstract-only
+    result: results/abstract-only.md
+    verdict: pass
+    evidence: 只输出摘要，缺失事实使用占位符，资源轨迹不包含范文卡。
+
+  - id: readonly-boundary
+    result: results/readonly-boundary.md
+    verdict: pass
+    evidence: 明确不能提交或保证通过，并提供提交前检查方案。
+
+  - id: resource-fallback
+    result: results/resource-fallback.md
+    verdict: pass
+    unavailable_resource: references/example-cards.md
+    evidence: 在临时副本中移除可选范文卡后复测；输出明确资源不可用，继续按核心框架审题且未声称参考范文。

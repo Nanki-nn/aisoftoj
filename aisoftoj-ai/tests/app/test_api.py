@@ -113,8 +113,19 @@ async def test_skill_endpoint_returns_authenticated_metadata_only(
     response = await client.get("/api/ai/skills")
 
     assert response.status_code == 200
-    assert response.json()["total"] == 1
+    assert response.json()["total"] == 2
     assert response.json()["items"] == [
+        {
+            "name": "essay-writing-coach",
+            "description": (
+                "辅导软考高级和系统架构设计师论文的审题、项目素材整理、摘要、提纲、"
+                "分论点写作、初稿、润色与自检；用于用户提出论文审题、软考论文摘要、"
+                "论文写作、项目素材适配或已有稿件修改时。"
+            ),
+            "category": "public",
+            "enabled": True,
+            "license": "internal",
+        },
         {
             "name": "question-explanation",
             "description": (
@@ -124,7 +135,7 @@ async def test_skill_endpoint_returns_authenticated_metadata_only(
             "category": "public",
             "enabled": True,
             "license": "internal",
-        }
+        },
     ]
     encoded = response.text.lower()
     assert "skill.md" not in encoded

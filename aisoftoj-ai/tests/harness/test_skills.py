@@ -1,8 +1,10 @@
 from __future__ import annotations
 
+import re
 from pathlib import Path
 
 import pytest
+import yaml
 
 from config import PROJECT_ROOT
 from packages.harness.aisoftoj_agent.skills import (
@@ -238,6 +240,115 @@ def test_bundled_question_explanation_skill_is_loadable() -> None:
     assert skill is not None
     assert "get_question" in skill.content
     assert "不得声称某个选项一定正确" in skill.content
+
+
+def test_bundled_essay_writing_coach_is_discoverable_and_complete() -> None:
+    registry = SkillRegistry.from_directory(
+        PROJECT_ROOT / "skills" / "public",
+        max_file_bytes=256 * 1024,
+        max_count=100,
+        max_index_chars=12_000,
+    )
+    skill = registry.get("essay-writing-coach")
+
+    assert skill is not None
+    assert skill.license == "internal"
+    assert registry.search("论文审题")[0] == skill
+    assert registry.search("软考论文摘要")[0] == skill
+    assert registry.search("essay-writing-coach")[0] == skill
+    assert registry.resource_paths(skill.name) == (
+        "SKILL.md",
+        "references/example-cards.md",
+        "references/quality-checklist.md",
+        "references/sources.md",
+        "references/topic-patterns.md",
+        "references/writing-framework.md",
+    )
+    assert "分阶段教练模式" in skill.content
+    assert "直接产出模式" in skill.content
+    assert "不得改变用户角色" in skill.content
+    assert "references/example-cards.md" in skill.content
+    assert "检查质量属性与技术机制的因果关系" in skill.content
+
+
+def test_essay_example_cards_have_valid_sources_and_compact_original_structure() -> None:
+    registry = SkillRegistry.from_directory(
+        PROJECT_ROOT / "skills" / "public",
+        max_file_bytes=256 * 1024,
+        max_count=100,
+        max_index_chars=12_000,
+    )
+    cards = registry.read_resource("essay-writing-coach", "references/example-cards.md")
+    sources = registry.read_resource("essay-writing-coach", "references/sources.md")
+
+    assert cards is not None
+    assert sources is not None
+    source_ids = set(re.findall(r"`([a-z][a-z0-9-]+-202608\d{2})`", sources))
+    cards_list = cards.split("\n## 卡片：")[1:]
+    assert len(cards_list) == 7
+    for card in cards_list:
+        card_ids = set(re.findall(r"`([a-z][a-z0-9-]+-202608\d{2})`", card))
+        assert card_ids
+        assert card_ids <= source_ids
+        assert len(card) <= 1600
+        assert not any(line.startswith(">") for line in card.splitlines())
+        assert max(len(paragraph) for paragraph in card.split("\n\n")) <= 400
+    assert "fangcai-five-part-20260825" not in cards
+    assert "csdn-soa-partial-20260825" not in cards
+
+
+def test_essay_writing_coach_eval_cases_cover_high_risk_contracts() -> None:
+    fixture_path = PROJECT_ROOT / "tests" / "evals" / "essay-writing-coach" / "cases.yaml"
+    payload = yaml.safe_load(fixture_path.read_text(encoding="utf-8"))
+    cases = payload["cases"]
+
+    assert payload["skill"] == "essay-writing-coach"
+    assert {case["id"] for case in cases} == {
+        "prompt-only",
+        "complete-microservices-project",
+        "direct-draft-without-metrics",
+        "availability-review",
+        "word-limit-conflict",
+        "abstract-only",
+        "readonly-boundary",
+        "resource-fallback",
+    }
+    resource_paths = {
+        path
+        for case in cases
+        for key in ("expected_resources", "optional_resources", "forbidden_resources")
+        for path in case.get(key, [])
+    }
+    assert all(path.startswith("references/") for path in resource_paths)
+    fallback = next(case for case in cases if case["id"] == "resource-fallback")
+    assert fallback["simulated_error"] == {
+        "path": "references/example-cards.md",
+        "error_code": "SKILL_FILE_NOT_FOUND",
+    }
+
+
+def test_essay_writing_coach_forward_results_are_complete_and_traceable() -> None:
+    eval_root = PROJECT_ROOT / "tests" / "evals" / "essay-writing-coach"
+    verdicts = yaml.safe_load((eval_root / "verdicts.yaml").read_text(encoding="utf-8"))
+    results = sorted((eval_root / "results").glob("*.md"))
+
+    assert verdicts["method"] == "fresh-subagent-forward-test"
+    assert len(verdicts["cases"]) == 8
+    assert all(case["verdict"].startswith("pass") for case in verdicts["cases"])
+    assert len(results) == 9
+    for result in results:
+        lines = result.read_text(encoding="utf-8").splitlines()
+        assert lines[0].startswith("case_id: ")
+        assert lines[1].startswith("resources_consulted: ")
+
+    availability = (eval_root / "results" / "availability-review.md").read_text(encoding="utf-8")
+    assert "references/topic-patterns.md" in availability.splitlines()[1]
+    assert "references/quality-checklist.md" in availability.splitlines()[1]
+    abstract = (eval_root / "results" / "abstract-only.md").read_text(encoding="utf-8")
+    assert "example-cards.md" not in abstract.splitlines()[1]
+    fallback_result = (eval_root / "results" / "resource-fallback.md").read_text(encoding="utf-8")
+    assert "范文卡资源无法读取" in fallback_result
+    assert "不会虚构" in fallback_result
 
 
 def test_registry_rejects_duplicate_objects(tmp_path: Path) -> None:

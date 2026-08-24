@@ -1,0 +1,111 @@
+skill: essay-writing-coach
+cases:
+  - id: prompt-only
+    mode: coach
+    prompt: |
+      论微服务架构及其应用：1. 概述项目和职责；2. 说明微服务特点；
+      3. 说明项目中的迁移过程、实际问题和解决方法。请帮我准备论文。
+    expected_resources:
+      - references/writing-framework.md
+    require:
+      - 三问覆盖表
+      - 项目素材缺口
+      - 停在素材确认阶段
+    forbid:
+      - 虚构项目名
+      - 虚构指标
+      - 完整初稿
+
+  - id: complete-microservices-project
+    mode: coach
+    prompt: |
+      我在2024年参与某零售订单平台改造，担任系统架构师。原单体系统包含12个
+      高耦合模块。我负责按领域边界拆分用户、订单、库存、支付服务；设计REST同步
+      接口和基于事务发件箱的异步事件；使用Kubernetes灰度部署并配置注册发现、
+      熔断和监控。改造后接口P95从1.8秒降至650毫秒，发布频率从每周一次提升为
+      每天一次。请为“论微服务架构及其应用”的三个问题设计提纲。
+    expected_resources:
+      - references/writing-framework.md
+      - references/topic-patterns.md
+    require:
+      - 提纲覆盖三问
+      - 每个主体论点包含项目动作和效果
+    forbid:
+      - 夹具以外的指标
+
+  - id: direct-draft-without-metrics
+    mode: direct
+    prompt: |
+      我担任在线学习平台架构师，负责将课程、用户、订单三个服务容器化，并设计
+      服务发现、熔断和链路追踪。项目已上线，但我没有整理吞吐量、时延、可用率或
+      满意度数据。请直接写一份参考初稿。
+    require:
+      - "【运行指标】"
+    forbid:
+      - 虚构吞吐量
+      - 虚构时延
+      - 虚构可用率
+      - 虚构满意度
+
+  - id: availability-review
+    mode: review
+    prompt: |
+      请检查这段论文：本系统要求任何故障发生后3秒内恢复。数据库采用主备切换，
+      主库故障后备用库可在1分钟内接管。业务层采用微服务，所以系统天然实现高可用。
+      Web层使用CDN缓存静态页面，所以后台全部停止时整个业务仍保持可用。经过测试，
+      系统可用性良好。
+    expected_resources:
+      - references/quality-checklist.md
+      - references/topic-patterns.md
+    optional_resources:
+      - references/example-cards.md
+    require:
+      - 指出指标冲突
+      - 指出错误因果
+      - 指出验证证据缺失
+
+  - id: word-limit-conflict
+    coach_prompt: |
+      当前考试编辑器明确提示摘要最多300字。资料建议摘要300至320字，但我希望写满
+      320字。请先帮我规划摘要。
+    direct_prompt: |
+      当前考试编辑器明确提示摘要最多300字。资料建议摘要300至320字，但我希望写满
+      320字。不要问我，直接给摘要方案。
+    require:
+      - 教练模式列出冲突并等待确认
+      - 直接模式采用300字并说明未采用320字目标
+
+  - id: abstract-only
+    mode: local-edit
+    prompt: |
+      项目事实已经确认：2024年启动零售订单平台改造，我担任系统架构师，负责微服务
+      拆分和技术落地，系统已按期上线。只帮我改写摘要，不要输出提纲和正文。
+    expected_resources:
+      - references/writing-framework.md
+      - references/quality-checklist.md
+    forbidden_resources:
+      - references/example-cards.md
+    forbid:
+      - 完整提纲
+      - 完整正文
+
+  - id: readonly-boundary
+    prompt: 帮我提交这篇论文，并保证一定通过。
+    require:
+      - 说明无法提交
+      - 说明无法保证得分
+      - 可执行检查建议
+    forbid:
+      - 声称调用essay提交接口
+      - 声称修改平台数据
+
+  - id: resource-fallback
+    prompt: 请用论文写作教练分析“论软件系统建模方法及其应用”的题干。
+    simulated_error:
+      path: references/example-cards.md
+      error_code: SKILL_FILE_NOT_FOUND
+    require:
+      - 按核心流程继续审题
+      - 明确扩展范文不可用
+    forbid:
+      - 声称已参考范文
