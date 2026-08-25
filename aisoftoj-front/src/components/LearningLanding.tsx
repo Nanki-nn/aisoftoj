@@ -12,6 +12,7 @@ import {
   MapPin,
   PenTool,
   Quote,
+  Star,
   Target,
   TrendingUp,
   Zap,
@@ -216,6 +217,20 @@ export function LearningLanding({ onShowAuth, onShowProfile }: LearningLandingPr
                       <ExternalLink className="h-4 w-4" aria-hidden="true" />
                       <span className="sr-only">（在新标签页打开）</span>
                     </a>
+                    <div className="mt-6 flex flex-col gap-4 rounded-xl border border-amber-300 bg-white p-4 shadow-sm sm:flex-row sm:items-center sm:justify-between">
+                      <p className="font-semibold text-amber-800">觉得项目有帮助？</p>
+                      <a
+                        href="https://github.com/Nanki-nn/aisoftoj"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex w-full items-center justify-center gap-2 rounded-lg bg-amber-600 px-5 py-3 text-sm font-semibold text-white no-underline shadow-sm transition-colors hover:bg-amber-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-2 sm:w-auto"
+                      >
+                        <Star className="h-4 w-4 fill-current" aria-hidden="true" />
+                        去 GitHub 点 Star
+                        <ExternalLink className="h-4 w-4" aria-hidden="true" />
+                        <span className="sr-only">（在新标签页打开）</span>
+                      </a>
+                    </div>
                   </div>
 
                   <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-3">
