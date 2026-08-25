@@ -2,11 +2,11 @@
 
 ## 目标
 
-在“作者经历”卡片中提高 GitHub 仓库入口的可见度，引导更多用户访问仓库并点击 Star，同时保留“阅读完整备考经验”的原有入口。
+在“作者经历”模块中提高 GitHub 仓库入口的可见度，引导更多用户访问仓库并点击 Star，同时保留“阅读完整备考经验”的原有入口。
 
 ## 范围
 
-- 仅修改 `aisoftoj-front/src/components/LearningLanding.tsx` 中的作者经历卡片。
+- 仅修改 `aisoftoj-front/src/components/LearningLanding.tsx` 中的作者经历模块。
 - 不调整卡片外层布局、其他页面区域或现有备考经验内容。
 - 不读取或展示实时 Star 数量。
 
@@ -16,7 +16,7 @@
 
 `https://github.com/Nanki-nn/aisoftoj/blob/main/guides/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84%E5%B8%88%E5%A4%87%E8%80%83%E7%BB%8F%E9%AA%8C.md`
 
-在该链接下方新增独立支持条：
+在完整作者经历卡片下方新增独立支持条，使其与备考正文和三个考试结果卡片完全分离：
 
 - 提示文案：`觉得项目有帮助？`
 - 主按钮文案：`去 GitHub 点 Star`
