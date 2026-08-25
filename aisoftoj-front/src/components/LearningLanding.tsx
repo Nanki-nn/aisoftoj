@@ -9,7 +9,6 @@ import {
   Clock,
   ExternalLink,
   FileText,
-  MapPin,
   PenTool,
   Quote,
   Star,
@@ -189,10 +188,6 @@ export function LearningLanding({ onShowAuth, onShowProfile }: LearningLandingPr
                     <div className="flex items-center gap-2">
                       <Briefcase className="h-4 w-4 text-amber-600" aria-hidden="true" />
                       <span>23 届计算机 · 后端开发</span>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <MapPin className="h-4 w-4 text-amber-600" aria-hidden="true" />
-                      <span>目标：杭州 E 类人才</span>
                     </div>
                   </div>
 
