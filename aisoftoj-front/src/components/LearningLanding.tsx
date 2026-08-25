@@ -82,8 +82,6 @@ const methodSteps = [
   },
 ] as const;
 
-const outcomes = ['综合知识通过', '案例分析通过', '论文写作通过'] as const;
-
 export function LearningLanding({ onShowAuth, onShowProfile }: LearningLandingProps) {
   return (
     <div className="min-h-screen text-slate-950">
@@ -199,25 +197,18 @@ export function LearningLanding({ onShowAuth, onShowProfile }: LearningLandingPr
                     <p className="mb-6 text-lg leading-relaxed text-slate-700 md:text-xl">
                       最终<span className="font-medium text-amber-700">综合知识、案例、论文全部通过。</span>
                     </p>
-                    <a
-                      href="https://github.com/Nanki-nn/aisoftoj/blob/main/guides/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84%E5%B8%88%E5%A4%87%E8%80%83%E7%BB%8F%E9%AA%8C.md"
-                      target="_blank"
-                      rel="noreferrer"
-                      className="inline-flex items-center gap-2 border-b border-amber-300 pb-1 text-sm font-semibold text-amber-800 no-underline transition-colors hover:border-amber-600 hover:text-amber-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-4"
-                    >
-                      阅读完整备考经验
-                      <ExternalLink className="h-4 w-4" aria-hidden="true" />
-                      <span className="sr-only">（在新标签页打开）</span>
-                    </a>
-                  </div>
-
-                  <div className="mt-8 grid grid-cols-1 gap-4 md:grid-cols-3">
-                    {outcomes.map((outcome) => (
-                      <div key={outcome} className="rounded-lg border border-amber-200/50 bg-white/60 p-4 text-center backdrop-blur-sm">
-                        <p className="mb-1 text-2xl text-amber-700">✓</p>
-                        <p className="text-sm text-slate-600">{outcome}</p>
-                      </div>
-                    ))}
+                    <div className="flex justify-end">
+                      <a
+                        href="https://github.com/Nanki-nn/aisoftoj/blob/main/guides/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84%E5%B8%88%E5%A4%87%E8%80%83%E7%BB%8F%E9%AA%8C.md"
+                        target="_blank"
+                        rel="noreferrer"
+                        className="inline-flex items-center gap-2 border-b border-amber-300 pb-1 text-sm font-semibold text-amber-800 no-underline transition-colors hover:border-amber-600 hover:text-amber-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-4"
+                      >
+                        阅读完整备考经验
+                        <ExternalLink className="h-4 w-4" aria-hidden="true" />
+                        <span className="sr-only">（在新标签页打开）</span>
+                      </a>
+                    </div>
                   </div>
                 </div>
               </div>
