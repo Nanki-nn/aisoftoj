@@ -5,7 +5,7 @@ spring:
   flyway:
     enabled: ${FLYWAY_ENABLED:false}
   datasource:
-    url: jdbc:mysql://localhost:3306/aisoftoj?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai
+    url: ${DB_URL:jdbc:mysql://127.0.0.1:13306/aisoftoj?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai}
     username: root
     password: abc123456
     driver-class-name: com.mysql.cj.jdbc.Driver
