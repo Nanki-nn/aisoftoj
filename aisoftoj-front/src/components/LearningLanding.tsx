@@ -207,7 +207,7 @@ export function LearningLanding({ onShowAuth, onShowProfile }: LearningLandingPr
                       <p className="text-base italic text-slate-600">这套路径直接做进了平台里。</p>
                     </div>
                     <a
-                      href="https://github.com/Nanki-nn/aisoftoj/blob/main/guides/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84%E5%B8%88%E5%A4%87%E7%BB%8F%E9%AA%8C.md"
+                      href="https://github.com/Nanki-nn/aisoftoj/blob/main/guides/%E7%B3%BB%E7%BB%9F%E6%9E%B6%E6%9E%84%E5%B8%88%E5%A4%87%E8%80%83%E7%BB%8F%E9%AA%8C.md"
                       target="_blank"
                       rel="noreferrer"
                       className="mt-6 inline-flex items-center gap-2 border-b border-amber-300 pb-1 text-sm font-semibold text-amber-800 no-underline transition-colors hover:border-amber-600 hover:text-amber-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-amber-600 focus-visible:ring-offset-4"
