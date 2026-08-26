@@ -147,6 +147,8 @@ Python 写入 Agent 自有缓存不改变 Java 业务事实，因此不违反“
 - `textbook_id`: Java 教材 ID，无跨库外键。
 - `index_version`: 唯一版本标识。
 - `source_hash`: 下载文件 SHA-256。
+- `catalog_hash`: 不含外部链接的章节、页码、知识点和出处映射 SHA-256。
+- `retrieval_profile_version`: 切块与检索配置版本。
 - `parser_name`、`parser_version`。
 - `embedding_model`、`reranker_model`。
 - `collection_name`: Qdrant Collection。
@@ -156,6 +158,7 @@ Python 写入 Agent 自有缓存不改变 Java 业务事实，因此不违反“
 - `created_at`、`activated_at`、`retired_at`。
 
 同一本教材最多只有一个 `ACTIVE` 索引。新版本完整写入 Qdrant 并通过检查后，在 AI 数据库事务内退役旧版本并激活新版本；构建失败时旧版本继续服务。
+PDF、目录页码/知识点映射或切块检索配置任一变化时，不复用旧索引；只修改官方链接不会触发重建。
 
 ### `ai_question_trace_cache`
 
