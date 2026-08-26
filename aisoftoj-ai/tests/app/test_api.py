@@ -54,6 +54,7 @@ async def api_client() -> AsyncGenerator[tuple[httpx.AsyncClient, PlatformClient
         worker=cast(Any, IdleWorker()),
     )
     app.state.platform_client = platform
+    assert app.state.container.langsmith_tracing.enabled is False
     app.dependency_overrides[get_trusted_user] = lambda: TrustedUser(
         user_id=7,
         username="reader",
