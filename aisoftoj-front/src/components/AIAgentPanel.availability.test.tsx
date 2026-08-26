@@ -59,7 +59,9 @@ describe('AIAgentPanel unavailable state', () => {
     const { AIAgentPanel } = await import('./AIAgentPanel');
     render(<AIAgentPanel />);
 
-    expect(screen.getByRole('status').textContent).toContain('AI 助手线上请求暂未开放');
+    const status = screen.getByRole('status');
+    expect(status.textContent).toContain('AI 助手线上请求暂未开放');
+    expect(status.textContent).toContain('欢迎加入交流群，查看项目最新进度');
     const input = screen.getByRole('textbox') as HTMLTextAreaElement;
     expect(input.disabled).toBe(true);
     expect(input.placeholder).toBe('AI 助手线上请求暂未开放');

@@ -386,6 +386,9 @@ export function AIAgentPanel() {
                 <p className="mt-2 text-sm leading-6 text-blue-800">
                   {AI_ASSISTANT_UNAVAILABLE_MESSAGE}
                 </p>
+                <p className="mt-1 text-xs leading-5 text-blue-600">
+                  欢迎加入交流群，查看项目最新进度
+                </p>
               </div>
             </div>
           ) : isLoading && messages.length === 0 ? (
