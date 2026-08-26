@@ -30,3 +30,15 @@ def test_process_note_is_a_supported_persisted_event() -> None:
     )
 
     assert event.type == "process.note"
+
+
+def test_skill_activation_is_a_supported_persisted_event() -> None:
+    event = PersistedEvent(
+        run_id="run",
+        sequence=1,
+        type="skill.activated",
+        created_at=datetime.now(UTC),
+        data={"skill_name": "essay-writing-coach", "category": "public"},
+    )
+
+    assert event.type == "skill.activated"

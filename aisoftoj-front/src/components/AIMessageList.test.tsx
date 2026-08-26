@@ -50,4 +50,37 @@ describe('AIMessageList', () => {
     expect(container.querySelector('.markdown-table-scroll table')).toBeTruthy();
     expect(container.querySelector('.markdown-body code')?.textContent).toBe('复习模式');
   });
+
+  it('renders skill activation and skill resource loading as explicit steps', () => {
+    const groups: MessageGroup[] = [{
+      type: 'assistant:processing',
+      key: 'run-1:processing',
+      run: {
+        ...createRunViewState('run-1'),
+        phase: 'completed',
+        skillActivations: [{
+          skillName: 'essay-writing-coach',
+          category: 'public',
+          sequence: 2,
+        }],
+        tools: [{
+          callId: 'call-1',
+          toolName: 'load_skill',
+          input: { has_path: true },
+          status: 'completed',
+          sequence: 3,
+          summary: { status: 'success', truncated: false },
+        }],
+      },
+    }];
+
+    render(<AIMessageList groups={groups} onRetry={vi.fn()} />);
+    const toggle = screen.getByRole('button', { name: /完成 2 个步骤/ });
+    fireEvent.click(toggle);
+
+    expect(screen.getByText('启用论文写作辅导 Skill')).toBeTruthy();
+    expect(screen.getByText('已应用 /essay-writing-coach 工作规程')).toBeTruthy();
+    expect(screen.getByText('读取 Skill 参考资料')).toBeTruthy();
+    expect(screen.getByText('Skill 资料已加载')).toBeTruthy();
+  });
 });

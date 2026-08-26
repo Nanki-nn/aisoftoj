@@ -77,6 +77,22 @@ describe('AI event normalization and reduction', () => {
     }]);
   });
 
+  it('records an explicitly activated skill in timeline order', () => {
+    const normalized = normalizeEvent(persisted(2, 'skill.activated', {
+      skill_name: 'essay-writing-coach',
+      category: 'public',
+    }));
+    const state = normalized?.event
+      ? applyEvent(createRunViewState('run-1'), normalized.event)
+      : createRunViewState('run-1');
+
+    expect(state.skillActivations).toEqual([{
+      skillName: 'essay-writing-coach',
+      category: 'public',
+      sequence: 2,
+    }]);
+  });
+
   it('moves an exact process note suffix out of the answer and restores it from history', () => {
     const raws = [
       persisted(1, 'message.delta', { delta: '我先读取你的练习记录。' }),

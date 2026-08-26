@@ -1,12 +1,18 @@
 from __future__ import annotations
 
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
-from langchain_core.messages import AIMessage, AIMessageChunk
+from langchain_core.messages import AIMessage, AIMessageChunk, HumanMessage
 
 from packages.harness.aisoftoj_agent.agents.context import AgentContext
-from packages.harness.aisoftoj_agent.runtime.worker import Worker, _message_text
+from packages.harness.aisoftoj_agent.runtime.worker import (
+    Worker,
+    _message_text,
+    current_activated_skill,
+)
+from packages.harness.aisoftoj_agent.skills import CURRENT_INPUT_KEY, Skill, SkillRegistry
 
 
 class FakeGraph:
@@ -101,3 +107,28 @@ def test_message_text_excludes_provider_reasoning_blocks() -> None:
     )
 
     assert _message_text(message) == "visible"
+
+
+def test_current_activated_skill_uses_only_enabled_skill_on_current_input(
+    tmp_path: Path,
+) -> None:
+    skill = Skill(
+        name="essay-writing-coach",
+        description="论文写作辅导",
+        license="internal",
+        category="public",
+        enabled=True,
+        skill_file=tmp_path / "essay-writing-coach" / "SKILL.md",
+        content="# 论文写作辅导",
+    )
+    registry = SkillRegistry([skill], max_index_chars=1000)
+    messages = [
+        HumanMessage(id="old", content="/essay-writing-coach 历史消息"),
+        HumanMessage(
+            id="current",
+            content="/essay-writing-coach 架构师论文怎么写",
+            additional_kwargs={CURRENT_INPUT_KEY: True},
+        ),
+    ]
+
+    assert current_activated_skill(messages, registry) is skill

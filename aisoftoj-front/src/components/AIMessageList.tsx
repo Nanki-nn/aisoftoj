@@ -13,7 +13,12 @@ import {
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { MessageGroup } from '../lib/aiMessageGroups';
-import { ProcessNoteState, RunViewState, ToolStepState } from '../lib/aiEvents';
+import {
+  ProcessNoteState,
+  RunViewState,
+  SkillActivationState,
+  ToolStepState,
+} from '../lib/aiEvents';
 
 type AIMessageListProps = {
   groups: MessageGroup[];
@@ -50,6 +55,8 @@ function toolCopy(tool: ToolStepState): { title: string; detail: string } {
       get_question: '读取题目信息',
       review_wrong_question: '复盘错题',
       list_practice_history: '查询练习历史',
+      describe_skill: '检索可用 Skill',
+      load_skill: '读取 Skill 参考资料',
     };
     return { title: titles[tool.toolName] || '执行数据查询', detail: '该步骤未完成' };
   }
@@ -94,10 +101,48 @@ function toolCopy(tool: ToolStepState): { title: string; detail: string } {
         : `已读取 ${integer(tool.summary, 'record_count')} 条记录，共 ${integer(tool.summary, 'total_count')} 次练习`,
     };
   }
+  if (tool.toolName === 'describe_skill') {
+    return {
+      title: '检索可用 Skill',
+      detail: tool.status === 'running'
+        ? suffix
+        : `找到 ${integer(tool.summary, 'total')} 个相关 Skill`,
+    };
+  }
+  if (tool.toolName === 'load_skill') {
+    return {
+      title: '读取 Skill 参考资料',
+      detail: tool.status === 'running'
+        ? suffix
+        : tool.summary?.truncated === true ? '已加载部分 Skill 资料' : 'Skill 资料已加载',
+    };
+  }
   return {
     title: '执行数据查询',
     detail: tool.status === 'running' ? suffix : '查询已完成',
   };
+}
+
+const SKILL_NAMES: Record<string, string> = {
+  'essay-writing-coach': '论文写作辅导 Skill',
+  'question-explanation': '题目讲解 Skill',
+};
+
+function SkillActivationStep({ activation }: { activation: SkillActivationState }) {
+  const title = SKILL_NAMES[activation.skillName] || `${activation.skillName} Skill`;
+  return (
+    <div className="grid min-h-12 grid-cols-[24px_minmax(0,1fr)] gap-2.5 py-1.5">
+      <span className="mt-0.5 flex h-6 w-6 items-center justify-center rounded-full bg-violet-50 text-violet-600">
+        <Sparkles className="h-3.5 w-3.5" aria-hidden="true" />
+      </span>
+      <span className="min-w-0">
+        <span className="block text-sm font-medium text-slate-800">启用{title}</span>
+        <span className="mt-0.5 block break-words text-xs leading-5 text-slate-500">
+          已应用 /{activation.skillName} 工作规程
+        </span>
+      </span>
+    </div>
+  );
 }
 
 function ToolStep({ tool }: { tool: ToolStepState }) {
@@ -150,10 +195,16 @@ function ProcessingPanel({ run }: { run: RunViewState }) {
   const terminal = isTerminal(run);
   const [open, setOpen] = useState(!terminal);
   useEffect(() => setOpen(!terminal), [terminal]);
-  const completed = run.tools.filter(tool => tool.status !== 'running').length;
+  const completed = run.skillActivations.length
+    + run.tools.filter(tool => tool.status !== 'running').length;
   const label = terminal ? `完成 ${completed} 个步骤` : '正在处理';
   const timeline = [
     ...run.processNotes.map(note => ({ kind: 'note' as const, sequence: note.sequence, note })),
+    ...run.skillActivations.map(activation => ({
+      kind: 'skill' as const,
+      sequence: activation.sequence,
+      activation,
+    })),
     ...run.tools.map(tool => ({ kind: 'tool' as const, sequence: tool.sequence, tool })),
   ].sort((left, right) => left.sequence - right.sequence);
 
@@ -178,7 +229,9 @@ function ProcessingPanel({ run }: { run: RunViewState }) {
           <div className="pb-1">
             {timeline.map((item, index) => item.kind === 'note'
               ? <ProcessNote key={`note-${item.sequence}-${index}`} note={item.note} active={!terminal && index === timeline.length - 1} />
-              : <ToolStep key={item.tool.callId} tool={item.tool} />)}
+              : item.kind === 'skill'
+                ? <SkillActivationStep key={`skill-${item.sequence}`} activation={item.activation} />
+                : <ToolStep key={item.tool.callId} tool={item.tool} />)}
           </div>
         </div>
       </div>

@@ -11,6 +11,7 @@ PersistedEventType = Literal[
     "message.started",
     "message.delta",
     "process.note",
+    "skill.activated",
     "tool.started",
     "tool.completed",
     "tool.failed",

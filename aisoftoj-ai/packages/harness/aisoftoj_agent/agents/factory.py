@@ -33,6 +33,7 @@ EXCLUDED_TOOLS = frozenset(
 class AgentGraph:
     graph: Any
     checkpointer: InMemorySaver
+    skill_registry: SkillRegistry
 
 
 def register_read_only_harness_profile() -> None:
@@ -68,4 +69,8 @@ def build_agent_graph(
         checkpointer=checkpointer,
         name="aisoftoj-assistant",
     )
-    return AgentGraph(graph=graph, checkpointer=checkpointer)
+    return AgentGraph(
+        graph=graph,
+        checkpointer=checkpointer,
+        skill_registry=skill_registry,
+    )

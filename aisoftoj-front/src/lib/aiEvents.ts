@@ -17,6 +17,12 @@ export type ProcessNoteState = {
   local?: boolean;
 };
 
+export type SkillActivationState = {
+  skillName: string;
+  category?: string;
+  sequence: number;
+};
+
 export type RunPhase =
   | 'idle'
   | 'running'
@@ -31,6 +37,7 @@ export type RunViewState = {
   phase: RunPhase;
   lastAppliedSequence: number;
   tools: ToolStepState[];
+  skillActivations: SkillActivationState[];
   processNotes: ProcessNoteState[];
   answer: string;
   planTasks: never[];
@@ -46,6 +53,7 @@ export type NormalizedRunEvent =
   | (EventBase & { type: 'run.started' })
   | (EventBase & { type: 'answer.delta'; text: string })
   | (EventBase & { type: 'process.note'; text: string })
+  | (EventBase & { type: 'skill.activated'; skillName: string; category?: string })
   | (EventBase & {
       type: 'tool.started';
       callId: string;
@@ -142,6 +150,19 @@ export function normalizeEvent(
         : null,
     };
   }
+  if (persistedType === 'skill.activated') {
+    return {
+      sequence,
+      event: typeof payload.skill_name === 'string' && payload.skill_name.trim()
+        ? {
+            ...base,
+            type: 'skill.activated',
+            skillName: payload.skill_name,
+            category: typeof payload.category === 'string' ? payload.category : undefined,
+          }
+        : null,
+    };
+  }
   if (persistedType === 'tool.started') {
     return {
       sequence,
@@ -205,6 +226,7 @@ export function createRunViewState(runId: string): RunViewState {
     phase: 'idle',
     lastAppliedSequence: 0,
     tools: [],
+    skillActivations: [],
     processNotes: [],
     answer: '',
     planTasks: [],
@@ -243,6 +265,18 @@ export function applyEvent(state: RunViewState, event: NormalizedRunEvent): RunV
       ? state.processNotes
       : [...state.processNotes, { text: event.text, sequence: event.sequence }];
     return { ...next, phase: 'running', answer, processNotes };
+  }
+  if (event.type === 'skill.activated') {
+    const activation: SkillActivationState = {
+      skillName: event.skillName,
+      category: event.category,
+      sequence: event.sequence,
+    };
+    return {
+      ...next,
+      phase: 'running',
+      skillActivations: [...state.skillActivations, activation],
+    };
   }
   if (event.type === 'tool.started') {
     const tool: ToolStepState = {

@@ -22,7 +22,7 @@ from ..persistence.models import AiRunEvent
 from ..persistence.repositories.messages import MessageRepository
 from ..persistence.repositories.runs import RunRepository
 from ..persistence.repositories.summaries import SummaryRepository
-from ..skills import CURRENT_INPUT_KEY
+from ..skills import CURRENT_INPUT_KEY, Skill, SkillRegistry, parse_slash_skill_name
 from .event_sequence import RunEventSequence
 from .event_sink import RunEventSink, ToolEventPersistenceError
 from .stream_bridge import StreamBridge
@@ -71,6 +71,19 @@ class Worker:
             context.thread_id, current_input_id=input_message_id
         )
         messages = with_current_question_context(messages, question_id)
+        activated_skill = current_activated_skill(
+            messages,
+            getattr(self.agent, "skill_registry", None),
+        )
+        if activated_skill is not None:
+            await self._append_event(
+                run_id,
+                "skill.activated",
+                {
+                    "skill_name": activated_skill.name,
+                    "category": activated_skill.category,
+                },
+            )
         await self._append_event(run_id, "message.started", {"role": "assistant"})
         runtime_context = replace(
             context,
@@ -297,6 +310,22 @@ def with_current_question_context(
     insert_at = len(result) - 1 if result and isinstance(result[-1], HumanMessage) else len(result)
     result.insert(insert_at, instruction)
     return result
+
+
+def current_activated_skill(
+    messages: list[BaseMessage], registry: object
+) -> Skill | None:
+    if not isinstance(registry, SkillRegistry):
+        return None
+    for message in reversed(messages):
+        if not isinstance(message, HumanMessage):
+            continue
+        if message.additional_kwargs.get(CURRENT_INPUT_KEY) is not True:
+            continue
+        skill_name = parse_slash_skill_name(_message_text(message))
+        skill = registry.get(skill_name) if skill_name is not None else None
+        return skill if skill is not None and skill.enabled else None
+    return None
 
 
 def _stream_item(item: Any) -> tuple[str | None, Any]:
