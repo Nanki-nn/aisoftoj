@@ -16,8 +16,8 @@
 新增 Vite 构建变量 `VITE_AI_ASSISTANT_ENABLED`，并在 `src/lib/aiAvailability.ts` 中集中解析，导出 `AI_ASSISTANT_ENABLED`：
 
 - 值为 `true`：所有模式开启。
-- 值为 `false` 或其他无效非空值：关闭。
-- 未设置：仅 `import.meta.env.DEV` 开启，生产关闭。
+- 值为 `false`、空字符串或任何非 `true` 的已设置值：关闭。
+- 严格未设置（值为 `undefined`）：仅 `import.meta.env.DEV` 开启，生产关闭。等价解析式为 `raw === undefined ? import.meta.env.DEV : raw === 'true'`。
 
 解析必须比较字符串值，不能依赖字符串 truthy 行为。同步补充 Vite 环境变量类型声明。
 
