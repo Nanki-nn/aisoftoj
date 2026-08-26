@@ -1,7 +1,8 @@
 package com.nan.aisoftoj.service.impl;
 
-import cn.hutool.json.JSONUtil;
 import cn.hutool.core.util.StrUtil;
+import cn.hutool.json.JSONObject;
+import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.nan.aisoftoj.common.ResourceNotFoundException;
 import com.nan.aisoftoj.common.ConflictException;
@@ -9,7 +10,6 @@ import com.nan.aisoftoj.common.UserRole;
 import com.nan.aisoftoj.consts.PaperCate;
 import com.nan.aisoftoj.consts.PaperStatus;
 import com.nan.aisoftoj.consts.PracticeSessionState;
-import com.nan.aisoftoj.dto.Option;
 import com.nan.aisoftoj.dto.PracticeHistoryDTO;
 import com.nan.aisoftoj.dto.ai.AiPaperDTO;
 import com.nan.aisoftoj.dto.ai.AiProfileDTO;
@@ -314,12 +314,21 @@ public class AiPlatformReadServiceImpl implements AiPlatformReadService {
         if (StrUtil.isBlank(rawOptions)) {
             return new ArrayList<>();
         }
-        List<Option> options = JSONUtil.toList(rawOptions, Option.class);
+        List<JSONObject> options = JSONUtil.toList(rawOptions, JSONObject.class);
         return options.stream()
-                .sorted(Comparator.comparing(Option::getOrderNum,
+                .sorted(Comparator.comparing(option -> option.getInt("orderNum"),
                         Comparator.nullsLast(Integer::compareTo)))
-                .map(option -> new AiQuestionOptionDTO(option.getKeyStr(), option.getValueStr()))
+                .map(option -> new AiQuestionOptionDTO(
+                        preferredOptionValue(option, "key", "keyStr"),
+                        preferredOptionValue(option, "text", "valueStr")))
                 .collect(Collectors.toList());
+    }
+
+    private String preferredOptionValue(
+            JSONObject option, String preferredField, String fallbackField) {
+        return StrUtil.blankToDefault(
+                option.getStr(preferredField),
+                option.getStr(fallbackField));
     }
 
     private String mapQuestionType(Integer type) {
