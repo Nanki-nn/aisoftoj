@@ -1,3 +1,8 @@
+import {
+  AI_ASSISTANT_ENABLED,
+  AI_ASSISTANT_UNAVAILABLE_MESSAGE,
+} from './aiAvailability';
+
 const AI_API_BASE_URL = import.meta.env.VITE_AI_API_BASE_URL || '';
 
 export type AIThread = {
@@ -97,6 +102,16 @@ export class AIApiError extends Error {
   }
 }
 
+function assertAIAssistantAvailable(): void {
+  if (!AI_ASSISTANT_ENABLED) {
+    throw new AIApiError(
+      AI_ASSISTANT_UNAVAILABLE_MESSAGE,
+      503,
+      'FEATURE_NOT_AVAILABLE',
+    );
+  }
+}
+
 function authHeaders(extra?: HeadersInit): Headers {
   const token = localStorage.getItem('authToken');
   if (!token) {
@@ -108,6 +123,7 @@ function authHeaders(extra?: HeadersInit): Headers {
 }
 
 async function aiRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  assertAIAssistantAvailable();
   const headers = authHeaders(init?.headers);
   if (init?.body && !headers.has('Content-Type')) {
     headers.set('Content-Type', 'application/json');
@@ -187,6 +203,7 @@ export async function streamAIRun(
   signal: AbortSignal,
   onEvent: (event: AIStreamEvent) => void,
 ): Promise<void> {
+  assertAIAssistantAvailable();
   const headers = authHeaders({ Accept: 'text/event-stream' });
   if (afterSequence > 0) {
     headers.set('Last-Event-ID', String(afterSequence));

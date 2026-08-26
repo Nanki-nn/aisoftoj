@@ -26,6 +26,11 @@ import { runAIStreamSession } from '../lib/aiRunSession';
 
 export type { ConversationMessage } from '../lib/aiEvents';
 
+type AIConversationOptions = {
+  active: boolean;
+  available: boolean;
+};
+
 const ACTIVE_STATUSES = new Set(['queued', 'running']);
 const TERMINAL_STATUSES = new Set(['completed', 'failed', 'cancelled', 'interrupted']);
 
@@ -71,7 +76,7 @@ async function replayRunEvents(
   return { state: applyRunSnapshot(state, run), transportSequence };
 }
 
-export function useAIConversation(enabled: boolean) {
+export function useAIConversation({ active, available }: AIConversationOptions) {
   const [threads, setThreads] = useState<AIThread[]>([]);
   const [currentThread, setCurrentThread] = useState<AIThread | null>(null);
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
@@ -84,15 +89,17 @@ export function useAIConversation(enabled: boolean) {
   const loadGenerationRef = useRef(0);
 
   const refreshMessages = useCallback(async (threadId: string) => {
+    if (!available) return;
     const page = await listAIMessages(threadId);
     setMessages(page.items.map(toConversationMessage));
-  }, []);
+  }, [available]);
 
   const followRun = useCallback(async (
     threadId: string,
     run: AIRun,
     initialSequence = 0,
   ) => {
+    if (!available) return;
     abortRef.current?.abort();
     const controller = new AbortController();
     abortRef.current = controller;
@@ -130,9 +137,10 @@ export function useAIConversation(enabled: boolean) {
       if (activeRunRef.current?.id === run.id) activeRunRef.current = null;
       setIsGenerating(false);
     }
-  }, [refreshMessages]);
+  }, [available, refreshMessages]);
 
   const loadThread = useCallback(async (thread: AIThread) => {
+    if (!available) return;
     const generation = ++loadGenerationRef.current;
     abortRef.current?.abort();
     setCurrentThread(thread);
@@ -187,9 +195,10 @@ export function useAIConversation(enabled: boolean) {
     } finally {
       if (generation === loadGenerationRef.current) setIsLoading(false);
     }
-  }, [followRun]);
+  }, [available, followRun]);
 
   const initialize = useCallback(async () => {
+    if (!available) return;
     setIsLoading(true);
     setError(null);
     try {
@@ -207,11 +216,28 @@ export function useAIConversation(enabled: boolean) {
     } finally {
       setIsLoading(false);
     }
-  }, [loadThread]);
+  }, [available, loadThread]);
 
   useEffect(() => {
-    if (enabled) void initialize();
-  }, [enabled, initialize]);
+    if (active && available) void initialize();
+  }, [active, available, initialize]);
+
+  useEffect(() => {
+    if (active && available) return;
+    abortRef.current?.abort();
+    abortRef.current = null;
+    activeRunRef.current = null;
+    loadGenerationRef.current += 1;
+    setIsLoading(false);
+    setIsGenerating(false);
+    if (!available) {
+      setThreads([]);
+      setCurrentThread(null);
+      setMessages([]);
+      setRunStates({});
+      setError(null);
+    }
+  }, [active, available]);
 
   useEffect(() => () => abortRef.current?.abort(), []);
 
@@ -221,7 +247,7 @@ export function useAIConversation(enabled: boolean) {
     existingMessageId?: string,
     context?: AIRunContext,
   ) => {
-    if (isGenerating) return;
+    if (!available || isGenerating) return;
     setIsGenerating(true);
     setError(null);
     let thread = currentThread;
@@ -274,21 +300,24 @@ export function useAIConversation(enabled: boolean) {
       setError(errorMessage(submissionError));
       setIsGenerating(false);
     }
-  }, [currentThread, followRun, isGenerating]);
+  }, [available, currentThread, followRun, isGenerating]);
 
   const sendMessage = useCallback((content: string, context?: AIRunContext) => {
+    if (!available) return;
     const trimmed = content.trim();
     if (!trimmed) return;
     void submitMessage(trimmed, crypto.randomUUID(), undefined, context);
-  }, [submitMessage]);
+  }, [available, submitMessage]);
 
   const retryMessage = useCallback((messageId: string) => {
+    if (!available) return;
     const message = messages.find(item => item.id === messageId);
     if (!message?.idempotencyKey) return;
     void submitMessage(message.content, message.idempotencyKey, message.id, message.context);
-  }, [messages, submitMessage]);
+  }, [available, messages, submitMessage]);
 
   const cancelCurrentRun = useCallback(async () => {
+    if (!available) return;
     const run = activeRunRef.current;
     if (!run) return;
     try {
@@ -296,9 +325,10 @@ export function useAIConversation(enabled: boolean) {
     } catch (cancelError) {
       setError(errorMessage(cancelError));
     }
-  }, []);
+  }, [available]);
 
   const newConversation = useCallback(async () => {
+    if (!available) return;
     const run = activeRunRef.current;
     if (run) {
       try {
@@ -322,7 +352,7 @@ export function useAIConversation(enabled: boolean) {
     setIsGenerating(false);
     setError(null);
     localStorage.removeItem(storageKey());
-  }, []);
+  }, [available]);
 
   return {
     threads,

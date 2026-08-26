@@ -15,6 +15,10 @@ import {
 } from 'lucide-react';
 import { useAgentPanel } from '../hooks/useAgentPanel';
 import { useAIConversation } from '../hooks/useAIConversation';
+import {
+  AI_ASSISTANT_ENABLED,
+  AI_ASSISTANT_UNAVAILABLE_MESSAGE,
+} from '../lib/aiAvailability';
 import { getMessageGroups } from '../lib/aiMessageGroups';
 import { AIMessageList } from './AIMessageList';
 
@@ -94,7 +98,7 @@ export function AIAgentPanel() {
     cancelCurrentRun,
     newConversation,
     selectThread,
-  } = useAIConversation(isOpen);
+  } = useAIConversation({ active: isOpen, available: AI_ASSISTANT_ENABLED });
   const [input, setInput] = useState('');
   const [historyOpen, setHistoryOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(() => (
@@ -123,7 +127,7 @@ export function AIAgentPanel() {
   }, []);
 
   useEffect(() => {
-    if (isOpen) {
+    if (isOpen && AI_ASSISTANT_ENABLED) {
       window.setTimeout(() => inputRef.current?.focus(), 220);
     }
   }, [isOpen]);
@@ -201,6 +205,7 @@ export function AIAgentPanel() {
   }, [finishResize]);
 
   const resetConversation = () => {
+    if (!AI_ASSISTANT_ENABLED) return;
     void newConversation();
     setInput('');
     setHistoryOpen(false);
@@ -208,6 +213,7 @@ export function AIAgentPanel() {
   };
 
   const handleSendMessage = (text: string) => {
+    if (!AI_ASSISTANT_ENABLED) return;
     const content = text.trim();
     if (!content || isGenerating) return;
 
@@ -217,6 +223,7 @@ export function AIAgentPanel() {
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
+    if (!AI_ASSISTANT_ENABLED) return;
     handleSendMessage(input);
   };
 
@@ -299,20 +306,24 @@ export function AIAgentPanel() {
         <header className="relative flex h-16 shrink-0 items-center justify-between border-b border-slate-200 px-4">
           <button
             type="button"
+            disabled={!AI_ASSISTANT_ENABLED}
             onClick={() => setHistoryOpen(value => !value)}
-            className="flex min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 text-left text-slate-800 outline-none hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-blue-600"
+            className="flex min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 text-left text-slate-800 outline-none hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-blue-600 disabled:cursor-not-allowed disabled:text-slate-500 disabled:hover:bg-transparent"
             aria-label="打开对话列表"
           >
             <Sparkles className="h-4 w-4 shrink-0 text-blue-600" aria-hidden="true" />
-            <span className="truncate text-sm font-semibold">{currentThread?.title || '新对话'}</span>
+            <span className="truncate text-sm font-semibold">
+              {currentThread?.title || (AI_ASSISTANT_ENABLED ? '新对话' : 'AI 助手')}
+            </span>
             <ChevronDown className="h-4 w-4 shrink-0 text-slate-400" aria-hidden="true" />
           </button>
 
           <div className="flex items-center gap-1">
             <button
               type="button"
+              disabled={!AI_ASSISTANT_ENABLED}
               onClick={resetConversation}
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 outline-none hover:bg-slate-100 hover:text-slate-800 focus-visible:ring-2 focus-visible:ring-blue-600"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 outline-none hover:bg-slate-100 hover:text-slate-800 focus-visible:ring-2 focus-visible:ring-blue-600 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
               title="新对话"
               aria-label="新对话"
             >
@@ -320,8 +331,9 @@ export function AIAgentPanel() {
             </button>
             <button
               type="button"
+              disabled={!AI_ASSISTANT_ENABLED}
               onClick={() => setHistoryOpen(value => !value)}
-              className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 outline-none hover:bg-slate-100 hover:text-slate-800 focus-visible:ring-2 focus-visible:ring-blue-600"
+              className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 outline-none hover:bg-slate-100 hover:text-slate-800 focus-visible:ring-2 focus-visible:ring-blue-600 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
               title="对话记录"
               aria-label="对话记录"
             >
@@ -338,7 +350,7 @@ export function AIAgentPanel() {
             </button>
           </div>
 
-          {historyOpen && (
+          {AI_ASSISTANT_ENABLED && historyOpen && (
             <div className="absolute left-3 right-3 top-[58px] z-10 max-h-72 overflow-y-auto rounded-lg border border-slate-200 bg-white p-1.5 shadow-xl">
               {threads.length === 0 ? (
                 <p className="px-3 py-5 text-center text-xs text-slate-500">暂无历史对话</p>
@@ -364,7 +376,19 @@ export function AIAgentPanel() {
         </header>
 
         <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto" aria-live="polite">
-          {isLoading && messages.length === 0 ? (
+          {!AI_ASSISTANT_ENABLED ? (
+            <div className="flex min-h-full items-center justify-center px-6 py-12 text-center">
+              <div role="status" className="max-w-xs rounded-2xl border border-blue-100 bg-blue-50/70 px-6 py-7 text-blue-950">
+                <span className="mx-auto flex h-12 w-12 items-center justify-center rounded-xl bg-blue-600 text-white shadow-sm">
+                  <Sparkles className="h-6 w-6" aria-hidden="true" />
+                </span>
+                <h2 className="mt-4 text-base font-semibold">AI 助手功能准备中</h2>
+                <p className="mt-2 text-sm leading-6 text-blue-800">
+                  {AI_ASSISTANT_UNAVAILABLE_MESSAGE}
+                </p>
+              </div>
+            </div>
+          ) : isLoading && messages.length === 0 ? (
             <div className="flex h-full items-center justify-center text-slate-500">
               <Loader2 className="h-5 w-5 animate-spin" aria-label="正在加载对话" />
             </div>
@@ -425,33 +449,47 @@ export function AIAgentPanel() {
         </div>
 
         <footer className="shrink-0 border-t border-slate-200 bg-white p-3.5">
-          {error && (
+          {AI_ASSISTANT_ENABLED && error && (
             <div role="alert" className="mb-2 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">
               {error}
             </div>
           )}
-          <form onSubmit={handleSubmit} className="rounded-xl border border-slate-300 bg-white p-2 shadow-sm focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
+          <form
+            onSubmit={handleSubmit}
+            className={`rounded-xl border p-2 shadow-sm ${
+              AI_ASSISTANT_ENABLED
+                ? 'border-slate-300 bg-white focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100'
+                : 'border-slate-200 bg-slate-50'
+            }`}
+          >
             <textarea
               ref={inputRef}
+              disabled={!AI_ASSISTANT_ENABLED}
               value={input}
               onChange={event => setInput(event.target.value)}
               onKeyDown={event => {
+                if (!AI_ASSISTANT_ENABLED) return;
                 if (event.key === 'Enter' && !event.shiftKey) {
                   event.preventDefault();
                   handleSendMessage(input);
                 }
               }}
-              placeholder="问我任何软考备考问题..."
+              placeholder={AI_ASSISTANT_ENABLED
+                ? '问我任何软考备考问题...'
+                : AI_ASSISTANT_UNAVAILABLE_MESSAGE}
               rows={2}
-              className="max-h-32 min-h-12 w-full resize-none border-0 bg-transparent px-2 py-1 text-sm leading-6 text-slate-900 outline-none placeholder:text-slate-400"
+              className="max-h-32 min-h-12 w-full resize-none border-0 bg-transparent px-2 py-1 text-sm leading-6 text-slate-900 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed disabled:text-slate-400"
             />
             <div className="flex items-center justify-between gap-3 px-1">
-              <span className="text-[11px] text-slate-400">Enter 发送，Shift + Enter 换行</span>
+              <span className="text-[11px] text-slate-400">
+                {AI_ASSISTANT_ENABLED ? 'Enter 发送，Shift + Enter 换行' : '线上请求暂未开放'}
+              </span>
               {isGenerating ? (
                 <button
                   type="button"
+                  disabled={!AI_ASSISTANT_ENABLED}
                   onClick={() => void cancelCurrentRun()}
-                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white outline-none hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-slate-700 focus-visible:ring-offset-2"
+                  className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white outline-none hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-slate-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
                   aria-label="停止生成"
                   title="停止生成"
                 >
@@ -460,7 +498,7 @@ export function AIAgentPanel() {
               ) : (
                 <button
                   type="submit"
-                  disabled={!input.trim()}
+                  disabled={!AI_ASSISTANT_ENABLED || !input.trim()}
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white outline-none transition-colors hover:bg-blue-700 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
                   aria-label="发送消息"
                 >
