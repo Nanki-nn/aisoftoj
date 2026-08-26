@@ -57,6 +57,7 @@ const MAX_PANEL_WIDTH = 720;
 const MIN_VISIBLE_PAGE_WIDTH = 320;
 const PANEL_WIDTH_STEP = 24;
 const DESKTOP_MEDIA_QUERY = '(min-width: 1280px)';
+const AUTO_FOLLOW_BOTTOM_THRESHOLD = 80;
 
 type ResizeSession = {
   pointerId: number;
@@ -125,6 +126,7 @@ export function AIAgentPanel() {
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const resizeSessionRef = useRef<ResizeSession | null>(null);
   const skillsRequestedRef = useRef(false);
+  const autoFollowRef = useRef(true);
   const filteredSkills = useMemo(() => filterAISkills(skills, input), [input, skills]);
   const hasSlashQuery = slashSkillQuery(input) !== null;
   const skillMenuOpen = Boolean(
@@ -173,6 +175,7 @@ export function AIAgentPanel() {
 
   useEffect(() => {
     if (isOpen && AI_ASSISTANT_ENABLED) {
+      autoFollowRef.current = true;
       window.setTimeout(() => inputRef.current?.focus(), 220);
     }
   }, [isOpen]);
@@ -188,10 +191,9 @@ export function AIAgentPanel() {
 
   useEffect(() => {
     const container = scrollRef.current;
-    if (container) {
-      container.scrollTo({ top: container.scrollHeight, behavior: 'smooth' });
-    }
-  }, [isGenerating, messages]);
+    if (!isOpen || !container || !autoFollowRef.current) return;
+    container.scrollTo({ top: container.scrollHeight, behavior: 'auto' });
+  }, [isGenerating, isOpen, messages, runStates]);
 
   useEffect(() => {
     const desktopQuery = window.matchMedia(DESKTOP_MEDIA_QUERY);
@@ -251,6 +253,7 @@ export function AIAgentPanel() {
 
   const resetConversation = () => {
     if (!AI_ASSISTANT_ENABLED) return;
+    autoFollowRef.current = true;
     void newConversation();
     setInput('');
     setHistoryOpen(false);
@@ -262,8 +265,16 @@ export function AIAgentPanel() {
     const content = text.trim();
     if (!content || isGenerating) return;
 
+    autoFollowRef.current = true;
     setInput('');
     sendMessage(content, currentQuestionId ? { questionId: currentQuestionId } : undefined);
+  };
+
+  const handleConversationScroll = () => {
+    const container = scrollRef.current;
+    if (!container) return;
+    const distanceFromBottom = container.scrollHeight - container.scrollTop - container.clientHeight;
+    autoFollowRef.current = distanceFromBottom <= AUTO_FOLLOW_BOTTOM_THRESHOLD;
   };
 
   const handleSubmit = (event: React.FormEvent) => {
@@ -463,6 +474,7 @@ export function AIAgentPanel() {
                   key={thread.id}
                   type="button"
                   onClick={() => {
+                    autoFollowRef.current = true;
                     void selectThread(thread);
                     setHistoryOpen(false);
                   }}
@@ -479,7 +491,12 @@ export function AIAgentPanel() {
           )}
         </header>
 
-        <div ref={scrollRef} className="min-h-0 flex-1 overflow-y-auto" aria-live="polite">
+        <div
+          ref={scrollRef}
+          onScroll={handleConversationScroll}
+          className="min-h-0 flex-1 overflow-y-auto"
+          aria-live="polite"
+        >
           {!AI_ASSISTANT_ENABLED ? (
             <div className="flex min-h-full items-center justify-center px-6 py-12 text-center">
               <div role="status" className="max-w-xs rounded-2xl border border-blue-100 bg-blue-50/70 px-6 py-7 text-blue-950">

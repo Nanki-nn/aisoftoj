@@ -9,6 +9,7 @@ const panelMocks = vi.hoisted(() => ({
   cancelCurrentRun: vi.fn(),
   newConversation: vi.fn(),
   selectThread: vi.fn(),
+  runStates: {},
 }));
 
 vi.mock('../hooks/useAgentPanel', () => ({
@@ -24,7 +25,7 @@ vi.mock('../hooks/useAIConversation', () => ({
     threads: [],
     currentThread: null,
     messages: [],
-    runStates: {},
+    runStates: panelMocks.runStates,
     isLoading: false,
     isGenerating: false,
     error: null,
@@ -36,7 +37,9 @@ describe('AIAgentPanel unavailable state', () => {
   beforeEach(() => {
     vi.resetModules();
     vi.stubEnv('VITE_AI_ASSISTANT_ENABLED', 'false');
-    Object.values(panelMocks).forEach(mock => mock.mockReset());
+    Object.values(panelMocks).forEach(mock => {
+      if (typeof mock === 'function') mock.mockReset();
+    });
     Object.defineProperty(window, 'matchMedia', {
       configurable: true,
       value: vi.fn().mockImplementation(() => ({

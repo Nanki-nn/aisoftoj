@@ -7,6 +7,7 @@ const mocks = vi.hoisted(() => ({
   close: vi.fn(),
   sendMessage: vi.fn(),
   listAISkills: vi.fn(),
+  runStates: {} as Record<string, unknown>,
 }));
 
 vi.mock('../hooks/useAgentPanel', () => ({
@@ -18,7 +19,7 @@ vi.mock('../hooks/useAIConversation', () => ({
     threads: [],
     currentThread: null,
     messages: [],
-    runStates: {},
+    runStates: mocks.runStates,
     isLoading: false,
     isGenerating: false,
     error: null,
@@ -61,6 +62,7 @@ describe('AIAgentPanel Slash Skill menu', () => {
     mocks.close.mockReset();
     mocks.sendMessage.mockReset();
     mocks.listAISkills.mockReset().mockResolvedValue(skillResponse);
+    mocks.runStates = {};
     Object.defineProperty(window, 'matchMedia', {
       configurable: true,
       value: vi.fn().mockImplementation(() => ({
