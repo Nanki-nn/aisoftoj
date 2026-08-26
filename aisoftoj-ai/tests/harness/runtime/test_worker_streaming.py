@@ -1,7 +1,10 @@
 from __future__ import annotations
 
+from collections.abc import Iterator
+from contextlib import contextmanager
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 from unittest.mock import AsyncMock
 
 from langchain_core.messages import AIMessage, AIMessageChunk, HumanMessage
@@ -16,7 +19,11 @@ from packages.harness.aisoftoj_agent.skills import CURRENT_INPUT_KEY, Skill, Ski
 
 
 class FakeGraph:
+    def __init__(self) -> None:
+        self.kwargs: dict[str, object] = {}
+
     async def astream(self, *_args: object, **_kwargs: object):
+        self.kwargs = _kwargs
         metadata = {"langgraph_node": "model"}
         yield "messages", (AIMessageChunk(content="我先读取练习记录。"), metadata)
         yield "messages", (
@@ -57,6 +64,20 @@ class FakeGraph:
         yield "values", {"messages": [AIMessage(content="## 今日安排\n\n- 复习错题")]}
 
 
+class RecordingTracing:
+    def __init__(self) -> None:
+        self.calls: list[dict[str, object]] = []
+
+    @contextmanager
+    def trace_run(self, **metadata: object) -> Iterator[dict[str, Any]]:
+        self.calls.append(metadata)
+        yield {
+            "run_name": "aisoftoj-agent-run",
+            "tags": ["environment:test"],
+            "metadata": metadata,
+        }
+
+
 async def test_worker_separates_tool_preamble_from_final_markdown() -> None:
     worker = Worker(
         session_factory=object(),  # type: ignore[arg-type]
@@ -95,6 +116,48 @@ async def test_worker_separates_tool_preamble_from_final_markdown() -> None:
     assert streamed == "我先读取练习记录。## 今日安排\n\n- 复习错题"
     assert "内部节点文字" not in streamed
     assert "隐藏推理" not in streamed
+
+
+async def test_worker_passes_business_metadata_to_root_trace() -> None:
+    tracing = RecordingTracing()
+    graph = FakeGraph()
+    worker = Worker(
+        session_factory=object(),  # type: ignore[arg-type]
+        agent=SimpleNamespace(graph=graph),  # type: ignore[arg-type]
+        stream_bridge=object(),  # type: ignore[arg-type]
+        max_run_seconds=30,
+        tracing=tracing,  # type: ignore[arg-type]
+        model_name="test-model",
+    )
+    worker._load_run_context = AsyncMock(return_value=(123, "input-1"))  # type: ignore[method-assign]
+    worker._load_messages = AsyncMock(return_value=[])  # type: ignore[method-assign]
+    worker._transition_and_event = AsyncMock()  # type: ignore[method-assign]
+    worker._append_event = AsyncMock()  # type: ignore[method-assign]
+    worker._publish_delta = AsyncMock()  # type: ignore[method-assign]
+    worker._complete = AsyncMock()  # type: ignore[method-assign]
+    context = AgentContext(
+        user_id=1,
+        username="tester",
+        nickname=None,
+        thread_id="thread-1",
+        run_id="run-1",
+        bearer_token="secret",
+    )
+
+    await worker._execute("run-1", context)
+
+    assert tracing.calls == [{
+        "run_id": "run-1",
+        "thread_id": "thread-1",
+        "user_id": 1,
+        "question_id": 123,
+        "model": "test-model",
+    }]
+    config = graph.kwargs["config"]
+    assert isinstance(config, dict)
+    assert config["run_name"] == "aisoftoj-agent-run"
+    assert config["configurable"] == {"thread_id": "run-1"}
+    assert config["metadata"]["question_id"] == 123
 
 
 def test_message_text_excludes_provider_reasoning_blocks() -> None:
