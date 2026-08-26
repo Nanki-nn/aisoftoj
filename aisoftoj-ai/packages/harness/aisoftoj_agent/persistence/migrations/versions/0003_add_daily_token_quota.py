@@ -5,12 +5,31 @@ Revises: 0002
 """
 
 import sqlalchemy as sa
-from alembic import op
+from alembic import context, op
 
 revision = "0003_daily_token_quota"
 down_revision = "0002_run_question"
 branch_labels = None
 depends_on = None
+
+
+def run_id_type() -> sa.CHAR:
+    """Match the existing ai_runs.id collation for MySQL foreign keys."""
+    bind = op.get_bind()
+    if context.is_offline_mode() or bind.dialect.name != "mysql":
+        return sa.CHAR(36)
+    collation = bind.execute(
+        sa.text(
+            """
+            SELECT COLLATION_NAME
+            FROM information_schema.COLUMNS
+            WHERE TABLE_SCHEMA = DATABASE()
+              AND TABLE_NAME = 'ai_runs'
+              AND COLUMN_NAME = 'id'
+            """
+        )
+    ).scalar_one_or_none()
+    return sa.CHAR(36, collation=collation) if collation else sa.CHAR(36)
 
 
 def upgrade() -> None:
@@ -44,7 +63,7 @@ def upgrade() -> None:
     op.create_table(
         "ai_token_reservations",
         sa.Column("id", sa.BigInteger(), autoincrement=True, nullable=False),
-        sa.Column("run_id", sa.CHAR(36), nullable=False),
+        sa.Column("run_id", run_id_type(), nullable=False),
         sa.Column("user_id", sa.Integer(), nullable=False),
         sa.Column("usage_date", sa.Date(), nullable=False),
         sa.Column("model_call_sequence", sa.Integer(), nullable=False),
