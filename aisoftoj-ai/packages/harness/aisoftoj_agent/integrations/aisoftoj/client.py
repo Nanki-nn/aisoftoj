@@ -16,6 +16,8 @@ from .models import (
     Profile,
     Question,
     ResultEnvelope,
+    TextbookCatalog,
+    TextbookTraceQuestion,
     WrongQuestionReview,
 )
 
@@ -120,6 +122,43 @@ class PlatformClient:
         return cast(
             bool,
             await self._get("/internal/ai/assistant-availability", bearer_token, bool),
+        )
+
+    async def get_textbook_trace_question(
+        self, bearer_token: str, question_id: int
+    ) -> TextbookTraceQuestion:
+        return cast(
+            TextbookTraceQuestion,
+            await self._get(
+                f"/internal/ai/questions/{question_id}/textbook-trace-context",
+                bearer_token,
+                TextbookTraceQuestion,
+            ),
+        )
+
+    async def get_active_textbook_catalog(
+        self, bearer_token: str, subject_name: str
+    ) -> TextbookCatalog:
+        return cast(
+            TextbookCatalog,
+            await self._get(
+                "/internal/ai/textbooks/active",
+                bearer_token,
+                TextbookCatalog,
+                params={"subjectName": subject_name},
+            ),
+        )
+
+    async def get_textbook_catalog(
+        self, bearer_token: str, textbook_id: int
+    ) -> TextbookCatalog:
+        return cast(
+            TextbookCatalog,
+            await self._get(
+                f"/internal/ai/textbooks/{textbook_id}",
+                bearer_token,
+                TextbookCatalog,
+            ),
         )
 
     async def review_wrong_question(

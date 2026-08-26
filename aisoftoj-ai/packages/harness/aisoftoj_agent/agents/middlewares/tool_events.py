@@ -25,6 +25,8 @@ _QUESTION_TYPES = {
     "unknown",
 }
 _DIFFICULTIES = {"easy", "medium", "hard", "unknown"}
+_TRACE_STATUSES = {"found", "insufficient_evidence", "unavailable"}
+_CACHE_STATUSES = {"hit", "miss", "bypass"}
 _PLATFORM_ERROR_CODES = {
     "AUTH_EXPIRED",
     "PLATFORM_FORBIDDEN",
@@ -64,7 +66,7 @@ def safe_tool_name(value: object) -> str:
 
 def safe_tool_input(tool_name: str, value: object) -> dict[str, object]:
     args = value if isinstance(value, dict) else {}
-    if tool_name == "get_question":
+    if tool_name in {"get_question", "trace_question_to_textbook"}:
         return {"question_id": _positive_int(args.get("question_id"))}
     if tool_name == "review_wrong_question":
         return {"wrong_question_id": _positive_int(args.get("wrong_question_id"))}
@@ -102,6 +104,11 @@ def safe_tool_summary(tool_name: str, value: object) -> dict[str, object]:
         return {
             "question_type": _enum(data.get("question_type"), _QUESTION_TYPES),
             "difficulty": _enum(data.get("difficulty"), _DIFFICULTIES),
+        }
+    if tool_name == "trace_question_to_textbook":
+        return {
+            "status": _enum(data.get("status"), _TRACE_STATUSES),
+            "cache_status": _enum(data.get("cacheStatus"), _CACHE_STATUSES),
         }
     if tool_name == "review_wrong_question":
         importance = data.get("importance")

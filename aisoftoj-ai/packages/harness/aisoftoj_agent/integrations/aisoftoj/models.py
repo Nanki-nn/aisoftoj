@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import datetime
 from typing import Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, HttpUrl, field_validator, model_validator
 from pydantic.alias_generators import to_camel
 
 
@@ -102,6 +102,86 @@ class Question(JavaModel):
     difficulty: Difficulty
     correct_answer: str | None = None
     analysis: str | None = None
+
+
+class TextbookTraceQuestion(Question):
+    analysis: str | None
+    subject_name: str = Field(min_length=1)
+
+
+class TextbookSection(JavaModel):
+    id: int = Field(gt=0)
+    parent_id: int | None = Field(default=None, gt=0)
+    level: int = Field(ge=1)
+    section_code: str = Field(min_length=1)
+    title: str = Field(min_length=1)
+    printed_page_start: int = Field(ge=0)
+    printed_page_end: int = Field(ge=0)
+    pdf_page_start: int = Field(ge=1)
+    pdf_page_end: int = Field(ge=1)
+    sort_order: int = Field(ge=0)
+
+    @model_validator(mode="after")
+    def validate_page_ranges(self) -> TextbookSection:
+        if self.printed_page_end < self.printed_page_start:
+            raise ValueError("printed page range is reversed")
+        if self.pdf_page_end < self.pdf_page_start:
+            raise ValueError("PDF page range is reversed")
+        return self
+
+
+class KnowledgePointSource(JavaModel):
+    id: int = Field(gt=0)
+    section_id: int = Field(gt=0)
+    printed_page_start: int = Field(ge=0)
+    printed_page_end: int = Field(ge=0)
+    pdf_page_start: int = Field(ge=1)
+    pdf_page_end: int = Field(ge=1)
+    primary: bool
+
+    @model_validator(mode="after")
+    def validate_page_ranges(self) -> KnowledgePointSource:
+        if self.printed_page_end < self.printed_page_start:
+            raise ValueError("printed page range is reversed")
+        if self.pdf_page_end < self.pdf_page_start:
+            raise ValueError("PDF page range is reversed")
+        return self
+
+
+class KnowledgePoint(JavaModel):
+    id: int = Field(gt=0)
+    parent_id: int | None = Field(default=None, gt=0)
+    level: int = Field(ge=1, le=2)
+    code: str = Field(min_length=1)
+    name: str = Field(min_length=1)
+    description: str | None
+    sources: list[KnowledgePointSource]
+
+
+class TextbookCatalog(JavaModel):
+    textbook_id: int = Field(gt=0)
+    subject_name: str = Field(min_length=1)
+    name: str = Field(min_length=1)
+    edition: str = Field(min_length=1)
+    isbn: str | None
+    official_url: HttpUrl
+    viewer_page_template: str | None
+    sections: list[TextbookSection]
+    knowledge_points: list[KnowledgePoint]
+
+    @field_validator("official_url")
+    @classmethod
+    def validate_official_url(cls, value: HttpUrl) -> HttpUrl:
+        if value.scheme != "https":
+            raise ValueError("official textbook URL must use HTTPS")
+        return value
+
+    @field_validator("viewer_page_template")
+    @classmethod
+    def validate_viewer_page_template(cls, value: str | None) -> str | None:
+        if value is not None and "{pdfPage}" not in value:
+            raise ValueError("viewer page template must contain {pdfPage}")
+        return value
 
 
 class WrongQuestionReview(JavaModel):

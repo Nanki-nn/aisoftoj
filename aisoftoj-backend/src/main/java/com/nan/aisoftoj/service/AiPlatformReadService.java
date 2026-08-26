@@ -6,6 +6,8 @@ import com.nan.aisoftoj.dto.ai.AiQuestionDTO;
 import com.nan.aisoftoj.dto.ai.AiPracticeHistoryPageDTO;
 import com.nan.aisoftoj.dto.ai.AiWrongQuestionReviewDTO;
 import com.nan.aisoftoj.dto.ai.AiAdminUserBatchDTO;
+import com.nan.aisoftoj.dto.ai.AiTextbookCatalogDTO;
+import com.nan.aisoftoj.dto.ai.AiTextbookTraceQuestionDTO;
 
 import java.util.List;
 
@@ -17,6 +19,12 @@ public interface AiPlatformReadService {
     AiQuestionDTO getQuestion(Integer questionId);
 
     boolean isAiAssistantAvailable(Integer userId);
+
+    AiTextbookTraceQuestionDTO getTextbookTraceQuestion(Integer questionId);
+
+    AiTextbookCatalogDTO getActiveTextbookCatalog(String subjectName);
+
+    AiTextbookCatalogDTO getTextbookCatalog(Long textbookId);
 
     AiWrongQuestionReviewDTO reviewWrongQuestion(Integer userId, Long wrongQuestionId);
 

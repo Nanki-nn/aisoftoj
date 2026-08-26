@@ -6,13 +6,23 @@ import com.baomidou.mybatisplus.core.metadata.TableInfoHelper;
 import com.nan.aisoftoj.entity.Paper;
 import com.nan.aisoftoj.entity.PracticeSession;
 import com.nan.aisoftoj.entity.Question;
+import com.nan.aisoftoj.entity.Textbook;
+import com.nan.aisoftoj.entity.TextbookSection;
+import com.nan.aisoftoj.entity.KnowledgePoint;
+import com.nan.aisoftoj.entity.KnowledgePointSource;
 import com.nan.aisoftoj.mapper.PaperMapper;
 import com.nan.aisoftoj.mapper.PracticeSessionMapper;
 import com.nan.aisoftoj.mapper.QuestionMapper;
 import com.nan.aisoftoj.mapper.UserMapper;
 import com.nan.aisoftoj.mapper.UserWrongQuestionStatMapper;
+import com.nan.aisoftoj.mapper.TextbookMapper;
+import com.nan.aisoftoj.mapper.TextbookSectionMapper;
+import com.nan.aisoftoj.mapper.KnowledgePointMapper;
+import com.nan.aisoftoj.mapper.KnowledgePointSourceMapper;
 import com.nan.aisoftoj.dto.ai.AiPaperDTO;
 import com.nan.aisoftoj.dto.ai.AiQuestionDTO;
+import com.nan.aisoftoj.dto.ai.AiTextbookCatalogDTO;
+import com.nan.aisoftoj.dto.ai.AiTextbookTraceQuestionDTO;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -47,6 +57,14 @@ class AiPlatformCatalogReadServiceTest {
     private PaperMapper paperMapper;
     @Mock
     private QuestionMapper questionMapper;
+    @Mock
+    private TextbookMapper textbookMapper;
+    @Mock
+    private TextbookSectionMapper textbookSectionMapper;
+    @Mock
+    private KnowledgePointMapper knowledgePointMapper;
+    @Mock
+    private KnowledgePointSourceMapper knowledgePointSourceMapper;
     @InjectMocks
     private AiPlatformReadServiceImpl service;
 
@@ -112,6 +130,83 @@ class AiPlatformCatalogReadServiceTest {
     @Test
     void invalidQuestionIdIsRejected() {
         assertThrows(IllegalArgumentException.class, () -> service.getQuestion(0));
+    }
+
+    @Test
+    void traceQuestionAddsSubjectAndAnalysisAfterPublishedAccessCheck() {
+        Question question = new Question();
+        question.setId(9);
+        question.setName("题目");
+        question.setIntro("题干");
+        question.setOptions("[]");
+        question.setAnalysis("可信解析");
+        question.setQuestionType(1);
+        question.setDifficulty(2);
+        question.setIsDeleted(0);
+        when(questionMapper.selectById(9)).thenReturn(question);
+        when(questionMapper.countPublishedPaperRelations(9)).thenReturn(1);
+        when(questionMapper.selectPublishedSubjectName(9)).thenReturn("系统架构设计师");
+
+        AiTextbookTraceQuestionDTO result = service.getTextbookTraceQuestion(9);
+
+        assertEquals("系统架构设计师", result.getSubjectName());
+        assertEquals("可信解析", result.getAnalysis());
+    }
+
+    @Test
+    void activeCatalogReturnsStableSectionsAndKnowledgePointSources() {
+        TableInfoHelper.initTableInfo(
+                new MapperBuilderAssistant(new MybatisConfiguration(), ""), Textbook.class);
+        TableInfoHelper.initTableInfo(
+                new MapperBuilderAssistant(new MybatisConfiguration(), ""), TextbookSection.class);
+        TableInfoHelper.initTableInfo(
+                new MapperBuilderAssistant(new MybatisConfiguration(), ""), KnowledgePoint.class);
+        TableInfoHelper.initTableInfo(
+                new MapperBuilderAssistant(new MybatisConfiguration(), ""), KnowledgePointSource.class);
+        Textbook textbook = new Textbook();
+        textbook.setId(1L);
+        textbook.setSubjectName("系统架构设计师");
+        textbook.setName("系统架构设计师教程");
+        textbook.setEdition("第1版");
+        textbook.setOfficialUrl("https://books.example/authorized.pdf");
+        textbook.setIsDeleted(0);
+        TextbookSection section = new TextbookSection();
+        section.setId(11L);
+        section.setTextbookId(1L);
+        section.setLevel(2);
+        section.setSectionCode("3.2");
+        section.setTitle("架构风格");
+        section.setPrintedPageStart(86);
+        section.setPrintedPageEnd(89);
+        section.setPdfPageStart(92);
+        section.setPdfPageEnd(95);
+        section.setSortOrder(1);
+        KnowledgePoint point = new KnowledgePoint();
+        point.setId(101L);
+        point.setSubjectName("系统架构设计师");
+        point.setLevel(1);
+        point.setCode("ARCH-STYLE");
+        point.setName("架构风格");
+        KnowledgePointSource source = new KnowledgePointSource();
+        source.setId(1001L);
+        source.setKnowledgePointId(101L);
+        source.setTextbookSectionId(11L);
+        source.setPrintedPageStart(86);
+        source.setPrintedPageEnd(89);
+        source.setPdfPageStart(92);
+        source.setPdfPageEnd(95);
+        source.setIsPrimary(true);
+        when(textbookMapper.selectOne(any())).thenReturn(textbook);
+        when(textbookSectionMapper.selectList(any())).thenReturn(Collections.singletonList(section));
+        when(knowledgePointMapper.selectList(any())).thenReturn(Collections.singletonList(point));
+        when(knowledgePointSourceMapper.selectList(any())).thenReturn(Collections.singletonList(source));
+
+        AiTextbookCatalogDTO result = service.getActiveTextbookCatalog("系统架构设计师");
+
+        assertEquals(1L, result.getTextbookId());
+        assertEquals(11L, result.getSections().get(0).getId());
+        assertEquals(101L, result.getKnowledgePoints().get(0).getId());
+        assertTrue(result.getKnowledgePoints().get(0).getSources().get(0).getPrimary());
     }
 
     private PracticeSession session(int id, int paperId, int status, int day, int answered) {

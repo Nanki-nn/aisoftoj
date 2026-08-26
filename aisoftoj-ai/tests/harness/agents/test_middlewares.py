@@ -549,6 +549,17 @@ def test_tool_event_sanitizers_are_strict_and_bounded() -> None:
     }
     assert "must-not-pass" not in json.dumps(summary)
     assert "secret" not in json.dumps(summary)
+    assert safe_tool_input(
+        "trace_question_to_textbook", {"question_id": 42, "token": "secret"}
+    ) == {"question_id": 42}
+    assert safe_tool_summary(
+        "trace_question_to_textbook",
+        {
+            "status": "found",
+            "cacheStatus": "hit",
+            "sources": [{"evidence": "must-not-pass"}],
+        },
+    ) == {"status": "found", "cache_status": "hit"}
 
 
 class LogCapture(logging.Handler):

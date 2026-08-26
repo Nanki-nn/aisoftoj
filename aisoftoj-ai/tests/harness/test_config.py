@@ -82,3 +82,25 @@ def test_skill_root_must_stay_inside_project(path: str) -> None:
 def test_default_skill_root_is_project_relative() -> None:
     settings = Settings.model_validate(valid_settings())
     assert settings.resolved_skills_root == PROJECT_ROOT / "skills" / "public"
+
+
+def test_textbook_rag_requires_an_explicit_download_host_allowlist() -> None:
+    payload = valid_settings()
+    payload["textbook_rag_enabled"] = True
+    with pytest.raises(ValidationError, match="textbook_allowed_hosts"):
+        Settings.model_validate(payload)
+
+
+def test_textbook_rag_resolves_embedding_credentials_without_exposing_them() -> None:
+    payload = valid_settings()
+    payload.update(
+        {
+            "textbook_rag_enabled": True,
+            "textbook_allowed_hosts": ["Download.Example.COM."],
+            "textbook_embedding_api_key": "embedding-secret",
+        }
+    )
+    settings = Settings.model_validate(payload)
+    assert settings.textbook_allowed_hosts == ["download.example.com"]
+    assert settings.resolved_textbook_embedding_api_key == "embedding-secret"
+    assert "embedding-secret" not in repr(settings)

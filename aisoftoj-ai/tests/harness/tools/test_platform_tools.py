@@ -7,7 +7,7 @@ from packages.harness.aisoftoj_agent.agents.tools.papers import format_paper_lis
 from packages.harness.aisoftoj_agent.integrations.aisoftoj.models import Paper
 
 
-def test_only_five_read_only_tools_are_registered() -> None:
+def test_only_six_platform_read_only_tools_are_registered() -> None:
     tools = build_platform_tools(Mock())
 
     assert {tool.name for tool in tools} == {
@@ -16,6 +16,7 @@ def test_only_five_read_only_tools_are_registered() -> None:
         "get_question",
         "review_wrong_question",
         "list_practice_history",
+        "trace_question_to_textbook",
     }
 
 

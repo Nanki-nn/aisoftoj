@@ -11,6 +11,7 @@ from sqlalchemy import (
     Computed,
     Date,
     DateTime,
+    Float,
     ForeignKey,
     Index,
     Integer,
@@ -269,3 +270,76 @@ class AiTokenReservation(Base):
     update_time: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
     )
+
+
+class AiTextbookIndex(Base):
+    __tablename__ = "ai_textbook_indexes"
+    __mapper_args__ = {"eager_defaults": True}
+    __table_args__ = (
+        UniqueConstraint("index_version", name="uq_ai_textbook_indexes_version"),
+        UniqueConstraint(
+            "textbook_id", "active_marker", name="uq_ai_textbook_indexes_active"
+        ),
+        Index("ix_ai_textbook_indexes_status", "textbook_id", "status", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(CHAR(36), primary_key=True)
+    textbook_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    index_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    source_hash: Mapped[str] = mapped_column(CHAR(64), nullable=False)
+    catalog_hash: Mapped[str] = mapped_column(CHAR(64), nullable=False)
+    retrieval_profile_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    parser_name: Mapped[str] = mapped_column(String(64), nullable=False)
+    parser_version: Mapped[str] = mapped_column(String(32), nullable=False)
+    embedding_model: Mapped[str] = mapped_column(String(128), nullable=False)
+    reranker_model: Mapped[str] = mapped_column(String(128), nullable=False)
+    collection_name: Mapped[str] = mapped_column(String(128), nullable=False)
+    chunk_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    status: Mapped[str] = mapped_column(String(16), nullable=False)
+    error_code: Mapped[str | None] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), nullable=False
+    )
+    activated_at: Mapped[datetime | None] = mapped_column(DateTime)
+    retired_at: Mapped[datetime | None] = mapped_column(DateTime)
+    active_marker: Mapped[int | None] = mapped_column(
+        Integer,
+        Computed("CASE WHEN status = 'ACTIVE' THEN 1 ELSE NULL END", persisted=True),
+    )
+
+
+class AiQuestionTraceCache(Base):
+    __tablename__ = "ai_question_trace_cache"
+    __mapper_args__ = {"eager_defaults": True}
+    __table_args__ = (
+        UniqueConstraint(
+            "question_id",
+            "question_content_hash",
+            "textbook_id",
+            "index_version",
+            "retrieval_profile_version",
+            name="uq_ai_question_trace_cache_key",
+        ),
+        Index("ix_ai_question_trace_cache_lookup", "question_id", "textbook_id"),
+    )
+
+    id: Mapped[str] = mapped_column(CHAR(36), primary_key=True)
+    question_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    question_content_hash: Mapped[str] = mapped_column(CHAR(64), nullable=False)
+    textbook_id: Mapped[int] = mapped_column(BigInteger, nullable=False)
+    index_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    retrieval_profile_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    status: Mapped[str] = mapped_column(String(32), nullable=False)
+    primary_knowledge_point_id: Mapped[int | None] = mapped_column(BigInteger)
+    secondary_knowledge_point_ids_json: Mapped[list[int]] = mapped_column(
+        JSON, nullable=False, default=list
+    )
+    source_chunk_ids_json: Mapped[list[str]] = mapped_column(
+        JSON, nullable=False, default=list
+    )
+    confidence: Mapped[float] = mapped_column(Float, nullable=False)
+    result_json: Mapped[dict[str, Any]] = mapped_column(JSON, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), nullable=False
+    )
+    expires_at: Mapped[datetime | None] = mapped_column(DateTime)

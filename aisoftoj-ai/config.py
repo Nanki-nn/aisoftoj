@@ -26,6 +26,26 @@ class Settings(BaseModel):
     platform_read_timeout_seconds: float = Field(default=5, gt=0)
     platform_max_response_bytes: int = Field(default=2_097_152, gt=0)
 
+    textbook_rag_enabled: bool = False
+    qdrant_url: HttpUrl = HttpUrl("http://127.0.0.1:6333")
+    qdrant_api_key: SecretStr | None = None
+    qdrant_collection: str = Field(default="aisoftoj_textbook_chunks", min_length=1)
+    textbook_allowed_hosts: list[str] = Field(default_factory=list)
+    textbook_download_timeout_seconds: float = Field(default=30, gt=0)
+    textbook_download_max_bytes: int = Field(default=100 * 1024 * 1024, gt=0)
+    textbook_download_max_redirects: int = Field(default=3, ge=0, le=5)
+    textbook_embedding_base_url: HttpUrl | None = None
+    textbook_embedding_api_key: SecretStr | None = None
+    textbook_embedding_model: str = Field(default="text-embedding-3-small", min_length=1)
+    textbook_embedding_dimensions: int = Field(default=1536, gt=0)
+    textbook_embedding_batch_size: int = Field(default=32, ge=1, le=256)
+    textbook_chunk_target_chars: int = Field(default=900, ge=200, le=4000)
+    textbook_chunk_overlap_chars: int = Field(default=120, ge=0, le=1000)
+    textbook_retrieval_candidates: int = Field(default=12, ge=1, le=50)
+    textbook_retrieval_sources: int = Field(default=3, ge=1, le=10)
+    textbook_retrieval_min_score: float = Field(default=0.55, ge=0, le=1)
+    textbook_retrieval_profile_version: str = Field(default="textbook-rag-v1", min_length=1)
+
     llm_base_url: HttpUrl
     llm_endpoint_mode: Literal["openai_base", "direct_endpoint"] = "openai_base"
     llm_api_key: SecretStr
@@ -91,12 +111,34 @@ class Settings(BaseModel):
             raise ValueError("skills_root must stay within the project root") from None
         return normalized
 
+    @field_validator("textbook_allowed_hosts")
+    @classmethod
+    def validate_textbook_allowed_hosts(cls, value: list[str]) -> list[str]:
+        normalized = sorted({host.strip().lower().rstrip(".") for host in value if host.strip()})
+        if any("/" in host or ":" in host for host in normalized):
+            raise ValueError("textbook_allowed_hosts must contain hostnames only")
+        return normalized
+
     @model_validator(mode="after")
     def validate_limits(self) -> Settings:
         if self.agent_max_user_concurrent_runs > self.agent_max_concurrent_runs:
             raise ValueError("per-user concurrency cannot exceed global concurrency")
         if self.agent_loop_warn_repetitions >= self.agent_loop_hard_repetitions:
             raise ValueError("loop warning threshold must be below hard threshold")
+        if self.textbook_chunk_overlap_chars >= self.textbook_chunk_target_chars:
+            raise ValueError("textbook chunk overlap must be below target size")
+        if self.textbook_retrieval_sources > self.textbook_retrieval_candidates:
+            raise ValueError("textbook source count cannot exceed candidate count")
+        if self.textbook_rag_enabled and not self.textbook_allowed_hosts:
+            raise ValueError("textbook_allowed_hosts is required when textbook RAG is enabled")
+        if (
+            self.textbook_rag_enabled
+            and self.llm_endpoint_mode == "direct_endpoint"
+            and self.textbook_embedding_base_url is None
+        ):
+            raise ValueError(
+                "textbook_embedding_base_url is required with direct_endpoint mode"
+            )
         return self
 
     @field_validator("rollout_allowed_user_ids", mode="before")
@@ -110,6 +152,16 @@ class Settings(BaseModel):
             except ValueError as exc:
                 raise ValueError("rollout user ids must be comma-separated integers") from exc
         return value
+
+    @property
+    def resolved_textbook_embedding_base_url(self) -> str:
+        value = self.textbook_embedding_base_url or self.llm_base_url
+        return str(value).rstrip("/")
+
+    @property
+    def resolved_textbook_embedding_api_key(self) -> str:
+        value = self.textbook_embedding_api_key or self.llm_api_key
+        return value.get_secret_value()
 
     @property
     def resolved_skills_root(self) -> Path:

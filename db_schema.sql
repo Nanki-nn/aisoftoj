@@ -244,3 +244,81 @@ CREATE TABLE `essay_review` (
   PRIMARY KEY (`id`),
   INDEX `idx_submission_id` (`submission_id`)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci COMMENT='AI论文批改评分表';
+
+CREATE TABLE `textbook` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT COMMENT '教材主键',
+  `subject_name` varchar(64) NOT NULL COMMENT '所属软考科目',
+  `name` varchar(255) NOT NULL COMMENT '教材名称',
+  `edition` varchar(128) NOT NULL COMMENT '教材版次',
+  `isbn` varchar(32) DEFAULT NULL COMMENT 'ISBN',
+  `official_url` varchar(1024) NOT NULL COMMENT '官方或授权外部地址',
+  `viewer_page_template` varchar(1024) DEFAULT NULL COMMENT '含 {pdfPage} 占位符的页码跳转模板',
+  `status` varchar(16) NOT NULL DEFAULT 'DRAFT' COMMENT 'DRAFT/ACTIVE/DISABLED',
+  `is_deleted` tinyint(1) NOT NULL DEFAULT 0 COMMENT '软删除',
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  `active_marker` varchar(64) GENERATED ALWAYS AS (IF(`status` = 'ACTIVE' AND `is_deleted` = 0, `subject_name`, NULL)) STORED,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_textbook_active_subject` (`active_marker`),
+  KEY `idx_textbook_subject_status` (`subject_name`, `status`, `is_deleted`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='平台指定教材';
+
+CREATE TABLE `textbook_section` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `textbook_id` bigint unsigned NOT NULL,
+  `parent_id` bigint unsigned DEFAULT NULL,
+  `level` tinyint unsigned NOT NULL,
+  `section_code` varchar(64) NOT NULL,
+  `title` varchar(255) NOT NULL,
+  `printed_page_start` int unsigned NOT NULL,
+  `printed_page_end` int unsigned NOT NULL,
+  `pdf_page_start` int unsigned NOT NULL,
+  `pdf_page_end` int unsigned NOT NULL,
+  `sort_order` int unsigned NOT NULL DEFAULT 0,
+  `is_deleted` tinyint(1) NOT NULL DEFAULT 0,
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_textbook_section_code` (`textbook_id`, `section_code`),
+  KEY `idx_textbook_section_parent` (`textbook_id`, `parent_id`, `sort_order`),
+  CONSTRAINT `fk_textbook_section_textbook` FOREIGN KEY (`textbook_id`) REFERENCES `textbook` (`id`),
+  CONSTRAINT `fk_textbook_section_parent` FOREIGN KEY (`parent_id`) REFERENCES `textbook_section` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='教材章节与页码映射';
+
+CREATE TABLE `knowledge_point` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `subject_name` varchar(64) NOT NULL,
+  `parent_id` bigint unsigned DEFAULT NULL,
+  `level` tinyint unsigned NOT NULL,
+  `code` varchar(128) NOT NULL,
+  `name` varchar(255) NOT NULL,
+  `description` text DEFAULT NULL,
+  `status` varchar(16) NOT NULL DEFAULT 'ACTIVE',
+  `is_deleted` tinyint(1) NOT NULL DEFAULT 0,
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_knowledge_point_code` (`code`),
+  KEY `idx_knowledge_point_subject` (`subject_name`, `status`, `is_deleted`),
+  KEY `idx_knowledge_point_parent` (`parent_id`),
+  CONSTRAINT `fk_knowledge_point_parent` FOREIGN KEY (`parent_id`) REFERENCES `knowledge_point` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='平台稳定知识点';
+
+CREATE TABLE `knowledge_point_source` (
+  `id` bigint unsigned NOT NULL AUTO_INCREMENT,
+  `knowledge_point_id` bigint unsigned NOT NULL,
+  `textbook_section_id` bigint unsigned NOT NULL,
+  `printed_page_start` int unsigned NOT NULL,
+  `printed_page_end` int unsigned NOT NULL,
+  `pdf_page_start` int unsigned NOT NULL,
+  `pdf_page_end` int unsigned NOT NULL,
+  `is_primary` tinyint(1) NOT NULL DEFAULT 0,
+  `is_deleted` tinyint(1) NOT NULL DEFAULT 0,
+  `create_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP,
+  `update_time` datetime NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+  PRIMARY KEY (`id`),
+  UNIQUE KEY `uk_knowledge_point_source` (`knowledge_point_id`, `textbook_section_id`, `printed_page_start`, `pdf_page_start`),
+  KEY `idx_knowledge_point_source_section` (`textbook_section_id`, `is_deleted`),
+  CONSTRAINT `fk_knowledge_point_source_point` FOREIGN KEY (`knowledge_point_id`) REFERENCES `knowledge_point` (`id`),
+  CONSTRAINT `fk_knowledge_point_source_section` FOREIGN KEY (`textbook_section_id`) REFERENCES `textbook_section` (`id`)
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COMMENT='知识点到教材章节页码的可信映射';

@@ -91,7 +91,7 @@ class TwoCallCapturingModel(CapturingModel):
         return ChatResult(generations=[ChatGeneration(message=message)])
 
 
-async def test_model_sees_exactly_seven_read_only_tools() -> None:
+async def test_model_sees_exactly_eight_read_only_tools() -> None:
     model = CapturingModel()
     registry = SkillRegistry.empty()
     agent = build_agent_graph(
@@ -122,6 +122,7 @@ async def test_model_sees_exactly_seven_read_only_tools() -> None:
         "get_question",
         "review_wrong_question",
         "list_practice_history",
+        "trace_question_to_textbook",
         "describe_skill",
         "load_skill",
     }

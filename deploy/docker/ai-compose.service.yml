@@ -14,7 +14,7 @@ services:
       - /etc/aisoftoj/ai-config.yaml:/etc/aisoftoj/ai-config.yaml:ro
     read_only: true
     tmpfs:
-      - /tmp:rw,noexec,nosuid,size=64m,mode=1777
+      - /tmp:rw,noexec,nosuid,size=256m,mode=1777
     restart: unless-stopped
     stop_grace_period: 30s
     mem_limit: 448m

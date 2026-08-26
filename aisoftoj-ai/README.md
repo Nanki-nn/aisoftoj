@@ -18,6 +18,7 @@ remains supported.
 - Java 后端已经启动在 `http://127.0.0.1:8080`。
 - 已安装 [uv](https://docs.astral.sh/uv/)。macOS 可执行 `brew install uv`。
 - 已准备可用的 OpenAI 兼容模型 API Key。
+- 如需教材溯源，已启动 Qdrant，并已确认教材外部地址允许下载、建立索引和展示短引用。
 
 项目要求 Python 3.12，`uv sync` 会自动创建 `.venv` 并安装锁定版本的依赖，
 不需要手动创建虚拟环境。
@@ -57,6 +58,25 @@ llm_base_url: https://api.openai.com/v1
 llm_api_key: 模型服务密钥
 llm_default_model: gpt-5-mini
 ```
+
+教材 RAG 默认关闭。确认授权来源后，可在 `config.yaml` 中启用：
+
+```yaml
+textbook_rag_enabled: true
+qdrant_url: http://127.0.0.1:6333
+qdrant_collection: aisoftoj_textbook_chunks
+textbook_allowed_hosts:
+  - 已授权下载域名.example
+textbook_embedding_base_url: https://api.openai.com/v1
+textbook_embedding_api_key: 模型服务密钥
+textbook_embedding_model: text-embedding-3-small
+textbook_embedding_dimensions: 1536
+```
+
+`textbook_allowed_hosts` 是强制下载白名单；教材地址还必须使用 HTTPS，且下载器会拒绝
+内网地址、跨白名单重定向、超限响应和非 PDF 内容。教材原文件只写入受限临时目录，
+索引完成或失败后都会删除。教材、章节双页码、知识点及出处映射由 Java 业务库维护，
+初始化方式见 [`docs/textbook-rag-bootstrap.md`](../docs/textbook-rag-bootstrap.md)。
 
 启动 Java 后端时可显式设置同一服务密钥：
 
@@ -173,10 +193,14 @@ LangSmith 配置重复写入 Compose 文件。
 - `POST /api/ai/threads/{thread_id}/runs/{run_id}/cancel` requests cancellation.
 - `GET /api/ai/skills` lists installed Skill metadata after the same Bearer JWT
   check. It never returns Skill bodies or host paths.
+- `POST /api/ai/admin/textbooks/{textbook_id}/indexes` starts an asynchronous
+  textbook index build for an authenticated `ADMIN`.
+- `GET /api/ai/admin/textbook-index-tasks/{task_id}` reads its safe task status.
 
-The agent has exactly seven read-only tools: five platform tools
+The agent has exactly eight read-only tools: six platform tools
 (`get_my_profile`, `list_papers`, `get_question`, `review_wrong_question`, and
-`list_practice_history`) plus `describe_skill` and `load_skill`. There are no
+`list_practice_history`, plus `trace_question_to_textbook`) and the two Skill
+tools `describe_skill` and `load_skill`. There are no
 filesystem, shell, subagent, practice-creation, answer-update, submit, or
 paper-submission tools. The Java internal API and service key are required for
 startup; configure `AI_INTERNAL_SERVICE_KEY` for the Java service and use the
@@ -220,3 +244,7 @@ docker run --rm --network host \
 Add `deploy/docker/ai-host-nginx-snippet.conf` before the generic Java
 `/api/` location. This keeps browser traffic on the public origin while the
 Python process remains bound to loopback.
+
+Qdrant 不作为 `/readyz` 的强制依赖；向量库故障只会让教材工具返回
+`unavailable`，不会影响普通对话和其他只读工具。生产环境需把 Qdrant 仅绑定在
+内网或 loopback，并为其数据目录配置持久化卷。

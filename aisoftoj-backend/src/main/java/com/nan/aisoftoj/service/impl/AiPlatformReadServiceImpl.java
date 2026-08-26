@@ -21,6 +21,11 @@ import com.nan.aisoftoj.dto.ai.AiPracticeHistorySummaryDTO;
 import com.nan.aisoftoj.dto.ai.AiWrongQuestionReviewDTO;
 import com.nan.aisoftoj.dto.ai.AiAdminUserBatchDTO;
 import com.nan.aisoftoj.dto.ai.AiAdminUserDTO;
+import com.nan.aisoftoj.dto.ai.AiKnowledgePointDTO;
+import com.nan.aisoftoj.dto.ai.AiKnowledgePointSourceDTO;
+import com.nan.aisoftoj.dto.ai.AiTextbookCatalogDTO;
+import com.nan.aisoftoj.dto.ai.AiTextbookSectionDTO;
+import com.nan.aisoftoj.dto.ai.AiTextbookTraceQuestionDTO;
 import com.nan.aisoftoj.dto.PracticeHistorySummaryDTO;
 import com.nan.aisoftoj.entity.Paper;
 import com.nan.aisoftoj.entity.PracticeSession;
@@ -28,12 +33,20 @@ import com.nan.aisoftoj.entity.Question;
 import com.nan.aisoftoj.entity.PracticeSessionQuestionRecord;
 import com.nan.aisoftoj.entity.UserWrongQuestionStat;
 import com.nan.aisoftoj.entity.User;
+import com.nan.aisoftoj.entity.KnowledgePoint;
+import com.nan.aisoftoj.entity.KnowledgePointSource;
+import com.nan.aisoftoj.entity.Textbook;
+import com.nan.aisoftoj.entity.TextbookSection;
 import com.nan.aisoftoj.mapper.PaperMapper;
 import com.nan.aisoftoj.mapper.PracticeSessionMapper;
 import com.nan.aisoftoj.mapper.QuestionMapper;
 import com.nan.aisoftoj.mapper.PracticeSessionQuestionRecordMapper;
 import com.nan.aisoftoj.mapper.UserMapper;
 import com.nan.aisoftoj.mapper.UserWrongQuestionStatMapper;
+import com.nan.aisoftoj.mapper.KnowledgePointMapper;
+import com.nan.aisoftoj.mapper.KnowledgePointSourceMapper;
+import com.nan.aisoftoj.mapper.TextbookMapper;
+import com.nan.aisoftoj.mapper.TextbookSectionMapper;
 import com.nan.aisoftoj.service.AiPlatformReadService;
 import org.springframework.stereotype.Service;
 
@@ -58,6 +71,10 @@ public class AiPlatformReadServiceImpl implements AiPlatformReadService {
     private final PaperMapper paperMapper;
     private final QuestionMapper questionMapper;
     private final PracticeSessionQuestionRecordMapper questionRecordMapper;
+    private final TextbookMapper textbookMapper;
+    private final TextbookSectionMapper textbookSectionMapper;
+    private final KnowledgePointMapper knowledgePointMapper;
+    private final KnowledgePointSourceMapper knowledgePointSourceMapper;
 
     public AiPlatformReadServiceImpl(
             UserMapper userMapper,
@@ -65,13 +82,21 @@ public class AiPlatformReadServiceImpl implements AiPlatformReadService {
             UserWrongQuestionStatMapper wrongQuestionStatMapper,
             PaperMapper paperMapper,
             QuestionMapper questionMapper,
-            PracticeSessionQuestionRecordMapper questionRecordMapper) {
+            PracticeSessionQuestionRecordMapper questionRecordMapper,
+            TextbookMapper textbookMapper,
+            TextbookSectionMapper textbookSectionMapper,
+            KnowledgePointMapper knowledgePointMapper,
+            KnowledgePointSourceMapper knowledgePointSourceMapper) {
         this.userMapper = userMapper;
         this.practiceSessionMapper = practiceSessionMapper;
         this.wrongQuestionStatMapper = wrongQuestionStatMapper;
         this.paperMapper = paperMapper;
         this.questionMapper = questionMapper;
         this.questionRecordMapper = questionRecordMapper;
+        this.textbookMapper = textbookMapper;
+        this.textbookSectionMapper = textbookSectionMapper;
+        this.knowledgePointMapper = knowledgePointMapper;
+        this.knowledgePointSourceMapper = knowledgePointSourceMapper;
     }
 
     @Override
@@ -155,16 +180,7 @@ public class AiPlatformReadServiceImpl implements AiPlatformReadService {
 
     @Override
     public AiQuestionDTO getQuestion(Integer questionId) {
-        if (questionId == null || questionId <= 0) {
-            throw new IllegalArgumentException("questionId 必须为正整数");
-        }
-        Question question = questionMapper.selectById(questionId);
-        if (question == null
-                || question.getIsDeleted() == null
-                || question.getIsDeleted() != 0
-                || questionMapper.countPublishedPaperRelations(questionId) == 0) {
-            throw new ResourceNotFoundException("题目不存在或暂未发布");
-        }
+        Question question = requirePublishedQuestion(questionId);
         AiQuestionDTO dto = new AiQuestionDTO();
         dto.setQuestionId(question.getId());
         dto.setName(question.getName());
@@ -183,6 +199,101 @@ public class AiPlatformReadServiceImpl implements AiPlatformReadService {
             throw new IllegalArgumentException("userId 必须为正整数");
         }
         return true;
+    }
+
+    @Override
+    public AiTextbookTraceQuestionDTO getTextbookTraceQuestion(Integer questionId) {
+        Question question = requirePublishedQuestion(questionId);
+        String subjectName = questionMapper.selectPublishedSubjectName(questionId);
+        if (StrUtil.isBlank(subjectName)) {
+            throw new ConflictException("题目缺少已发布科目信息");
+        }
+
+        AiTextbookTraceQuestionDTO dto = new AiTextbookTraceQuestionDTO();
+        dto.setQuestionId(question.getId());
+        dto.setName(question.getName());
+        dto.setContent(question.getIntro());
+        dto.setOptions(parseOptions(question.getOptions()));
+        dto.setAnalysis(question.getAnalysis());
+        dto.setQuestionType(mapQuestionType(question.getQuestionType()));
+        dto.setDifficulty(mapDifficulty(question.getDifficulty()));
+        dto.setSubjectName(subjectName);
+        return dto;
+    }
+
+    @Override
+    public AiTextbookCatalogDTO getActiveTextbookCatalog(String subjectName) {
+        if (StrUtil.isBlank(subjectName)) {
+            throw new IllegalArgumentException("subjectName 不能为空");
+        }
+        Textbook textbook = textbookMapper.selectOne(Wrappers.lambdaQuery(Textbook.class)
+                .eq(Textbook::getSubjectName, subjectName.trim())
+                .eq(Textbook::getStatus, "ACTIVE")
+                .eq(Textbook::getIsDeleted, 0)
+                .last("LIMIT 1"));
+        if (textbook == null) {
+            throw new ResourceNotFoundException("当前科目暂无可用教材");
+        }
+
+        return buildTextbookCatalog(textbook);
+    }
+
+    @Override
+    public AiTextbookCatalogDTO getTextbookCatalog(Long textbookId) {
+        if (textbookId == null || textbookId <= 0) {
+            throw new IllegalArgumentException("textbookId 必须为正整数");
+        }
+        Textbook textbook = textbookMapper.selectById(textbookId);
+        if (textbook == null || !Integer.valueOf(0).equals(textbook.getIsDeleted())) {
+            throw new ResourceNotFoundException("教材不存在");
+        }
+        return buildTextbookCatalog(textbook);
+    }
+
+    private AiTextbookCatalogDTO buildTextbookCatalog(Textbook textbook) {
+        List<TextbookSection> sections = textbookSectionMapper.selectList(
+                Wrappers.lambdaQuery(TextbookSection.class)
+                        .eq(TextbookSection::getTextbookId, textbook.getId())
+                        .eq(TextbookSection::getIsDeleted, 0)
+                        .orderByAsc(TextbookSection::getSortOrder)
+                        .orderByAsc(TextbookSection::getId));
+        List<KnowledgePoint> points = knowledgePointMapper.selectList(
+                Wrappers.lambdaQuery(KnowledgePoint.class)
+                        .eq(KnowledgePoint::getSubjectName, textbook.getSubjectName())
+                        .eq(KnowledgePoint::getStatus, "ACTIVE")
+                        .eq(KnowledgePoint::getIsDeleted, 0)
+                        .orderByAsc(KnowledgePoint::getLevel)
+                        .orderByAsc(KnowledgePoint::getCode)
+                        .orderByAsc(KnowledgePoint::getId));
+
+        List<Long> sectionIds = sections.stream()
+                .map(TextbookSection::getId)
+                .collect(Collectors.toList());
+        List<KnowledgePointSource> sources = sectionIds.isEmpty()
+                ? Collections.emptyList()
+                : knowledgePointSourceMapper.selectList(
+                        Wrappers.lambdaQuery(KnowledgePointSource.class)
+                                .in(KnowledgePointSource::getTextbookSectionId, sectionIds)
+                                .eq(KnowledgePointSource::getIsDeleted, 0)
+                                .orderByDesc(KnowledgePointSource::getIsPrimary)
+                                .orderByAsc(KnowledgePointSource::getId));
+        Map<Long, List<KnowledgePointSource>> sourcesByPoint = sources.stream()
+                .collect(Collectors.groupingBy(KnowledgePointSource::getKnowledgePointId));
+
+        AiTextbookCatalogDTO dto = new AiTextbookCatalogDTO();
+        dto.setTextbookId(textbook.getId());
+        dto.setSubjectName(textbook.getSubjectName());
+        dto.setName(textbook.getName());
+        dto.setEdition(textbook.getEdition());
+        dto.setIsbn(textbook.getIsbn());
+        dto.setOfficialUrl(textbook.getOfficialUrl());
+        dto.setViewerPageTemplate(textbook.getViewerPageTemplate());
+        dto.setSections(sections.stream().map(this::toTextbookSectionDTO).collect(Collectors.toList()));
+        dto.setKnowledgePoints(points.stream()
+                .map(point -> toKnowledgePointDTO(
+                        point, sourcesByPoint.getOrDefault(point.getId(), Collections.emptyList())))
+                .collect(Collectors.toList()));
+        return dto;
     }
 
     @Override
@@ -347,6 +458,62 @@ public class AiPlatformReadServiceImpl implements AiPlatformReadService {
             return session.getEndTime();
         }
         return session.getCreateTime();
+    }
+
+    private Question requirePublishedQuestion(Integer questionId) {
+        if (questionId == null || questionId <= 0) {
+            throw new IllegalArgumentException("questionId 必须为正整数");
+        }
+        Question question = questionMapper.selectById(questionId);
+        if (question == null
+                || question.getIsDeleted() == null
+                || question.getIsDeleted() != 0
+                || questionMapper.countPublishedPaperRelations(questionId) == 0) {
+            throw new ResourceNotFoundException("题目不存在或暂未发布");
+        }
+        return question;
+    }
+
+    private AiTextbookSectionDTO toTextbookSectionDTO(TextbookSection section) {
+        AiTextbookSectionDTO dto = new AiTextbookSectionDTO();
+        dto.setId(section.getId());
+        dto.setParentId(section.getParentId());
+        dto.setLevel(section.getLevel());
+        dto.setSectionCode(section.getSectionCode());
+        dto.setTitle(section.getTitle());
+        dto.setPrintedPageStart(section.getPrintedPageStart());
+        dto.setPrintedPageEnd(section.getPrintedPageEnd());
+        dto.setPdfPageStart(section.getPdfPageStart());
+        dto.setPdfPageEnd(section.getPdfPageEnd());
+        dto.setSortOrder(section.getSortOrder());
+        return dto;
+    }
+
+    private AiKnowledgePointDTO toKnowledgePointDTO(
+            KnowledgePoint point, List<KnowledgePointSource> sources) {
+        AiKnowledgePointDTO dto = new AiKnowledgePointDTO();
+        dto.setId(point.getId());
+        dto.setParentId(point.getParentId());
+        dto.setLevel(point.getLevel());
+        dto.setCode(point.getCode());
+        dto.setName(point.getName());
+        dto.setDescription(point.getDescription());
+        dto.setSources(sources.stream()
+                .map(this::toKnowledgePointSourceDTO)
+                .collect(Collectors.toList()));
+        return dto;
+    }
+
+    private AiKnowledgePointSourceDTO toKnowledgePointSourceDTO(KnowledgePointSource source) {
+        AiKnowledgePointSourceDTO dto = new AiKnowledgePointSourceDTO();
+        dto.setId(source.getId());
+        dto.setSectionId(source.getTextbookSectionId());
+        dto.setPrintedPageStart(source.getPrintedPageStart());
+        dto.setPrintedPageEnd(source.getPrintedPageEnd());
+        dto.setPdfPageStart(source.getPdfPageStart());
+        dto.setPdfPageEnd(source.getPdfPageEnd());
+        dto.setPrimary(source.getIsPrimary());
+        return dto;
     }
 
     private List<AiQuestionOptionDTO> parseOptions(String rawOptions) {

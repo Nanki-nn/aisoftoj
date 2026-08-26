@@ -103,6 +103,34 @@ async def test_ai_assistant_availability_validates_boolean_contract() -> None:
     assert available is False
 
 
+async def test_textbook_trace_context_uses_the_dedicated_internal_contract() -> None:
+    async def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/internal/ai/questions/42/textbook-trace-context"
+        return response(
+            {
+                "questionId": 42,
+                "name": "架构题",
+                "content": "题干",
+                "options": [],
+                "analysis": "解析",
+                "questionType": "single_choice",
+                "difficulty": "medium",
+                "subjectName": "系统架构设计师",
+            }
+        )
+
+    client = PlatformClient(
+        base_url="http://127.0.0.1:8080",
+        service_key="service-key",
+        transport=httpx.MockTransport(handler),
+    )
+    result = await client.get_textbook_trace_question("jwt", 42)
+    await client.close()
+
+    assert result.subject_name == "系统架构设计师"
+    assert result.analysis == "解析"
+
+
 async def test_admin_user_page_forwards_filters_and_validates_contract() -> None:
     async def handler(request: httpx.Request) -> httpx.Response:
         assert request.url.path == "/admin/users"

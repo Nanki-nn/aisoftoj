@@ -17,6 +17,8 @@ def test_metadata_contains_only_ai_runtime_tables() -> None:
         "ai_user_quota_overrides",
         "ai_daily_token_usage",
         "ai_token_reservations",
+        "ai_textbook_indexes",
+        "ai_question_trace_cache",
     }
 
 
@@ -32,3 +34,24 @@ def test_run_has_nullable_question_snapshot() -> None:
     column = Base.metadata.tables["ai_runs"].c.question_id
     assert column.nullable is True
     assert column.type.python_type is int
+
+
+def test_textbook_index_has_one_active_version_per_textbook() -> None:
+    table = Base.metadata.tables["ai_textbook_indexes"]
+    assert table.c.active_marker.computed is not None
+    constraint_names = {constraint.name for constraint in table.constraints}
+    assert "uq_ai_textbook_indexes_active" in constraint_names
+
+
+def test_trace_cache_has_versioned_fact_key() -> None:
+    table = Base.metadata.tables["ai_question_trace_cache"]
+    constraint = next(
+        item for item in table.constraints if item.name == "uq_ai_question_trace_cache_key"
+    )
+    assert {column.name for column in constraint.columns} == {
+        "question_id",
+        "question_content_hash",
+        "textbook_id",
+        "index_version",
+        "retrieval_profile_version",
+    }

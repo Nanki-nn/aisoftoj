@@ -9,6 +9,27 @@ platform_connect_timeout_seconds: 2
 platform_read_timeout_seconds: 5
 platform_max_response_bytes: 2097152
 
+# 启用前先在 Java 业务库登记经过确认的官方/授权教材地址和章节页码。
+textbook_rag_enabled: false
+qdrant_url: http://127.0.0.1:6333
+qdrant_api_key:
+qdrant_collection: aisoftoj_textbook_chunks
+textbook_allowed_hosts: []
+textbook_download_timeout_seconds: 30
+textbook_download_max_bytes: 104857600
+textbook_download_max_redirects: 3
+textbook_embedding_base_url: https://api.openai.com/v1
+textbook_embedding_api_key:
+textbook_embedding_model: text-embedding-3-small
+textbook_embedding_dimensions: 1536
+textbook_embedding_batch_size: 32
+textbook_chunk_target_chars: 900
+textbook_chunk_overlap_chars: 120
+textbook_retrieval_candidates: 12
+textbook_retrieval_sources: 3
+textbook_retrieval_min_score: 0.55
+textbook_retrieval_profile_version: textbook-rag-v1
+
 llm_base_url: https://api.openai.com/v1
 llm_endpoint_mode: openai_base
 llm_api_key: change-me

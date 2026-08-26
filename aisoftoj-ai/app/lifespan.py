@@ -18,11 +18,23 @@ from packages.harness.aisoftoj_agent.observability import (
 )
 from packages.harness.aisoftoj_agent.persistence.engine import create_engine, create_session_factory
 from packages.harness.aisoftoj_agent.persistence.repositories.runs import RunRepository
+from packages.harness.aisoftoj_agent.persistence.repositories.textbook_indexes import (
+    TextbookIndexRepository,
+)
 from packages.harness.aisoftoj_agent.quota import DailyTokenQuotaService
 from packages.harness.aisoftoj_agent.runtime.run_manager import RunManager
 from packages.harness.aisoftoj_agent.runtime.stream_bridge import StreamBridge
 from packages.harness.aisoftoj_agent.runtime.worker import Worker
 from packages.harness.aisoftoj_agent.skills import SkillRegistry, build_skill_tools
+from packages.harness.aisoftoj_agent.textbook_rag import (
+    TextbookIndexer,
+    TextbookIndexTaskManager,
+    TextbookTraceService,
+)
+from packages.harness.aisoftoj_agent.textbook_rag.downloader import SecureTextbookDownloader
+from packages.harness.aisoftoj_agent.textbook_rag.embeddings import EmbeddingClient
+from packages.harness.aisoftoj_agent.textbook_rag.extractor import PyMuPDFTextbookExtractor
+from packages.harness.aisoftoj_agent.textbook_rag.qdrant import QdrantClient
 
 
 @dataclass(slots=True)
@@ -38,6 +50,9 @@ class AppState:
     worker: Worker
     quota_service: DailyTokenQuotaService | None = None
     access_control_service: AiAccessControlService | None = None
+    textbook_trace_service: TextbookTraceService | None = None
+    textbook_indexer: TextbookIndexer | None = None
+    textbook_index_tasks: TextbookIndexTaskManager | None = None
     skill_registry: SkillRegistry = field(default_factory=SkillRegistry.empty)
     langsmith_tracing: LangSmithTracing = field(
         default_factory=LangSmithTracing.disabled
@@ -68,6 +83,51 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     )
     quota_service = DailyTokenQuotaService(session_factory)
     access_control_service = AiAccessControlService(session_factory)
+    embedding_client: EmbeddingClient | None = None
+    qdrant_client: QdrantClient | None = None
+    downloader: SecureTextbookDownloader | None = None
+    textbook_indexer: TextbookIndexer | None = None
+    textbook_index_tasks: TextbookIndexTaskManager | None = None
+    if settings.textbook_rag_enabled:
+        embedding_client = EmbeddingClient(
+            base_url=settings.resolved_textbook_embedding_base_url,
+            api_key=settings.resolved_textbook_embedding_api_key,
+            model=settings.textbook_embedding_model,
+            batch_size=settings.textbook_embedding_batch_size,
+            timeout_seconds=settings.llm_request_timeout_seconds,
+        )
+        qdrant_client = QdrantClient(
+            base_url=str(settings.qdrant_url).rstrip("/"),
+            collection=settings.qdrant_collection,
+            api_key=(
+                settings.qdrant_api_key.get_secret_value()
+                if settings.qdrant_api_key is not None
+                else None
+            ),
+        )
+        downloader = SecureTextbookDownloader(
+            allowed_hosts=settings.textbook_allowed_hosts,
+            timeout_seconds=settings.textbook_download_timeout_seconds,
+            max_bytes=settings.textbook_download_max_bytes,
+            max_redirects=settings.textbook_download_max_redirects,
+        )
+        textbook_indexer = TextbookIndexer(
+            settings=settings,
+            session_factory=session_factory,
+            platform_client=platform_client,
+            downloader=downloader,
+            extractor=PyMuPDFTextbookExtractor(),
+            embedding_client=embedding_client,
+            qdrant_client=qdrant_client,
+        )
+        textbook_index_tasks = TextbookIndexTaskManager(textbook_indexer)
+    textbook_trace_service = TextbookTraceService(
+        settings=settings,
+        session_factory=session_factory,
+        platform_client=platform_client,
+        embedding_client=embedding_client,
+        qdrant_client=qdrant_client,
+    )
     agent = build_agent_graph(
         settings,
         platform_client,
@@ -75,6 +135,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         skill_tools=skill_tools,
         quota_service=quota_service,
         access_control_service=access_control_service,
+        textbook_trace_service=textbook_trace_service,
     )
     langsmith_tracing = build_langsmith_tracing(settings)
     stream_bridge = StreamBridge()
@@ -93,6 +154,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     worker.platform_client = platform_client
     async with session_factory.begin() as session:
         await RunRepository(session).interrupt_unfinished()
+        await TextbookIndexRepository(session).fail_unfinished()
     await quota_service.recover_unsettled()
     container = AppState(
         settings=settings,
@@ -106,6 +168,9 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         worker=worker,
         quota_service=quota_service,
         access_control_service=access_control_service,
+        textbook_trace_service=textbook_trace_service,
+        textbook_indexer=textbook_indexer,
+        textbook_index_tasks=textbook_index_tasks,
         skill_registry=skill_registry,
         langsmith_tracing=langsmith_tracing,
     )
@@ -116,6 +181,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     finally:
         container.ready = False
         await run_manager.shutdown(settings.shutdown_drain_seconds)
+        if textbook_index_tasks is not None:
+            await textbook_index_tasks.shutdown()
         await langsmith_tracing.aclose()
+        if downloader is not None:
+            await downloader.close()
+        if qdrant_client is not None:
+            await qdrant_client.close()
+        if embedding_client is not None:
+            await embedding_client.close()
         await platform_client.close()
         await engine.dispose()

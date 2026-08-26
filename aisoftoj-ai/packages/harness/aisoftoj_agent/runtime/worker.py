@@ -358,7 +358,9 @@ def with_current_question_context(
     instruction = SystemMessage(
         content=(
             f"可信页面上下文：用户发送本次消息时正在查看题目 ID {question_id}。"
-            "当本次消息涉及‘这题’、‘当前题’、选项或题目讲解时，"
+            "当本次消息询问教材出处、复习章节或教材页码时，"
+            f"必须调用 trace_question_to_textbook(question_id={question_id})。"
+            "当本次消息涉及‘这题’、‘当前题’、选项或题目讲解但不涉及教材溯源时，"
             f"必须先调用 get_question(question_id={question_id})，再依据工具结果回答。"
             "该 ID 只用于理解本次最新用户消息，不得重新解释更早消息中的指代。"
         )

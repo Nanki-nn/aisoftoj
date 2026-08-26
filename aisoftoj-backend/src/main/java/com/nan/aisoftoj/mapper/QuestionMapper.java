@@ -52,6 +52,14 @@ public interface QuestionMapper extends BaseMapper<Question> {
             "AND p.is_deleted = 0 AND p.publish_status = 1")
     int countPublishedPaperRelations(@Param("questionId") Integer questionId);
 
+    @Select("SELECT p.subject_name FROM paper_question_relation pqr " +
+            "JOIN paper p ON p.id = pqr.paper_id " +
+            "WHERE pqr.question_id = #{questionId} " +
+            "AND p.is_deleted = 0 AND p.publish_status = 1 " +
+            "AND p.subject_name IS NOT NULL AND p.subject_name <> '' " +
+            "ORDER BY p.paper_year DESC, p.paper_month DESC, p.id DESC LIMIT 1")
+    String selectPublishedSubjectName(@Param("questionId") Integer questionId);
+
     @Select("SELECT COUNT(1) FROM practice_session_question_record " +
             "WHERE question_id = #{questionId} AND is_deleted = 0")
     int countSessionQuestionRecords(@Param("questionId") Integer questionId);

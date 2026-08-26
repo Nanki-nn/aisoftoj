@@ -57,6 +57,7 @@ function toolCopy(tool: ToolStepState): { title: string; detail: string } {
       list_practice_history: '查询练习历史',
       describe_skill: '检索可用 Skill',
       load_skill: '读取 Skill 参考资料',
+      trace_question_to_textbook: '查找教材出处',
     };
     return { title: titles[tool.toolName] || '执行数据查询', detail: '该步骤未完成' };
   }
@@ -115,6 +116,18 @@ function toolCopy(tool: ToolStepState): { title: string; detail: string } {
       detail: tool.status === 'running'
         ? suffix
         : tool.summary?.truncated === true ? '已加载部分 Skill 资料' : 'Skill 资料已加载',
+    };
+  }
+  if (tool.toolName === 'trace_question_to_textbook') {
+    const status = String(tool.summary?.status || 'unknown');
+    const details: Record<string, string> = {
+      found: '教材出处查询完成',
+      insufficient_evidence: '未找到可靠教材出处',
+      unavailable: '教材溯源暂不可用',
+    };
+    return {
+      title: '查找教材出处',
+      detail: tool.status === 'running' ? '正在检索教材' : (details[status] || '教材出处查询完成'),
     };
   }
   return {
@@ -302,6 +315,9 @@ export function AIMessageList({ groups, onRetry }: AIMessageListProps) {
                   components={{
                     table: ({ children }) => (
                       <div className="markdown-table-scroll"><table>{children}</table></div>
+                    ),
+                    a: ({ children, href }) => (
+                      <a href={href} target="_blank" rel="noopener noreferrer">{children}</a>
                     ),
                   }}
                 >

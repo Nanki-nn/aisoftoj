@@ -9,6 +9,8 @@ import com.nan.aisoftoj.dto.ai.AiPracticeHistoryPageDTO;
 import com.nan.aisoftoj.dto.ai.AiWrongQuestionReviewDTO;
 import com.nan.aisoftoj.dto.ai.AiAdminUserBatchDTO;
 import com.nan.aisoftoj.dto.ai.AiAdminUserBatchRequest;
+import com.nan.aisoftoj.dto.ai.AiTextbookCatalogDTO;
+import com.nan.aisoftoj.dto.ai.AiTextbookTraceQuestionDTO;
 import com.nan.aisoftoj.service.AiPlatformReadService;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
@@ -63,6 +65,30 @@ public class AiInternalController {
             HttpServletRequest request) {
         Integer userId = authenticate(request);
         return noStore(ResultDTO.success(readService.isAiAssistantAvailable(userId)));
+    }
+
+    @GetMapping("/questions/{questionId}/textbook-trace-context")
+    public ResponseEntity<ResultDTO<AiTextbookTraceQuestionDTO>> getTextbookTraceQuestion(
+            @PathVariable Integer questionId,
+            HttpServletRequest request) {
+        authenticate(request);
+        return noStore(ResultDTO.success(readService.getTextbookTraceQuestion(questionId)));
+    }
+
+    @GetMapping("/textbooks/active")
+    public ResponseEntity<ResultDTO<AiTextbookCatalogDTO>> getActiveTextbookCatalog(
+            @RequestParam String subjectName,
+            HttpServletRequest request) {
+        authenticate(request);
+        return noStore(ResultDTO.success(readService.getActiveTextbookCatalog(subjectName)));
+    }
+
+    @GetMapping("/textbooks/{textbookId}")
+    public ResponseEntity<ResultDTO<AiTextbookCatalogDTO>> getTextbookCatalog(
+            @PathVariable Long textbookId,
+            HttpServletRequest request) {
+        authenticate(request);
+        return noStore(ResultDTO.success(readService.getTextbookCatalog(textbookId)));
     }
 
     @GetMapping("/wrong-questions/{wrongQuestionId}/review")
