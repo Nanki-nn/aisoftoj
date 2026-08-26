@@ -100,8 +100,17 @@ describe('ExamSession exit guard', () => {
     fireEvent.click(await screen.findByRole('button', { name: '离开试卷' }));
 
     await waitFor(() => expect(router.state.location.pathname).toBe('/papers'));
-    expect(onPause).toHaveBeenCalledTimes(1);
+    await waitFor(() => expect(onPause).toHaveBeenCalledTimes(2));
     expect(onCleanupAfterPause).toHaveBeenCalledTimes(1);
+  });
+
+  it('pauses as an unmount safety net when the route is replaced externally', async () => {
+    const onPause = vi.fn().mockResolvedValue(undefined);
+    const { unmount } = renderSession({ onPause });
+
+    unmount();
+
+    await waitFor(() => expect(onPause).toHaveBeenCalledTimes(1));
   });
 
   it('uses native unload protection and handles page lifecycle pause/resume', async () => {

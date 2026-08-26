@@ -127,6 +127,8 @@ export function ExamSession({
   const hasMountedRef = useRef(false);
   const completionInFlightRef = useRef(false);
   const allowResultNavigationRef = useRef(false);
+  const isReadOnlyRef = useRef(false);
+  const pauseOnUnmountRef = useRef(onPause);
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
@@ -153,6 +155,8 @@ export function ExamSession({
     return () => clearQuestion(questionId);
   }, [clearQuestion, currentQuestion?.id, publishQuestion]);
   const isReadOnly = session.isCompleted;
+  isReadOnlyRef.current = isReadOnly;
+  pauseOnUnmountRef.current = onPause;
   const isCurrentQuestionLocked = isReadOnly || Boolean(currentQuestion.confirmedAt);
   const shouldRevealAnswer = isReadOnly || Boolean(currentQuestion.confirmedAt);
   const modeLabel = isReadOnly ? '已完成' : (session.examMode === 'practice' ? '练习模式' : '考试模式');
@@ -211,6 +215,13 @@ export function ExamSession({
       setShowConfirmExit(true);
     }
   }, [blocker.state]);
+
+  useEffect(() => () => {
+    if (isReadOnlyRef.current || allowResultNavigationRef.current) {
+      return;
+    }
+    void pauseOnUnmountRef.current().catch(() => undefined);
+  }, []);
 
   useEffect(() => {
     if (isReadOnly) {
