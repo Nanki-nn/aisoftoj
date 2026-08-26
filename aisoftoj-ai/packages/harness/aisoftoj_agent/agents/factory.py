@@ -17,6 +17,7 @@ from langgraph.checkpoint.memory import InMemorySaver
 from config import Settings
 
 from ..integrations.aisoftoj.client import PlatformClient
+from ..quota import DailyTokenQuotaService
 from ..skills import SkillRegistry
 from .context import AgentContext
 from .middlewares import build_middlewares
@@ -52,6 +53,7 @@ def build_agent_graph(
     *,
     skill_registry: SkillRegistry,
     skill_tools: list[BaseTool],
+    quota_service: DailyTokenQuotaService | None = None,
     model: BaseChatModel | None = None,
 ) -> AgentGraph:
     register_read_only_harness_profile()
@@ -60,7 +62,7 @@ def build_agent_graph(
         model=model or build_chat_model(settings),
         tools=build_agent_tools(platform_client, skill_tools),
         system_prompt=SYSTEM_PROMPT,
-        middleware=build_middlewares(settings, skill_registry),
+        middleware=build_middlewares(settings, skill_registry, quota_service),
         subagents=[],
         skills=None,
         memory=None,

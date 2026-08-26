@@ -22,6 +22,7 @@ from ..persistence.models import AiRunEvent
 from ..persistence.repositories.messages import MessageRepository
 from ..persistence.repositories.runs import RunRepository
 from ..persistence.repositories.summaries import SummaryRepository
+from ..quota import DailyTokenQuotaExceeded, DailyTokenQuotaUnavailable
 from ..skills import CURRENT_INPUT_KEY, Skill, SkillRegistry, parse_slash_skill_name
 from .event_sequence import RunEventSequence
 from .event_sink import RunEventSink, ToolEventPersistenceError
@@ -57,6 +58,10 @@ class Worker:
             await self._finish_failure(run_id, "failed", "EVENT_PERSISTENCE_FAILED")
         except PlatformError as exc:
             await self._finish_failure(run_id, "failed", exc.code)
+        except DailyTokenQuotaExceeded:
+            await self._finish_failure(run_id, "failed", "AI_DAILY_TOKEN_QUOTA_EXCEEDED")
+        except DailyTokenQuotaUnavailable:
+            await self._finish_failure(run_id, "failed", "AI_QUOTA_UNAVAILABLE")
         except Exception:
             await self._finish_failure(run_id, "failed", "AGENT_FAILED")
         finally:

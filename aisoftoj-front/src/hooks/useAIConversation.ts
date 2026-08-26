@@ -12,6 +12,7 @@ import {
   listAIRunEvents,
   listAIRuns,
   listAIThreads,
+  getAIQuota,
 } from '../lib/aiApi';
 import {
   ConversationMessage,
@@ -46,6 +47,7 @@ function storageKey(): string {
 function errorMessage(error: unknown): string {
   if (error instanceof AIApiError) {
     if (error.status === 401 || error.code === 'AUTH_EXPIRED') return '登录状态已失效，请重新登录';
+    if (error.code === 'AI_DAILY_TOKEN_QUOTA_EXCEEDED') return '今日 AI 助手额度已用完';
     if (error.status === 429) return 'AI 助手当前繁忙，请稍后重试';
     return error.message;
   }
@@ -84,9 +86,38 @@ export function useAIConversation({ active, available }: AIConversationOptions) 
   const [isLoading, setIsLoading] = useState(false);
   const [isGenerating, setIsGenerating] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [quotaResetAt, setQuotaResetAt] = useState<string | null>(null);
   const activeRunRef = useRef<AIRun | null>(null);
   const abortRef = useRef<AbortController | null>(null);
   const loadGenerationRef = useRef(0);
+
+  const recordQuotaState = useCallback((remaining: number, resetAt: string) => {
+    setQuotaResetAt(remaining <= 0 ? resetAt : null);
+  }, []);
+
+  const refreshQuota = useCallback(async (forceExhausted = false) => {
+    if (!available) return;
+    const quota = await getAIQuota();
+    if (forceExhausted) {
+      setQuotaResetAt(quota.reset_at);
+    } else {
+      recordQuotaState(quota.remaining, quota.reset_at);
+    }
+  }, [available, recordQuotaState]);
+
+  useEffect(() => {
+    if (!quotaResetAt) return;
+    const delay = new Date(quotaResetAt).getTime() - Date.now();
+    if (delay <= 0) {
+      setQuotaResetAt(null);
+      return;
+    }
+    const timer = window.setTimeout(
+      () => setQuotaResetAt(null),
+      Math.min(delay, 2_147_483_647),
+    );
+    return () => window.clearTimeout(timer);
+  }, [quotaResetAt]);
 
   const refreshMessages = useCallback(async (threadId: string) => {
     if (!available) return;
@@ -130,6 +161,11 @@ export function useAIConversation({ active, available }: AIConversationOptions) 
         ? '连接已中断，重新打开面板后可继续接收回答'
         : null);
       if (result.run.status === 'completed') await refreshMessages(threadId);
+      if (result.run.error_code === 'AI_DAILY_TOKEN_QUOTA_EXCEEDED') {
+        await refreshQuota(true).catch(() => undefined);
+      } else if (TERMINAL_STATUSES.has(result.run.status)) {
+        await refreshQuota().catch(() => undefined);
+      }
     } catch (followError) {
       if (!controller.signal.aborted) setError(errorMessage(followError));
     } finally {
@@ -137,7 +173,7 @@ export function useAIConversation({ active, available }: AIConversationOptions) 
       if (activeRunRef.current?.id === run.id) activeRunRef.current = null;
       setIsGenerating(false);
     }
-  }, [available, refreshMessages]);
+  }, [available, refreshMessages, refreshQuota]);
 
   const loadThread = useCallback(async (thread: AIThread) => {
     if (!available) return;
@@ -202,7 +238,10 @@ export function useAIConversation({ active, available }: AIConversationOptions) 
     setIsLoading(true);
     setError(null);
     try {
-      const page = await listAIThreads();
+      const [page] = await Promise.all([
+        listAIThreads(),
+        refreshQuota().catch(() => undefined),
+      ]);
       setThreads(page.items);
       const savedId = localStorage.getItem(storageKey());
       const selected = page.items.find(item => item.id === savedId) || page.items[0];
@@ -216,7 +255,7 @@ export function useAIConversation({ active, available }: AIConversationOptions) 
     } finally {
       setIsLoading(false);
     }
-  }, [available, loadThread]);
+  }, [available, loadThread, refreshQuota]);
 
   useEffect(() => {
     if (active && available) void initialize();
@@ -236,6 +275,7 @@ export function useAIConversation({ active, available }: AIConversationOptions) 
       setMessages([]);
       setRunStates({});
       setError(null);
+      setQuotaResetAt(null);
     }
   }, [active, available]);
 
@@ -298,6 +338,16 @@ export function useAIConversation({ active, available }: AIConversationOptions) 
         ? { ...item, status: 'failed', idempotencyKey }
         : item));
       setError(errorMessage(submissionError));
+      if (
+        submissionError instanceof AIApiError
+        && submissionError.code === 'AI_DAILY_TOKEN_QUOTA_EXCEEDED'
+      ) {
+        const resetAt = submissionError.details?.reset_at;
+        if (typeof resetAt === 'string') {
+          setQuotaResetAt(resetAt);
+          setError(null);
+        }
+      }
       setIsGenerating(false);
     }
   }, [available, currentThread, followRun, isGenerating]);
@@ -362,6 +412,8 @@ export function useAIConversation({ active, available }: AIConversationOptions) 
     isLoading,
     isGenerating,
     error,
+    quotaExhausted: quotaResetAt !== null,
+    quotaResetAt,
     sendMessage,
     retryMessage,
     cancelCurrentRun,

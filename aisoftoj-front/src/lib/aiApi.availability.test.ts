@@ -1,3 +1,5 @@
+// @vitest-environment jsdom
+
 describe('disabled AI API', () => {
   beforeEach(() => {
     vi.resetModules();
@@ -31,5 +33,25 @@ describe('disabled AI API', () => {
     });
 
     expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('allows administrators to configure quota while the user assistant is disabled', async () => {
+    localStorage.setItem('authToken', 'admin-token');
+    const fetchMock = vi.fn().mockResolvedValue({
+      ok: true,
+      json: async () => ({
+        daily_token_limit: 30_000,
+        updated_by_user_id: null,
+        updated_at: null,
+      }),
+    });
+    vi.stubGlobal('fetch', fetchMock);
+    const api = await import('./aiApi');
+
+    await expect(api.getAIQuotaConfig()).resolves.toMatchObject({
+      daily_token_limit: 30_000,
+    });
+    expect(fetchMock).toHaveBeenCalledOnce();
+    localStorage.removeItem('authToken');
   });
 });

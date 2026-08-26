@@ -16,6 +16,7 @@ def build_chat_model(settings: Settings) -> BaseChatModel:
             api_key=settings.llm_api_key,
             model_name=settings.llm_default_model,
             timeout_seconds=settings.llm_request_timeout_seconds,
+            max_output_tokens=settings.agent_max_output_tokens,
         )
     return ChatOpenAI(
         model=settings.llm_default_model,
@@ -24,4 +25,6 @@ def build_chat_model(settings: Settings) -> BaseChatModel:
         streaming=True,
         timeout=settings.llm_request_timeout_seconds,
         max_retries=settings.llm_max_retries,
+        max_tokens=settings.agent_max_output_tokens,
+        stream_usage=True,
     )

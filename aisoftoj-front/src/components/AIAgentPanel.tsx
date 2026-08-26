@@ -101,12 +101,14 @@ export function AIAgentPanel() {
     isLoading,
     isGenerating,
     error,
+    quotaExhausted,
     sendMessage,
     retryMessage,
     cancelCurrentRun,
     newConversation,
     selectThread,
   } = useAIConversation({ active: isOpen, available: AI_ASSISTANT_ENABLED });
+  const assistantUsable = AI_ASSISTANT_ENABLED && !quotaExhausted;
   const [input, setInput] = useState('');
   const [skills, setSkills] = useState<AISkill[]>([]);
   const [skillsLoaded, setSkillsLoaded] = useState(false);
@@ -139,7 +141,7 @@ export function AIAgentPanel() {
   const highlightedSkill = filteredSkills[highlightedSkillIndex];
 
   useEffect(() => {
-    if (!isOpen || !AI_ASSISTANT_ENABLED || skillsRequestedRef.current) return;
+    if (!isOpen || !assistantUsable || skillsRequestedRef.current) return;
     let active = true;
     skillsRequestedRef.current = true;
     void listAISkills()
@@ -154,7 +156,7 @@ export function AIAgentPanel() {
     return () => {
       active = false;
     };
-  }, [isOpen]);
+  }, [assistantUsable, isOpen]);
 
   useEffect(() => {
     setHighlightedSkillIndex(skillMenuOpen && filteredSkills.length ? 0 : -1);
@@ -174,11 +176,11 @@ export function AIAgentPanel() {
   }, []);
 
   useEffect(() => {
-    if (isOpen && AI_ASSISTANT_ENABLED) {
+    if (isOpen && assistantUsable) {
       autoFollowRef.current = true;
       window.setTimeout(() => inputRef.current?.focus(), 220);
     }
-  }, [isOpen]);
+  }, [assistantUsable, isOpen]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -252,7 +254,7 @@ export function AIAgentPanel() {
   }, [finishResize]);
 
   const resetConversation = () => {
-    if (!AI_ASSISTANT_ENABLED) return;
+    if (!assistantUsable) return;
     autoFollowRef.current = true;
     void newConversation();
     setInput('');
@@ -261,7 +263,7 @@ export function AIAgentPanel() {
   };
 
   const handleSendMessage = (text: string) => {
-    if (!AI_ASSISTANT_ENABLED) return;
+    if (!assistantUsable) return;
     const content = text.trim();
     if (!content || isGenerating) return;
 
@@ -279,7 +281,7 @@ export function AIAgentPanel() {
 
   const handleSubmit = (event: React.FormEvent) => {
     event.preventDefault();
-    if (!AI_ASSISTANT_ENABLED) return;
+    if (!assistantUsable) return;
     handleSendMessage(input);
   };
 
@@ -300,7 +302,7 @@ export function AIAgentPanel() {
   };
 
   const handleInputKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
-    if (!AI_ASSISTANT_ENABLED || event.nativeEvent.isComposing) return;
+    if (!assistantUsable || event.nativeEvent.isComposing) return;
     const hasModifier = event.metaKey || event.ctrlKey || event.altKey;
 
     if (skillMenuOpen && event.key === 'Escape') {
@@ -421,7 +423,7 @@ export function AIAgentPanel() {
         <header className="relative flex h-16 shrink-0 items-center justify-between border-b border-slate-200 px-4">
           <button
             type="button"
-            disabled={!AI_ASSISTANT_ENABLED}
+            disabled={!assistantUsable}
             onClick={() => setHistoryOpen(value => !value)}
             className="flex min-w-0 items-center gap-2 rounded-lg px-2 py-1.5 text-left text-slate-800 outline-none hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-blue-600 disabled:cursor-not-allowed disabled:text-slate-500 disabled:hover:bg-transparent"
             aria-label="打开对话列表"
@@ -436,7 +438,7 @@ export function AIAgentPanel() {
           <div className="flex items-center gap-1">
             <button
               type="button"
-              disabled={!AI_ASSISTANT_ENABLED}
+              disabled={!assistantUsable}
               onClick={resetConversation}
               className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 outline-none hover:bg-slate-100 hover:text-slate-800 focus-visible:ring-2 focus-visible:ring-blue-600 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
               title="新对话"
@@ -446,7 +448,7 @@ export function AIAgentPanel() {
             </button>
             <button
               type="button"
-              disabled={!AI_ASSISTANT_ENABLED}
+              disabled={!assistantUsable}
               onClick={() => setHistoryOpen(value => !value)}
               className="flex h-9 w-9 items-center justify-center rounded-lg text-slate-500 outline-none hover:bg-slate-100 hover:text-slate-800 focus-visible:ring-2 focus-visible:ring-blue-600 disabled:cursor-not-allowed disabled:text-slate-300 disabled:hover:bg-transparent"
               title="对话记录"
@@ -533,6 +535,7 @@ export function AIAgentPanel() {
                     key={title}
                     type="button"
                     onClick={() => handleSendMessage(prompt)}
+                    disabled={quotaExhausted}
                     className="group flex min-h-[68px] w-full items-center gap-3 rounded-xl border border-slate-200 bg-slate-50/80 px-3.5 py-3 text-left outline-none transition-colors hover:border-blue-200 hover:bg-blue-50 focus-visible:ring-2 focus-visible:ring-blue-600"
                   >
                     <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-slate-200 bg-white text-blue-600 shadow-sm group-hover:border-blue-200">
@@ -574,7 +577,12 @@ export function AIAgentPanel() {
         </div>
 
         <footer className="relative shrink-0 border-t border-slate-200 bg-white p-3.5">
-          {AI_ASSISTANT_ENABLED && error && (
+          {AI_ASSISTANT_ENABLED && quotaExhausted && (
+            <div role="status" className="mb-2 rounded-lg bg-amber-50 px-3 py-2.5 text-xs leading-5 text-amber-900">
+              今日 AI 助手额度已用完，将于明日 00:00 恢复
+            </div>
+          )}
+          {AI_ASSISTANT_ENABLED && !quotaExhausted && error && (
             <div role="alert" className="mb-2 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">
               {error}
             </div>
@@ -582,7 +590,7 @@ export function AIAgentPanel() {
           <form
             onSubmit={handleSubmit}
             className={`relative rounded-xl border p-2 shadow-sm ${
-              AI_ASSISTANT_ENABLED
+              assistantUsable
                 ? 'border-slate-300 bg-white focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100'
                 : 'border-slate-200 bg-slate-50'
             }`}
@@ -596,7 +604,7 @@ export function AIAgentPanel() {
             )}
             <textarea
               ref={inputRef}
-              disabled={!AI_ASSISTANT_ENABLED}
+              disabled={!assistantUsable}
               value={input}
               onChange={event => handleInputChange(event.target.value)}
               onFocus={() => setInputFocused(true)}
@@ -609,20 +617,24 @@ export function AIAgentPanel() {
               aria-activedescendant={skillMenuOpen && highlightedSkill
                 ? skillOptionId(highlightedSkill.name)
                 : undefined}
-              placeholder={AI_ASSISTANT_ENABLED
+              placeholder={assistantUsable
                 ? '问我任何软考备考问题...'
-                : AI_ASSISTANT_UNAVAILABLE_MESSAGE}
+                : quotaExhausted
+                  ? '今日额度已用完，明日 00:00 恢复'
+                  : AI_ASSISTANT_UNAVAILABLE_MESSAGE}
               rows={2}
               className="max-h-32 min-h-12 w-full resize-none border-0 bg-transparent px-2 py-1 text-sm leading-6 text-slate-900 outline-none placeholder:text-slate-400 disabled:cursor-not-allowed disabled:text-slate-400"
             />
             <div className="flex items-center justify-between gap-3 px-1">
               <span className="text-[11px] text-slate-400">
-                {AI_ASSISTANT_ENABLED ? 'Enter 发送，Shift + Enter 换行' : '线上请求暂未开放'}
+                {assistantUsable
+                  ? 'Enter 发送，Shift + Enter 换行'
+                  : quotaExhausted ? '今日额度已用完' : '线上请求暂未开放'}
               </span>
               {isGenerating ? (
                 <button
                   type="button"
-                  disabled={!AI_ASSISTANT_ENABLED}
+                  disabled={!assistantUsable}
                   onClick={() => void cancelCurrentRun()}
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-slate-900 text-white outline-none hover:bg-slate-700 focus-visible:ring-2 focus-visible:ring-slate-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
                   aria-label="停止生成"
@@ -633,7 +645,7 @@ export function AIAgentPanel() {
               ) : (
                 <button
                   type="submit"
-                  disabled={!AI_ASSISTANT_ENABLED || !input.trim()}
+                  disabled={!assistantUsable || !input.trim()}
                   className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full bg-blue-600 text-white outline-none transition-colors hover:bg-blue-700 focus-visible:ring-2 focus-visible:ring-blue-600 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-400"
                   aria-label="发送消息"
                 >

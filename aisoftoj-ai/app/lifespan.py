@@ -13,6 +13,7 @@ from packages.harness.aisoftoj_agent.agents.factory import AgentGraph, build_age
 from packages.harness.aisoftoj_agent.integrations.aisoftoj.client import PlatformClient
 from packages.harness.aisoftoj_agent.persistence.engine import create_engine, create_session_factory
 from packages.harness.aisoftoj_agent.persistence.repositories.runs import RunRepository
+from packages.harness.aisoftoj_agent.quota import DailyTokenQuotaService
 from packages.harness.aisoftoj_agent.runtime.run_manager import RunManager
 from packages.harness.aisoftoj_agent.runtime.stream_bridge import StreamBridge
 from packages.harness.aisoftoj_agent.runtime.worker import Worker
@@ -30,6 +31,7 @@ class AppState:
     stream_bridge: StreamBridge
     run_manager: RunManager
     worker: Worker
+    quota_service: DailyTokenQuotaService | None = None
     skill_registry: SkillRegistry = field(default_factory=SkillRegistry.empty)
 
 
@@ -45,9 +47,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         max_resources_per_skill=settings.skills_max_resources_per_skill,
         max_total_resource_bytes=settings.skills_max_total_resource_bytes,
     )
-    skill_tools = build_skill_tools(
-        skill_registry, read_max_chars=settings.skills_read_max_chars
-    )
+    skill_tools = build_skill_tools(skill_registry, read_max_chars=settings.skills_read_max_chars)
     engine = create_engine(settings.database_url.get_secret_value())
     session_factory = create_session_factory(engine)
     platform_client = PlatformClient(
@@ -57,11 +57,13 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         read_timeout=settings.platform_read_timeout_seconds,
         max_response_bytes=settings.platform_max_response_bytes,
     )
+    quota_service = DailyTokenQuotaService(session_factory)
     agent = build_agent_graph(
         settings,
         platform_client,
         skill_registry=skill_registry,
         skill_tools=skill_tools,
+        quota_service=quota_service,
     )
     stream_bridge = StreamBridge()
     run_manager = RunManager(
@@ -76,6 +78,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     )
     async with session_factory.begin() as session:
         await RunRepository(session).interrupt_unfinished()
+    await quota_service.recover_unsettled()
     container = AppState(
         settings=settings,
         ready=True,
@@ -86,6 +89,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         stream_bridge=stream_bridge,
         run_manager=run_manager,
         worker=worker,
+        quota_service=quota_service,
         skill_registry=skill_registry,
     )
     app.state.container = container

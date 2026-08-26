@@ -29,6 +29,7 @@ class DirectEndpointChatModel(BaseChatModel):
     api_key: SecretStr
     model_name: str
     timeout_seconds: float = 120
+    max_output_tokens: int = 2048
     transport: Any = Field(default=None, exclude=True)
 
     @property
@@ -125,7 +126,10 @@ class DirectEndpointChatModel(BaseChatModel):
             "model": self.model_name,
             "messages": [_message_dict(message) for message in messages],
             "stream": stream,
+            "max_tokens": int(kwargs.get("max_tokens") or self.max_output_tokens),
         }
+        if stream:
+            payload["stream_options"] = {"include_usage": True}
         for name in ("tools", "tool_choice", "response_format"):
             if kwargs.get(name):
                 payload[name] = kwargs[name]

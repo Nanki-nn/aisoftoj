@@ -6,6 +6,10 @@ The Python service validates that JWT through Java's internal profile endpoint,
 then forwards the same JWT and the private `X-AI-Service-Key` to Java for every
 business-tool request.
 
+The legacy essay grading/scoring feature is deprecated and is not charged
+against the AI Assistant Agent daily token quota. The essay writing coach skill
+remains supported.
+
 ## 本地启动
 
 ### 前置条件
