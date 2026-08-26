@@ -155,14 +155,22 @@ LangGraph 继续自动记录 messages、模型调用、工具调用和节点状�
 字符串内容过滤至少覆盖：
 
 - `Authorization: Bearer ...` 和独立的 Bearer Token。
-- 常见 API Key 前缀后跟足够长度的凭据字符：OpenAI/兼容服务 `sk-`、`sk-proj-`，
-  Anthropic `sk-ant-`，Google `AIza`，GitHub `ghp_`、`github_pat_`，Slack `xoxb-`、
-  `xoxp-`。短前缀本身不视为秘密。
-- 当前进程已加载的 LLM Key、平台服务 Key 和 LangSmith Key 的精确值。
+- 常见 API Key 使用以下确定规则（均替换完整匹配）：
+  - `sk-proj-[A-Za-z0-9_-]{16,}`
+  - `sk-ant-[A-Za-z0-9_-]{16,}`
+  - `sk-[A-Za-z0-9_-]{16,}`
+  - `AIza[A-Za-z0-9_-]{20,}`
+  - `ghp_[A-Za-z0-9]{20,}`
+  - `github_pat_[A-Za-z0-9_]{20,}`
+  - `xoxb-[A-Za-z0-9-]{16,}`、`xoxp-[A-Za-z0-9-]{16,}`
+- 当前进程从 `Settings.llm_api_key`、`Settings.platform_service_key` 和
+  `LANGSMITH_API_KEY` 加载的三个秘密精确值。
 
 显式秘密值长度至少为 8 个字符才参与正文替换，避免测试占位符或短普通词导致大面积
-误删。字段名命中不受该长度限制。Bearer 匹配要求 `Bearer` 后有至少 8 个合法 Token
-字符，并替换整个凭据部分。
+误删。字段名命中不受该长度限制。Bearer 凭据使用 RFC 6750 的字符集合，确定规则为
+`(?i)Bearer[ ]+[A-Za-z0-9._~+/-]{8,}=*`，并替换完整匹配。每条 Run 的
+`AgentContext.bearer_token` 通过字段名规则和该 Bearer 规则过滤，不加入跨 Run 共享的
+静态秘密集合。
 
 命中内容统一替换为 `[REDACTED]`。普通题干、用户问题、模型回答、Tool 业务参数和
 Tool 业务结果保持完整。脱敏器必须支持嵌套字典、列表、元组和字符串，并避免在日志
@@ -177,7 +185,7 @@ Tool 业务结果保持完整。脱敏器必须支持嵌套字典、列表、元
   Run 改为 failed。
 - 应用关闭时在既有 shutdown drain 之后执行 flush/close，使用
   `LANGSMITH_FLUSH_TIMEOUT_SECONDS` 的独立超时（默认 2 秒）；超时后记录警告并
-  继续退出。
+  继续退出。该超时覆盖完整的 flush-and-close 序列，不为两个阶段分别计时。
 - 不上传文件二进制。当前 Agent 工具均为结构化只读工具；若未来引入大文档工具，
   应另行增加大小限制，而不是在本期静默截断普通问答正文。
 
