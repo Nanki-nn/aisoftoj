@@ -17,6 +17,10 @@
 **/.env.local
 **/.env.production
 
+# Local backend runtime configuration
+/aisoftoj-backend/src/main/resources/application.yml
+/aisoftoj-backend/src/main/resources/application-prod.yml
+
 target/
 */target/
 
