@@ -102,6 +102,61 @@ AGENT_CONFIG_FILE=/绝对路径/ai-config.yaml uv run python server.py
 - 模型调用失败：检查 `llm_base_url`、`llm_api_key` 和
   `llm_default_model` 是否由同一个模型服务支持。
 
+## LangSmith Agent 可观测性
+
+LangSmith tracing 默认关闭。配置只通过环境变量提供，尤其不要把
+`LANGSMITH_API_KEY` 写入 `config.yaml`、数据库或仓库。
+
+本地开发或测试环境可使用全量采样：
+
+```bash
+export LANGSMITH_TRACING=true
+export LANGSMITH_API_KEY='replace-me'
+export LANGSMITH_ENDPOINT='https://api.smith.langchain.com'
+export LANGSMITH_PROJECT='aisoftoj-agent-dev'
+export LANGSMITH_ENVIRONMENT='development'
+export LANGSMITH_AGENT_VERSION='local'
+export LANGSMITH_TRACING_SAMPLING_RATE='1.0'
+export LANGSMITH_FLUSH_TIMEOUT_SECONDS='2'
+```
+
+然后按前述方式启动服务并触发一次 Agent 请求。LangSmith 中的顶层 Trace 名称为
+`aisoftoj-agent-run`，可通过 `run_id`、`thread_id`、`user_id`、`question_id`、
+`agent_version`、`model` 和 `environment` metadata 检索。Agent、模型和工具节点由
+LangGraph/LangChain 原生 tracing 生成，不会为 SSE delta 单独创建节点。
+
+生产环境建议从 20% 采样开始，再根据调用量和费用调整：
+
+```bash
+export LANGSMITH_PROJECT='aisoftoj-agent-production'
+export LANGSMITH_ENVIRONMENT='production'
+export LANGSMITH_AGENT_VERSION='release-2026.08.27'
+export LANGSMITH_TRACING_SAMPLING_RATE='0.2'
+```
+
+数据安全边界：
+
+- 用户输入、模型可见回答和 Tool 业务输入输出会完整发送到 LangSmith SaaS。
+- API Key、Authorization、Cookie、Token、Password、Service Key、常见凭据格式和
+  当前进程加载的模型/平台/LangSmith Key 会在发送副本中替换为 `[REDACTED]`。
+- provider 的 `reasoning_content` 及 reasoning/thinking 内容块会替换为
+  `[HIDDEN_REASONING]`，不会作为隐藏推理正文发送。
+- 脱敏只作用于 tracing 副本，不改变业务消息、工具结果或数据库内容。
+
+启用 tracing 但未配置 API Key，或者采样率、Endpoint、环境名等配置非法时，服务会
+拒绝启动并返回不含密钥的配置错误。运行期间的 LangSmith 超时、限流或上报失败不会
+改变 Agent Run 的业务状态；SDK 使用后台批量上报，关闭服务时最多按
+`LANGSMITH_FLUSH_TIMEOUT_SECONDS` 等待发送队列。
+
+关闭 tracing：
+
+```bash
+export LANGSMITH_TRACING=false
+```
+
+生产 Compose 已通过 `/etc/aisoftoj/aisoftoj.env` 向 AI 容器传递环境变量，无需把
+LangSmith 配置重复写入 Compose 文件。
+
 ## API
 
 - `POST /api/ai/threads` creates a local conversation thread.
