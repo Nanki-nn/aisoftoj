@@ -263,7 +263,6 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
         if (practiceSession == null) {
             throw new IllegalArgumentException("试卷会话记录不存在");
         }
-        resumeSessionIfPaused(practiceSession);
         //获取试卷信息
         Paper paper = paperService.getById(practiceSession.getPaperId());
         if (paper == null) {
@@ -328,6 +327,16 @@ public class PracticeSessionServiceImpl implements PracticeSessionService {
         updateSession.setEndTime(pausedAt);
         practiceSessionMapper.updateById(updateSession);
         practiceSession.setEndTime(pausedAt);
+    }
+
+    @Override
+    @Transactional(rollbackFor = Exception.class)
+    public void resumePracticeSession(Integer userId, Integer practiceSessionId) {
+        PracticeSession practiceSession = getOwnedSession(userId, practiceSessionId);
+        if (practiceSession == null) {
+            throw new IllegalArgumentException("试卷会话记录不存在");
+        }
+        resumeSessionIfPaused(practiceSession);
     }
 
     @Override

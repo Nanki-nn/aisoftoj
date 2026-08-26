@@ -110,7 +110,34 @@ class PracticeSessionServiceImplTest {
     }
 
     @Test
-    void continuingPausedSessionExcludesPausedIntervalFromElapsedTime() {
+    void explicitlyResumingPausedSessionExcludesPausedIntervalFromElapsedTime() {
+        long now = System.currentTimeMillis();
+        PracticeSession session = doingSession();
+        session.setStartTime(new Date(now - 300_000L));
+        session.setEndTime(new Date(now - 120_000L));
+        when(practiceSessionMapper.selectById(12)).thenReturn(session);
+
+        Paper paper = new Paper();
+        paper.setId(3);
+        paper.setName("测试试卷");
+        when(paperService.getById(3)).thenReturn(paper);
+        when(questionService.listSessionQuestionSnapshotsBySessionId(12)).thenReturn(Collections.emptyList());
+
+        practiceSessionService.resumePracticeSession(7, 12);
+        GETPracticeSessionRes result = practiceSessionService.getPracticeSessionDetail(7, 12);
+
+        long elapsedAfterResume = System.currentTimeMillis() - result.getStartTime().getTime();
+        assertTrue(elapsedAfterResume >= 179_000L && elapsedAfterResume <= 181_000L);
+        assertEquals(0L, result.getEndTime().getTime());
+
+        ArgumentCaptor<PracticeSession> updateCaptor = ArgumentCaptor.forClass(PracticeSession.class);
+        verify(practiceSessionMapper).updateById(updateCaptor.capture());
+        assertEquals(result.getStartTime(), updateCaptor.getValue().getStartTime());
+        assertEquals(0L, updateCaptor.getValue().getEndTime().getTime());
+    }
+
+    @Test
+    void readingPausedSessionDoesNotResumeTimer() {
         long now = System.currentTimeMillis();
         PracticeSession session = doingSession();
         session.setStartTime(new Date(now - 300_000L));
@@ -125,14 +152,9 @@ class PracticeSessionServiceImplTest {
 
         GETPracticeSessionRes result = practiceSessionService.getPracticeSessionDetail(7, 12);
 
-        long elapsedAfterResume = System.currentTimeMillis() - result.getStartTime().getTime();
-        assertTrue(elapsedAfterResume >= 179_000L && elapsedAfterResume <= 181_000L);
-        assertEquals(0L, result.getEndTime().getTime());
-
-        ArgumentCaptor<PracticeSession> updateCaptor = ArgumentCaptor.forClass(PracticeSession.class);
-        verify(practiceSessionMapper).updateById(updateCaptor.capture());
-        assertEquals(result.getStartTime(), updateCaptor.getValue().getStartTime());
-        assertEquals(0L, updateCaptor.getValue().getEndTime().getTime());
+        assertEquals(session.getStartTime(), result.getStartTime());
+        assertEquals(session.getEndTime(), result.getEndTime());
+        verify(practiceSessionMapper, never()).updateById(any());
     }
 
     @Test

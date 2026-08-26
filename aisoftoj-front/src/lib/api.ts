@@ -552,6 +552,7 @@ export async function fetchWrongQuestions(params: PageQuery = {}): Promise<PageR
 }
 
 export async function continuePracticeSession(sessionId: string): Promise<ExamSession> {
+  await resumePracticeSession(sessionId);
   const data = await requestEncrypted<GetSessionRes>(`/session/${sessionId}`);
   if (data.status === 1) {
     return fetchPracticeSessionResult(sessionId);
@@ -587,6 +588,10 @@ function mapSessionResponse(data: GetSessionRes): ExamSession {
 
 export async function pausePracticeSession(sessionId: string): Promise<void> {
   await request(`/session/${sessionId}/pause`, { method: 'PATCH' });
+}
+
+export async function resumePracticeSession(sessionId: string): Promise<void> {
+  await request(`/session/${sessionId}/resume`, { method: 'PATCH' });
 }
 
 export function pausePracticeSessionOnPageHide(sessionId: string): Promise<void> {

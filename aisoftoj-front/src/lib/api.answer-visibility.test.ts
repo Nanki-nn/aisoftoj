@@ -26,6 +26,18 @@ async function successResponse(data: unknown, init?: RequestInit): Promise<Respo
   });
 }
 
+function plainSuccessResponse(data: unknown = null): Response {
+  return new Response(JSON.stringify({
+    code: 200,
+    message: '操作成功',
+    data,
+    timestamp: Date.now(),
+  }), {
+    status: 200,
+    headers: { 'Content-Type': 'application/json' },
+  });
+}
+
 function sessionResponse(status: number, answer: string | null, analysis: string | null) {
   return {
     id: 12,
@@ -61,7 +73,9 @@ describe('server-side answer visibility', () => {
   });
 
   it('maps an ongoing redacted multiple-choice question without crashing', async () => {
-    globalThis.fetch = async (_input, init) => successResponse(sessionResponse(0, null, null), init);
+    globalThis.fetch = async (input, init) => String(input).endsWith('/resume')
+      ? plainSuccessResponse()
+      : successResponse(sessionResponse(0, null, null), init);
 
     const session = await continuePracticeSession('12');
 
@@ -75,6 +89,9 @@ describe('server-side answer visibility', () => {
     globalThis.fetch = async (input, init) => {
       const path = String(input);
       paths.push(path);
+      if (path.endsWith('/resume')) {
+        return plainSuccessResponse();
+      }
       return path.endsWith('/result')
         ? successResponse(sessionResponse(1, 'A,B', '完成解析'), init)
         : successResponse(sessionResponse(1, null, null), init);
@@ -83,6 +100,7 @@ describe('server-side answer visibility', () => {
     const session = await continuePracticeSession('12');
 
     expect(paths.map(path => new URL(path).pathname)).toEqual([
+      '/session/12/resume',
       '/session/12',
       '/session/12/result',
     ]);
