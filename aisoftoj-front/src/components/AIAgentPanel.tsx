@@ -1,4 +1,4 @@
-import React, { useCallback, useEffect, useRef, useState } from 'react';
+import React, { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import {
   BookOpenCheck,
   Brain,
@@ -19,7 +19,15 @@ import {
   AI_ASSISTANT_UNAVAILABLE_MESSAGE,
 } from '../lib/aiAvailability';
 import { getMessageGroups } from '../lib/aiMessageGroups';
+import { AISkill, listAISkills } from '../lib/aiApi';
 import { AIMessageList } from './AIMessageList';
+import {
+  AISkillMenu,
+  AI_SKILL_LISTBOX_ID,
+  filterAISkills,
+  skillOptionId,
+  slashSkillQuery,
+} from './AISkillMenu';
 
 const QUICK_PROMPTS = [
   {
@@ -99,6 +107,11 @@ export function AIAgentPanel() {
     selectThread,
   } = useAIConversation({ active: isOpen, available: AI_ASSISTANT_ENABLED });
   const [input, setInput] = useState('');
+  const [skills, setSkills] = useState<AISkill[]>([]);
+  const [skillsLoaded, setSkillsLoaded] = useState(false);
+  const [highlightedSkillIndex, setHighlightedSkillIndex] = useState(-1);
+  const [dismissedSlashInput, setDismissedSlashInput] = useState<string | null>(null);
+  const [inputFocused, setInputFocused] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [isDesktop, setIsDesktop] = useState(() => (
     typeof window !== 'undefined' && window.matchMedia(DESKTOP_MEDIA_QUERY).matches
@@ -111,6 +124,39 @@ export function AIAgentPanel() {
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const resizeSessionRef = useRef<ResizeSession | null>(null);
+  const skillsRequestedRef = useRef(false);
+  const filteredSkills = useMemo(() => filterAISkills(skills, input), [input, skills]);
+  const hasSlashQuery = slashSkillQuery(input) !== null;
+  const skillMenuOpen = Boolean(
+    isOpen
+    && inputFocused
+    && skillsLoaded
+    && hasSlashQuery
+    && dismissedSlashInput !== input,
+  );
+  const highlightedSkill = filteredSkills[highlightedSkillIndex];
+
+  useEffect(() => {
+    if (!isOpen || !AI_ASSISTANT_ENABLED || skillsRequestedRef.current) return;
+    let active = true;
+    skillsRequestedRef.current = true;
+    void listAISkills()
+      .then(response => {
+        if (!active) return;
+        setSkills(response.items.filter(skill => skill.enabled));
+        setSkillsLoaded(true);
+      })
+      .catch(() => {
+        // Skill discovery is optional; ordinary chat remains available.
+      });
+    return () => {
+      active = false;
+    };
+  }, [isOpen]);
+
+  useEffect(() => {
+    setHighlightedSkillIndex(skillMenuOpen && filteredSkills.length ? 0 : -1);
+  }, [input, skills, skillMenuOpen, filteredSkills.length]);
 
   const finishResize = useCallback((pointerId?: number) => {
     const session = resizeSessionRef.current;
@@ -224,6 +270,65 @@ export function AIAgentPanel() {
     event.preventDefault();
     if (!AI_ASSISTANT_ENABLED) return;
     handleSendMessage(input);
+  };
+
+  const selectSkill = (skill: AISkill) => {
+    const command = `/${skill.name} `;
+    setInput(command);
+    setDismissedSlashInput(command);
+    setHighlightedSkillIndex(-1);
+    window.requestAnimationFrame(() => {
+      inputRef.current?.focus();
+      inputRef.current?.setSelectionRange(command.length, command.length);
+    });
+  };
+
+  const handleInputChange = (nextInput: string) => {
+    setInput(nextInput);
+    if (nextInput !== dismissedSlashInput) setDismissedSlashInput(null);
+  };
+
+  const handleInputKeyDown = (event: React.KeyboardEvent<HTMLTextAreaElement>) => {
+    if (!AI_ASSISTANT_ENABLED || event.nativeEvent.isComposing) return;
+    const hasModifier = event.metaKey || event.ctrlKey || event.altKey;
+
+    if (skillMenuOpen && event.key === 'Escape') {
+      event.preventDefault();
+      event.stopPropagation();
+      setDismissedSlashInput(input);
+      return;
+    }
+    if (skillMenuOpen && !hasModifier && !event.shiftKey && (
+      event.key === 'ArrowDown' || event.key === 'ArrowUp'
+    )) {
+      event.preventDefault();
+      if (!filteredSkills.length) return;
+      const direction = event.key === 'ArrowDown' ? 1 : -1;
+      setHighlightedSkillIndex(current => (
+        (current + direction + filteredSkills.length) % filteredSkills.length
+      ));
+      return;
+    }
+    if (skillMenuOpen && event.key === 'Enter' && event.shiftKey) {
+      setDismissedSlashInput(input);
+      return;
+    }
+    if (
+      skillMenuOpen
+      && event.key === 'Enter'
+      && !event.shiftKey
+      && !hasModifier
+      && highlightedSkillIndex >= 0
+      && filteredSkills[highlightedSkillIndex]
+    ) {
+      event.preventDefault();
+      selectSkill(filteredSkills[highlightedSkillIndex]);
+      return;
+    }
+    if (event.key === 'Enter' && !event.shiftKey && !hasModifier) {
+      event.preventDefault();
+      handleSendMessage(input);
+    }
   };
 
   const handleResizeStart = (event: React.PointerEvent<HTMLDivElement>) => {
@@ -451,7 +556,7 @@ export function AIAgentPanel() {
           )}
         </div>
 
-        <footer className="shrink-0 border-t border-slate-200 bg-white p-3.5">
+        <footer className="relative shrink-0 border-t border-slate-200 bg-white p-3.5">
           {AI_ASSISTANT_ENABLED && error && (
             <div role="alert" className="mb-2 rounded-md bg-red-50 px-3 py-2 text-xs text-red-700">
               {error}
@@ -459,24 +564,34 @@ export function AIAgentPanel() {
           )}
           <form
             onSubmit={handleSubmit}
-            className={`rounded-xl border p-2 shadow-sm ${
+            className={`relative rounded-xl border p-2 shadow-sm ${
               AI_ASSISTANT_ENABLED
                 ? 'border-slate-300 bg-white focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100'
                 : 'border-slate-200 bg-slate-50'
             }`}
           >
+            {skillMenuOpen && (
+              <AISkillMenu
+                skills={filteredSkills}
+                highlightedIndex={highlightedSkillIndex}
+                onSelect={selectSkill}
+              />
+            )}
             <textarea
               ref={inputRef}
               disabled={!AI_ASSISTANT_ENABLED}
               value={input}
-              onChange={event => setInput(event.target.value)}
-              onKeyDown={event => {
-                if (!AI_ASSISTANT_ENABLED) return;
-                if (event.key === 'Enter' && !event.shiftKey) {
-                  event.preventDefault();
-                  handleSendMessage(input);
-                }
-              }}
+              onChange={event => handleInputChange(event.target.value)}
+              onFocus={() => setInputFocused(true)}
+              onBlur={() => setInputFocused(false)}
+              onKeyDown={handleInputKeyDown}
+              role="combobox"
+              aria-autocomplete="list"
+              aria-expanded={skillMenuOpen}
+              aria-controls={skillMenuOpen ? AI_SKILL_LISTBOX_ID : undefined}
+              aria-activedescendant={skillMenuOpen && highlightedSkill
+                ? skillOptionId(highlightedSkill.name)
+                : undefined}
               placeholder={AI_ASSISTANT_ENABLED
                 ? '问我任何软考备考问题...'
                 : AI_ASSISTANT_UNAVAILABLE_MESSAGE}

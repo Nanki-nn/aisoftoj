@@ -12,6 +12,19 @@ export type AIThread = {
   updated_at: string;
 };
 
+export type AISkill = {
+  name: string;
+  description: string;
+  category: string;
+  enabled: boolean;
+  license: string | null;
+};
+
+export type AISkillListResponse = {
+  items: AISkill[];
+  total: number;
+};
+
 export type AIMessage = {
   id: string;
   thread_id: string;
@@ -146,6 +159,10 @@ export function createAIThread(title?: string): Promise<AIThread> {
 
 export function listAIThreads(page = 1, pageSize = 50): Promise<Page<AIThread>> {
   return aiRequest(`/api/ai/threads?page=${page}&page_size=${pageSize}`);
+}
+
+export function listAISkills(): Promise<AISkillListResponse> {
+  return aiRequest('/api/ai/skills');
 }
 
 export function listAIMessages(threadId: string, limit = 100): Promise<MessagePage> {

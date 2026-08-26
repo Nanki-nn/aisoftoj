@@ -62,7 +62,7 @@ describe('AIAgentPanel unavailable state', () => {
     const status = screen.getByRole('status');
     expect(status.textContent).toContain('AI 助手线上请求暂未开放');
     expect(status.textContent).toContain('欢迎加入交流群，查看项目最新进度');
-    const input = screen.getByRole('textbox') as HTMLTextAreaElement;
+    const input = screen.getByRole('combobox') as HTMLTextAreaElement;
     expect(input.disabled).toBe(true);
     expect(input.placeholder).toBe('AI 助手线上请求暂未开放');
     expect((screen.getByRole('button', { name: '发送消息' }) as HTMLButtonElement).disabled).toBe(true);
