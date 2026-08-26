@@ -10,7 +10,8 @@ AI 回答的 `message.delta` 会实时更新 `runStates.answer`，但当前滚�
 
 ## 状态与数据流
 
-在 `AIAgentPanel` 内维护一个不触发渲染的 `autoFollowRef`。滚动容器每次产生 scroll
+在 `AIAgentPanel` 内用 `useRef(true)` 维护一个不触发渲染的 `autoFollowRef`，确保首次
+异步加载历史消息后默认滚到底部。滚动容器每次产生 scroll
 事件时计算 `scrollHeight - scrollTop - clientHeight`：距离不超过 80px 视为仍在底部，
 保持自动跟随；超过阈值则暂停。
 
@@ -18,8 +19,9 @@ AI 回答的 `message.delta` 会实时更新 `runStates.answer`，但当前滚�
 后，如果 `autoFollowRef` 为真，将容器立即滚到最新 `scrollHeight`。流式更新使用即时滚动，
 不为每个 token 排队创建平滑动画。
 
-用户发送新消息、切换会话或新建会话时重新启用自动跟随，确保新问题和新回答进入视口。
-用户随后主动上滚仍可再次暂停。该状态只属于当前 UI，不写入会话或后端。
+用户发送新消息、切换会话、新建会话或重新打开 AI 面板时重新启用自动跟随，确保新问题、
+新回答和当前会话末尾进入视口；关闭面板时不滚动。用户随后主动上滚仍可再次暂停。该状态
+只属于当前 UI，不写入会话或后端。`isOpen` 参与滚动 effect 的生命周期判断。
 
 ## 边界与降级
 
@@ -36,4 +38,7 @@ AI 回答的 `message.delta` 会实时更新 `runStates.answer`，但当前滚�
 - 用户上滚超过阈值后，新的流式 delta 不触发滚动；
 - 用户重新滚回底部后恢复自动跟随；
 - 发送新消息会重新启用跟随；
+- 切换会话、新建会话和重新打开面板分别恢复自动跟随；
+- 面板关闭期间的 `runStates` 变化不触发滚动；
+- 测试中的 `runStates` mock 保持稳定引用，仅在验证流式更新时通过 rerender 显式替换；
 - 前端完整 Vitest 和生产构建继续通过。
