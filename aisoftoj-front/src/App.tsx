@@ -232,7 +232,7 @@ export default function App() {
   const { isOpen: isAgentOpen, close: closeAgent } = useAgentPanel();
   const navigate = useNavigate();
   const location = useLocation();
-  const agentAvailable = !location.pathname.startsWith('/admin')
+  const agentVisibleOnRoute = !location.pathname.startsWith('/admin')
     && location.pathname !== ROUTES.auth
     && location.pathname !== ROUTES.forgotPassword;
 
@@ -242,10 +242,10 @@ export default function App() {
   }, [checkAuthStatus]);
 
   useEffect(() => {
-    if (!agentAvailable && isAgentOpen) {
+    if (!agentVisibleOnRoute && isAgentOpen) {
       closeAgent();
     }
-  }, [agentAvailable, closeAgent, isAgentOpen]);
+  }, [agentVisibleOnRoute, closeAgent, isAgentOpen]);
 
   const handleStartPaper = async (paper: ExamPaper, mode: 'practice' | 'exam') => {
     try {
@@ -421,7 +421,7 @@ export default function App() {
   return (
     <div
       className={`min-h-screen bg-background text-foreground transition-[padding] duration-300 ease-out ${
-        agentAvailable && isAgentOpen ? 'xl:pr-[400px]' : ''
+        agentVisibleOnRoute && isAgentOpen ? 'xl:pr-[400px]' : ''
       }`}
     >
       <Routes>
@@ -550,7 +550,7 @@ export default function App() {
         />
         <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
       </Routes>
-      {agentAvailable && <AIAgentPanel />}
+      {agentVisibleOnRoute && <AIAgentPanel />}
     </div>
   );
 }
