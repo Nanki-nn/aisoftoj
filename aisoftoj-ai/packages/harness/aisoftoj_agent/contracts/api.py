@@ -122,3 +122,23 @@ class SkillResponse(BaseModel):
 class SkillListResponse(BaseModel):
     items: list[SkillResponse]
     total: int = Field(ge=0)
+
+
+class QuotaResponse(BaseModel):
+    limit: int = Field(ge=0)
+    consumed: int = Field(ge=0)
+    reserved: int = Field(ge=0)
+    remaining: int = Field(ge=0)
+    reset_at: datetime
+
+
+class QuotaConfigResponse(BaseModel):
+    daily_token_limit: int = Field(ge=1_000, le=10_000_000)
+    updated_by_user_id: int | None
+    updated_at: datetime | None
+
+
+class QuotaConfigUpdateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    daily_token_limit: int = Field(strict=True, ge=1_000, le=10_000_000)

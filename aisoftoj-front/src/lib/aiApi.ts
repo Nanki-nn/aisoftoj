@@ -106,12 +106,14 @@ type ErrorEnvelope = {
 export class AIApiError extends Error {
   readonly status: number;
   readonly code?: string;
+  readonly details?: Record<string, unknown>;
 
-  constructor(message: string, status: number, code?: string) {
+  constructor(message: string, status: number, code?: string, details?: Record<string, unknown>) {
     super(message);
     this.name = 'AIApiError';
     this.status = status;
     this.code = code;
+    this.details = details;
   }
 }
 
@@ -145,9 +147,62 @@ async function aiRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const payload = await response.json().catch(() => null) as T | ErrorEnvelope | null;
   if (!response.ok) {
     const error = (payload as ErrorEnvelope | null)?.error;
-    throw new AIApiError(error?.message || `AI 服务请求失败 (${response.status})`, response.status, error?.code);
+    throw new AIApiError(
+      error?.message || `AI 服务请求失败 (${response.status})`,
+      response.status,
+      error?.code,
+      error as Record<string, unknown> | undefined,
+    );
   }
   return payload as T;
+}
+
+async function aiAdminRequest<T>(path: string, init?: RequestInit): Promise<T> {
+  const headers = authHeaders(init?.headers);
+  if (init?.body && !headers.has('Content-Type')) {
+    headers.set('Content-Type', 'application/json');
+  }
+  const response = await fetch(`${AI_API_BASE_URL}${path}`, { ...init, headers });
+  const payload = await response.json().catch(() => null) as T | ErrorEnvelope | null;
+  if (!response.ok) {
+    const error = (payload as ErrorEnvelope | null)?.error;
+    throw new AIApiError(
+      error?.message || `AI 服务请求失败 (${response.status})`,
+      response.status,
+      error?.code,
+      error as Record<string, unknown> | undefined,
+    );
+  }
+  return payload as T;
+}
+
+export type AIQuota = {
+  limit: number;
+  consumed: number;
+  reserved: number;
+  remaining: number;
+  reset_at: string;
+};
+
+export type AIQuotaConfig = {
+  daily_token_limit: number;
+  updated_by_user_id: number | null;
+  updated_at: string | null;
+};
+
+export function getAIQuota(): Promise<AIQuota> {
+  return aiRequest('/api/ai/quota');
+}
+
+export function getAIQuotaConfig(): Promise<AIQuotaConfig> {
+  return aiAdminRequest('/api/ai/admin/quota-config');
+}
+
+export function updateAIQuotaConfig(dailyTokenLimit: number): Promise<AIQuotaConfig> {
+  return aiAdminRequest('/api/ai/admin/quota-config', {
+    method: 'PATCH',
+    body: JSON.stringify({ daily_token_limit: dailyTokenLimit }),
+  });
 }
 
 export function createAIThread(title?: string): Promise<AIThread> {

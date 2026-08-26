@@ -5,12 +5,16 @@ import logging
 from types import SimpleNamespace
 from typing import Any
 
+import httpx
 import pytest
 from langchain.agents.middleware import ModelRequest, ModelResponse
 from langchain_core.language_models.fake_chat_models import FakeMessagesListChatModel
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from langgraph.runtime import Runtime
 
+from packages.harness.aisoftoj_agent.agents.middlewares.daily_token_quota import (
+    DailyTokenQuotaMiddleware,
+)
 from packages.harness.aisoftoj_agent.agents.middlewares.loop_detection import (
     AgentLoopDetected,
     LoopDetectionMiddleware,
@@ -40,14 +44,16 @@ from packages.harness.aisoftoj_agent.skills import (
 
 
 def model_request(
-    messages: list[Any], system_message: SystemMessage | None = None
+    messages: list[Any],
+    system_message: SystemMessage | None = None,
+    runtime: Runtime[Any] | None = None,
 ) -> ModelRequest[Any]:
     return ModelRequest(
         model=FakeMessagesListChatModel(responses=[AIMessage(content="unused")]),
         messages=messages,
         system_message=system_message,
         state={"messages": messages},
-        runtime=Runtime(context=None),
+        runtime=runtime or Runtime(context=None),
     )
 
 
@@ -61,6 +67,134 @@ async def test_token_budget_fails_before_an_unbounded_model_call() -> None:
         await middleware.awrap_model_call(
             model_request([HumanMessage(content="123456789012")]), handler
         )
+
+
+async def test_daily_quota_reserves_and_settles_provider_usage() -> None:
+    calls: list[tuple[str, object]] = []
+
+    class QuotaService:
+        async def reserve(self, **kwargs: object) -> object:
+            calls.append(("reserve", kwargs))
+            return SimpleNamespace(id=9)
+
+        async def settle(self, reservation_id: int, **kwargs: object) -> None:
+            calls.append(("settle", {"reservation_id": reservation_id, **kwargs}))
+
+        async def release(self, reservation_id: int) -> None:
+            calls.append(("release", reservation_id))
+
+    request = model_request(
+        [HumanMessage(content="12345678")],
+        runtime=Runtime(context=SimpleNamespace(run_id="run-1", user_id=7)),
+    )
+    middleware = DailyTokenQuotaMiddleware(  # type: ignore[arg-type]
+        QuotaService(), max_output_tokens=100, reservation_margin_percent=10
+    )
+
+    async def handler(prepared: ModelRequest[Any]) -> ModelResponse[Any]:
+        assert prepared.model_settings["max_tokens"] == 100
+        return ModelResponse(
+            result=[
+                AIMessage(
+                    content="ok",
+                    usage_metadata={
+                        "input_tokens": 11,
+                        "output_tokens": 4,
+                        "total_tokens": 15,
+                    },
+                )
+            ]
+        )
+
+    await middleware.awrap_model_call(request, handler)
+    assert calls[0] == (
+        "reserve",
+        {"run_id": "run-1", "user_id": 7, "tokens": 103},
+    )
+    assert calls[1] == (
+        "settle",
+        {
+            "reservation_id": 9,
+            "prompt_tokens": 11,
+            "completion_tokens": 4,
+            "usage_source": "provider",
+            "estimated": False,
+        },
+    )
+
+
+async def test_daily_quota_estimates_reservation_when_model_outcome_is_unknown() -> None:
+    settled: list[tuple[int, dict[str, object]]] = []
+    released: list[int] = []
+
+    class QuotaService:
+        async def reserve(self, **_kwargs: object) -> object:
+            return SimpleNamespace(id=10, reserved_tokens=103)
+
+        async def settle(self, reservation_id: int, **kwargs: object) -> None:
+            settled.append((reservation_id, kwargs))
+
+        async def release(self, reservation_id: int) -> None:
+            released.append(reservation_id)
+
+    request = model_request(
+        [HumanMessage(content="hello")],
+        runtime=Runtime(context=SimpleNamespace(run_id="run-1", user_id=7)),
+    )
+    middleware = DailyTokenQuotaMiddleware(  # type: ignore[arg-type]
+        QuotaService(), max_output_tokens=100, reservation_margin_percent=10
+    )
+
+    async def handler(_prepared: ModelRequest[Any]) -> ModelResponse[Any]:
+        raise RuntimeError("model unavailable")
+
+    with pytest.raises(RuntimeError, match="model unavailable"):
+        await middleware.awrap_model_call(request, handler)
+    assert released == []
+    assert settled == [
+        (
+            10,
+            {
+                "prompt_tokens": 103,
+                "completion_tokens": 0,
+                "usage_source": "estimated",
+                "estimated": True,
+            },
+        )
+    ]
+
+
+async def test_daily_quota_releases_on_definitive_provider_rejection() -> None:
+    released: list[int] = []
+
+    class QuotaService:
+        async def reserve(self, **_kwargs: object) -> object:
+            return SimpleNamespace(id=11, reserved_tokens=103)
+
+        async def settle(self, _reservation_id: int, **_kwargs: object) -> None:
+            raise AssertionError("definitive rejection must not be charged")
+
+        async def release(self, reservation_id: int) -> None:
+            released.append(reservation_id)
+
+    request = model_request(
+        [HumanMessage(content="hello")],
+        runtime=Runtime(context=SimpleNamespace(run_id="run-1", user_id=7)),
+    )
+    middleware = DailyTokenQuotaMiddleware(  # type: ignore[arg-type]
+        QuotaService(), max_output_tokens=100, reservation_margin_percent=10
+    )
+    provider_request = httpx.Request("POST", "https://model.example/v1/chat")
+    provider_response = httpx.Response(429, request=provider_request)
+
+    async def handler(_prepared: ModelRequest[Any]) -> ModelResponse[Any]:
+        raise httpx.HTTPStatusError(
+            "rate limited", request=provider_request, response=provider_response
+        )
+
+    with pytest.raises(httpx.HTTPStatusError):
+        await middleware.awrap_model_call(request, handler)
+    assert released == [11]
 
 
 def skill_registry(tmp_path: Any) -> SkillRegistry:

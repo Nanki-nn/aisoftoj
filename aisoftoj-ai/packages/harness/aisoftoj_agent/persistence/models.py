@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Any
 
 from sqlalchemy import (
@@ -9,6 +9,7 @@ from sqlalchemy import (
     BigInteger,
     Boolean,
     Computed,
+    Date,
     DateTime,
     ForeignKey,
     Index,
@@ -133,6 +134,74 @@ class AiThreadSummary(Base):
     )
     content: Mapped[str] = mapped_column(Text, nullable=False)
     summarized_through_sequence: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    create_time: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), nullable=False
+    )
+    update_time: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+
+class AiQuotaConfig(Base):
+    __tablename__ = "ai_quota_config"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    daily_token_limit: Mapped[int] = mapped_column(Integer, nullable=False, default=30_000)
+    updated_by_user_id: Mapped[int | None] = mapped_column(Integer)
+    create_time: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), nullable=False
+    )
+    update_time: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+
+class AiDailyTokenUsage(Base):
+    __tablename__ = "ai_daily_token_usage"
+    __table_args__ = (
+        UniqueConstraint("user_id", "usage_date", name="uq_ai_daily_token_usage_user_date"),
+    )
+
+    id: Mapped[int] = mapped_column(
+        BigInteger().with_variant(Integer, "sqlite"),
+        primary_key=True,
+        autoincrement=True,
+    )
+    user_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    usage_date: Mapped[date] = mapped_column(Date, nullable=False)
+    consumed_tokens: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    reserved_tokens: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    create_time: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), nullable=False
+    )
+    update_time: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+
+class AiTokenReservation(Base):
+    __tablename__ = "ai_token_reservations"
+    __table_args__ = (
+        UniqueConstraint("run_id", "model_call_sequence", name="uq_ai_token_reservation_run_call"),
+        Index("ix_ai_token_reservations_status", "status", "create_time"),
+    )
+
+    id: Mapped[int] = mapped_column(
+        BigInteger().with_variant(Integer, "sqlite"),
+        primary_key=True,
+        autoincrement=True,
+    )
+    run_id: Mapped[str] = mapped_column(
+        CHAR(36), ForeignKey("ai_runs.id", ondelete="CASCADE"), nullable=False
+    )
+    user_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    usage_date: Mapped[date] = mapped_column(Date, nullable=False)
+    model_call_sequence: Mapped[int] = mapped_column(Integer, nullable=False)
+    reserved_tokens: Mapped[int] = mapped_column(Integer, nullable=False)
+    prompt_tokens: Mapped[int | None] = mapped_column(Integer)
+    completion_tokens: Mapped[int | None] = mapped_column(Integer)
+    usage_source: Mapped[str | None] = mapped_column(String(16))
+    status: Mapped[str] = mapped_column(String(24), nullable=False)
     create_time: Mapped[datetime] = mapped_column(
         DateTime, server_default=func.now(), nullable=False
     )

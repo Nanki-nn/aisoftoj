@@ -17,6 +17,8 @@ llm_request_timeout_seconds: 60
 llm_max_retries: 1
 
 agent_max_run_tokens: 32000
+agent_max_output_tokens: 2048
+agent_quota_reservation_margin_percent: 10
 agent_max_run_seconds: 180
 agent_summary_trigger_tokens: 24000
 agent_summary_keep_messages: 12

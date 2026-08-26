@@ -6,7 +6,9 @@ from langchain.agents.middleware import AgentMiddleware
 
 from config import Settings
 
+from ...quota import DailyTokenQuotaService
 from ...skills import SkillRegistry
+from .daily_token_quota import DailyTokenQuotaMiddleware
 from .loop_detection import LoopDetectionMiddleware
 from .persistent_summary import PersistentSummaryMiddleware
 from .skill_activation import SkillActivationMiddleware
@@ -18,15 +20,30 @@ from .tool_policy import ToolPolicyMiddleware
 
 
 def build_middlewares(
-    settings: Settings, skill_registry: SkillRegistry
+    settings: Settings,
+    skill_registry: SkillRegistry,
+    quota_service: DailyTokenQuotaService | None = None,
 ) -> list[AgentMiddleware[Any, Any, Any]]:
-    return [
+    middlewares: list[AgentMiddleware[Any, Any, Any]] = [
         PersistentSummaryMiddleware(),
         SkillActivationMiddleware(skill_registry),
         TokenBudgetMiddleware(settings.agent_max_run_tokens),
-        ToolAuditMiddleware(),
-        ToolEventMiddleware(),
-        ToolPolicyMiddleware(),
-        ToolErrorMiddleware(),
-        LoopDetectionMiddleware(settings.agent_loop_hard_repetitions),
     ]
+    if quota_service is not None:
+        middlewares.append(
+            DailyTokenQuotaMiddleware(
+                quota_service,
+                max_output_tokens=settings.agent_max_output_tokens,
+                reservation_margin_percent=settings.agent_quota_reservation_margin_percent,
+            )
+        )
+    middlewares.extend(
+        [
+            ToolAuditMiddleware(),
+            ToolEventMiddleware(),
+            ToolPolicyMiddleware(),
+            ToolErrorMiddleware(),
+            LoopDetectionMiddleware(settings.agent_loop_hard_repetitions),
+        ]
+    )
+    return middlewares

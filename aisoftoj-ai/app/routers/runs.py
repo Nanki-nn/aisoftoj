@@ -9,6 +9,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Header, HTTPException, Query, Request, Response, status
 from fastapi.responses import StreamingResponse
+from sqlalchemy.exc import SQLAlchemyError
 
 from app.dependencies import Container, CurrentUser, DatabaseSession
 from packages.harness.aisoftoj_agent.agents.context import AgentContext
@@ -85,6 +86,12 @@ async def create_run(
     if existing is not None:
         response.status_code = status.HTTP_200_OK
         return run_response(existing)
+    if container.quota_service is None:
+        raise HTTPException(status_code=503, detail="AI_QUOTA_UNAVAILABLE")
+    try:
+        await container.quota_service.require_available(user.user_id)
+    except SQLAlchemyError as exc:
+        raise HTTPException(status_code=503, detail="AI_QUOTA_UNAVAILABLE") from exc
     # The ownership/idempotency reads autobegin a transaction. End it before
     # reserving capacity and entering the transaction that creates the run.
     await session.rollback()

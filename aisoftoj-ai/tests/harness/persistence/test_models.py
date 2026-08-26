@@ -10,6 +10,9 @@ def test_metadata_contains_only_ai_runtime_tables() -> None:
         "ai_runs",
         "ai_run_events",
         "ai_thread_summaries",
+        "ai_quota_config",
+        "ai_daily_token_usage",
+        "ai_token_reservations",
     }
 
 

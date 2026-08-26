@@ -84,8 +84,10 @@ class RunRepository:
         run.status = status
         run.error_code = error_code
         run.output_message_id = output_message_id
-        run.prompt_tokens = prompt_tokens
-        run.completion_tokens = completion_tokens
+        if prompt_tokens is not None:
+            run.prompt_tokens = prompt_tokens
+        if completion_tokens is not None:
+            run.completion_tokens = completion_tokens
         await self.session.flush()
 
     async def append_event(

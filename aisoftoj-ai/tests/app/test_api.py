@@ -16,8 +16,13 @@ from app.main import create_app
 from config import PROJECT_ROOT
 from packages.harness.aisoftoj_agent.integrations.aisoftoj.client import PlatformClient
 from packages.harness.aisoftoj_agent.integrations.aisoftoj.context import TrustedUser
-from packages.harness.aisoftoj_agent.persistence.models import Base
+from packages.harness.aisoftoj_agent.persistence.models import (
+    AiDailyTokenUsage,
+    AiQuotaConfig,
+    Base,
+)
 from packages.harness.aisoftoj_agent.persistence.repositories.runs import RunRepository
+from packages.harness.aisoftoj_agent.quota import DailyTokenQuotaService, beijing_date
 from packages.harness.aisoftoj_agent.runtime.run_manager import RunManager
 from packages.harness.aisoftoj_agent.runtime.stream_bridge import StreamBridge
 from packages.harness.aisoftoj_agent.runtime.worker import Worker
@@ -34,6 +39,8 @@ async def api_client() -> AsyncGenerator[tuple[httpx.AsyncClient, PlatformClient
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")
     async with engine.begin() as connection:
         await connection.run_sync(Base.metadata.create_all)
+    async with async_sessionmaker(engine, expire_on_commit=False).begin() as setup:
+        setup.add(AiQuotaConfig(id=1, daily_token_limit=30_000))
     session_factory = async_sessionmaker(engine, expire_on_commit=False)
     platform = PlatformClient(
         base_url="http://127.0.0.1:8080",
@@ -52,6 +59,7 @@ async def api_client() -> AsyncGenerator[tuple[httpx.AsyncClient, PlatformClient
         stream_bridge=StreamBridge(),
         run_manager=RunManager(max_runs=4, max_user_runs=2),
         worker=cast(Any, IdleWorker()),
+        quota_service=DailyTokenQuotaService(session_factory),
     )
     app.state.platform_client = platform
     assert app.state.container.langsmith_tracing.enabled is False
@@ -90,6 +98,63 @@ async def test_thread_and_message_endpoints_are_owner_scoped(
 
     messages = await client.get(f"/api/ai/threads/{thread_id}/messages")
     assert messages.status_code == 200
+    assert messages.json()["items"] == []
+
+
+async def test_quota_endpoints_enforce_role_and_apply_updates_immediately(
+    api_client: tuple[httpx.AsyncClient, PlatformClient, Any],
+) -> None:
+    client, _platform, app = api_client
+    quota = await client.get("/api/ai/quota")
+    assert quota.status_code == 200
+    assert quota.json()["limit"] == 30_000
+    assert quota.json()["remaining"] == 30_000
+    assert quota.json()["reset_at"].endswith("+08:00")
+
+    assert (await client.get("/api/ai/admin/quota-config")).status_code == 403
+    app.dependency_overrides[get_trusted_user] = lambda: TrustedUser(
+        user_id=1,
+        username="admin",
+        nickname=None,
+        role="ADMIN",
+        bearer_token="jwt",
+    )
+    updated = await client.patch("/api/ai/admin/quota-config", json={"daily_token_limit": 45_000})
+    assert updated.status_code == 200
+    assert updated.json()["daily_token_limit"] == 45_000
+    app.dependency_overrides[get_trusted_user] = lambda: TrustedUser(
+        user_id=7,
+        username="reader",
+        nickname=None,
+        role="USER",
+        bearer_token="jwt",
+    )
+    assert (await client.get("/api/ai/quota")).json()["limit"] == 45_000
+
+
+async def test_exhausted_quota_rejects_run_without_persisting_message(
+    api_client: tuple[httpx.AsyncClient, PlatformClient, Any],
+) -> None:
+    client, _platform, app = api_client
+    thread_id = (await client.post("/api/ai/threads", json={})).json()["id"]
+    async with app.state.container.session_factory.begin() as session:
+        session.add(
+            AiDailyTokenUsage(
+                user_id=7,
+                usage_date=beijing_date(),
+                consumed_tokens=30_000,
+                reserved_tokens=0,
+            )
+        )
+    response = await client.post(
+        f"/api/ai/threads/{thread_id}/runs",
+        json={"message": "继续讲解"},
+        headers={"Idempotency-Key": "quota-exhausted"},
+    )
+    assert response.status_code == 429
+    assert response.json()["error"]["code"] == "AI_DAILY_TOKEN_QUOTA_EXCEEDED"
+    assert response.json()["error"]["remaining"] == 0
+    messages = await client.get(f"/api/ai/threads/{thread_id}/messages")
     assert messages.json()["items"] == []
 
 
@@ -190,13 +255,9 @@ async def test_run_persists_first_question_context_across_idempotent_replay(
         max_run_seconds=30,
     )
     assert await worker._load_question_id(first.json()["id"]) == 123
-    messages = await worker._load_messages(
-        thread_id, current_input_id=run.input_message_id
-    )
+    messages = await worker._load_messages(thread_id, current_input_id=run.input_message_id)
     current = [
-        message
-        for message in messages
-        if message.additional_kwargs.get(CURRENT_INPUT_KEY) is True
+        message for message in messages if message.additional_kwargs.get(CURRENT_INPUT_KEY) is True
     ]
     assert len(current) == 1
     assert str(current[0].id) == run.input_message_id
@@ -271,15 +332,12 @@ async def test_run_events_are_owner_scoped_and_paginated(
         await repository.append_event(run_id, "message.delta", {"delta": "一"})
         await repository.append_event(run_id, "message.delta", {"delta": "二"})
 
-    first = await client.get(
-        f"/api/ai/threads/{thread_id}/runs/{run_id}/events?limit=1"
-    )
+    first = await client.get(f"/api/ai/threads/{thread_id}/runs/{run_id}/events?limit=1")
     assert first.status_code == 200
     assert first.json()["has_more"] is True
     cursor = first.json()["next_after_sequence"]
     second = await client.get(
-        f"/api/ai/threads/{thread_id}/runs/{run_id}/events"
-        f"?after_sequence={cursor}&limit=10"
+        f"/api/ai/threads/{thread_id}/runs/{run_id}/events?after_sequence={cursor}&limit=10"
     )
     assert second.status_code == 200
     assert all(item["sequence"] > cursor for item in second.json()["items"])
