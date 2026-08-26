@@ -1,12 +1,13 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, BookOpen, ImageUp, ChevronLeft } from 'lucide-react';
+import { LayoutDashboard, Users, BookOpen, ImageUp, ChevronLeft, Bot } from 'lucide-react';
 
 const NAV_ITEMS = [
   { path: '/admin', label: '数据概览', icon: LayoutDashboard, exact: true },
   { path: '/admin/users', label: '用户管理', icon: Users, exact: false },
   { path: '/admin/questions', label: '题库管理', icon: BookOpen, exact: false },
   { path: '/admin/oss', label: '图片上传', icon: ImageUp, exact: false },
+  { path: '/admin/ai', label: 'AI 助手设置', icon: Bot, exact: false },
 ];
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {

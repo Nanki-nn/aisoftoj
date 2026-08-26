@@ -24,6 +24,7 @@ import { AdminUsers } from './components/admin/AdminUsers';
 import { AdminQuestions } from './components/admin/AdminQuestions';
 import { AdminOssUpload } from './components/admin/AdminOssUpload';
 import { AdminRouteGuard } from './components/admin/AdminRouteGuard';
+import { AdminAISettings } from './components/admin/AdminAISettings';
 import { useExamSession } from './hooks/useExamSession';
 import { useAuth } from './hooks/useAuth';
 import { useAgentPanel } from './hooks/useAgentPanel';
@@ -618,6 +619,16 @@ export default function App() {
             <AdminRouteGuard>
               <AdminLayout>
                 <AdminOssUpload />
+              </AdminLayout>
+            </AdminRouteGuard>
+          }
+        />
+        <Route
+          path="/admin/ai"
+          element={
+            <AdminRouteGuard>
+              <AdminLayout>
+                <AdminAISettings />
               </AdminLayout>
             </AdminRouteGuard>
           }
