@@ -26,7 +26,7 @@ export function getMessageGroups(
     const run = message.runId ? runStates[message.runId] : undefined;
     const assistant = message.runId ? assistantByRun.get(message.runId) : undefined;
     groups.push({ type: 'human', key: `${runId}:human`, message });
-    if (run?.tools.length) {
+    if (run && (run.tools.length || run.processNotes.length)) {
       groups.push({ type: 'assistant:processing', key: `${runId}:processing`, run });
     }
     const answer = assistant?.content || run?.answer || '';

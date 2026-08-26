@@ -71,9 +71,51 @@ describe('AI event normalization and reduction', () => {
       toolName: 'list_papers',
       input: {},
       status: 'completed',
+      sequence: 2,
       summary: { total: 12 },
       durationMs: 20,
     }]);
+  });
+
+  it('moves an exact process note suffix out of the answer and restores it from history', () => {
+    const raws = [
+      persisted(1, 'message.delta', { delta: '我先读取你的练习记录。' }),
+      persisted(2, 'process.note', { text: '我先读取你的练习记录。' }),
+      persisted(3, 'tool.started', {
+        call_id: 'call-1',
+        tool_name: 'list_practice_history',
+        input: {},
+      }),
+      persisted(4, 'message.delta', { delta: '## 今日安排\n\n- 复习错题' }),
+    ];
+    let state = createRunViewState('run-1');
+    raws.forEach(raw => {
+      const normalized = normalizeEvent(raw);
+      if (normalized?.event) state = applyEvent(state, normalized.event);
+    });
+
+    expect(state.answer).toBe('## 今日安排\n\n- 复习错题');
+    expect(state.processNotes).toEqual([{
+      text: '我先读取你的练习记录。',
+      sequence: 2,
+    }]);
+    expect(state.tools[0].sequence).toBe(3);
+  });
+
+  it('does not duplicate a legacy local note when the durable note arrives later', () => {
+    let state = createRunViewState('run-1');
+    [
+      persisted(1, 'message.delta', { delta: '先查询试卷。' }),
+      persisted(2, 'tool.started', { call_id: 'call-1', tool_name: 'list_papers', input: {} }),
+      persisted(3, 'process.note', { text: '先查询试卷。' }),
+    ].forEach(raw => {
+      const normalized = normalizeEvent(raw);
+      if (normalized?.event) state = applyEvent(state, normalized.event);
+    });
+
+    expect(state.answer).toBe('');
+    expect(state.processNotes).toHaveLength(1);
+    expect(state.processNotes[0]).toMatchObject({ text: '先查询试卷。', sequence: 1.5, local: true });
   });
 
   it('produces the same state from SSE and persisted history', () => {

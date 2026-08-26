@@ -10,6 +10,7 @@ PersistedEventType = Literal[
     "run.started",
     "message.started",
     "message.delta",
+    "process.note",
     "tool.started",
     "tool.completed",
     "tool.failed",

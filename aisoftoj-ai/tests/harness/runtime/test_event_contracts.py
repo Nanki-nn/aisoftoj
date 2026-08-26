@@ -18,3 +18,15 @@ def test_event_rejects_unknown_fields_and_invalid_sequence() -> None:
             data={},
             secret="must-not-pass",
         )
+
+
+def test_process_note_is_a_supported_persisted_event() -> None:
+    event = PersistedEvent(
+        run_id="run",
+        sequence=1,
+        type="process.note",
+        created_at=datetime.now(UTC),
+        data={"text": "先读取练习记录"},
+    )
+
+    assert event.type == "process.note"

@@ -22,6 +22,7 @@ describe('AI message grouping', () => {
         toolName: 'list_papers',
         input: {},
         status: 'completed',
+        sequence: 2,
         summary: { total: 12 },
       }],
     };

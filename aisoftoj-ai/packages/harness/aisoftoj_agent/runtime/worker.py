@@ -1,13 +1,13 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Mapping
 from dataclasses import replace
 from datetime import UTC, datetime
 from typing import Any
 
 from langchain_core.messages import (
     AIMessage,
-    AIMessageChunk,
     BaseMessage,
     HumanMessage,
     SystemMessage,
@@ -82,21 +82,65 @@ class Worker:
                 run_id,
             ),
         )
-        final_text = ""
-        async for chunk in self.agent.graph.astream(
+        output_parts: list[str] = []
+        pending_model_text: list[str] = []
+        pending_has_tool_calls = False
+        pending_discarded = False
+        latest_state: Mapping[str, Any] | None = None
+        async for item in self.agent.graph.astream(
             {"messages": messages, "todos": [], "files": {}},
             context=runtime_context,
             config={"configurable": {"thread_id": run_id}},
-            stream_mode="messages",
+            stream_mode=["messages", "values"],
         ):
-            message = chunk[0] if isinstance(chunk, tuple) else chunk
-            if not isinstance(message, AIMessageChunk):
+            mode, payload = _stream_item(item)
+            if mode == "values" and isinstance(payload, Mapping):
+                latest_state = payload
+                has_tool_calls = pending_has_tool_calls or _latest_ai_message_has_tool_calls(
+                    payload
+                )
+                if pending_model_text and has_tool_calls:
+                    if not pending_discarded:
+                        _discard_suffix(output_parts, pending_model_text)
+                    await self._persist_process_note(
+                        run_id, "".join(pending_model_text)
+                    )
+                pending_model_text.clear()
+                pending_has_tool_calls = False
+                pending_discarded = False
                 continue
-            delta = message.content if isinstance(message.content, str) else ""
+            if mode != "messages":
+                continue
+            message, metadata = _message_event(payload)
+            if metadata.get("langgraph_node") != "model":
+                continue
+            delta = _message_text(message)
             if not delta:
+                if _has_tool_calls(message) and pending_model_text:
+                    pending_has_tool_calls = True
+                    _discard_suffix(output_parts, pending_model_text)
+                    pending_discarded = True
                 continue
-            final_text += delta
-            await self._publish_delta(run_id, delta)
+            if not pending_has_tool_calls:
+                pending_model_text.append(delta)
+                output_parts.append(delta)
+                await self._publish_delta(run_id, delta)
+            if _has_tool_calls(message):
+                pending_has_tool_calls = True
+                if pending_model_text and not pending_discarded:
+                    _discard_suffix(output_parts, pending_model_text)
+                    pending_discarded = True
+
+        if pending_model_text and (
+            pending_has_tool_calls
+            or (latest_state is not None and _latest_ai_message_has_tool_calls(latest_state))
+        ):
+            if not pending_discarded:
+                _discard_suffix(output_parts, pending_model_text)
+            await self._persist_process_note(run_id, "".join(pending_model_text))
+        final_text = "".join(output_parts)
+        if not final_text and latest_state is not None:
+            final_text = _latest_final_answer(latest_state)
         await self._complete(run_id, context.thread_id, final_text)
 
     async def _load_question_id(self, run_id: str) -> int | None:
@@ -220,6 +264,10 @@ class Worker:
             )
         )
 
+    async def _persist_process_note(self, run_id: str, text: str) -> None:
+        if text.strip():
+            await self._append_event(run_id, "process.note", {"text": text})
+
     async def _publish(self, event: AiRunEvent) -> None:
         await self.stream_bridge.publish(
             PersistedEvent(
@@ -249,3 +297,80 @@ def with_current_question_context(
     insert_at = len(result) - 1 if result and isinstance(result[-1], HumanMessage) else len(result)
     result.insert(insert_at, instruction)
     return result
+
+
+def _stream_item(item: Any) -> tuple[str | None, Any]:
+    if isinstance(item, tuple) and len(item) == 2 and item[0] in {"messages", "values"}:
+        return str(item[0]), item[1]
+    return None, item
+
+
+def _message_event(payload: Any) -> tuple[BaseMessage | None, dict[str, Any]]:
+    if isinstance(payload, tuple) and len(payload) == 2:
+        message, metadata = payload
+        return (
+            message if isinstance(message, BaseMessage) else None,
+            metadata if isinstance(metadata, dict) else {},
+        )
+    return (payload if isinstance(payload, BaseMessage) else None, {})
+
+
+def _message_text(message: BaseMessage | None) -> str:
+    if message is None:
+        return ""
+    if isinstance(message.content, str):
+        return message.content
+    if not isinstance(message.content, list):
+        return ""
+    parts: list[str] = []
+    for block in message.content:
+        if isinstance(block, str):
+            parts.append(block)
+        elif (
+            isinstance(block, dict)
+            and block.get("type") not in {"reasoning", "thinking"}
+            and isinstance(block.get("text"), str)
+        ):
+            parts.append(block["text"])
+    return "".join(parts)
+
+
+def _has_tool_calls(message: BaseMessage | None) -> bool:
+    return bool(
+        message is not None
+        and (
+            getattr(message, "tool_call_chunks", None)
+            or getattr(message, "tool_calls", None)
+        )
+    )
+
+
+def _latest_ai_message_has_tool_calls(state: Mapping[str, Any]) -> bool:
+    messages = state.get("messages")
+    if not isinstance(messages, list):
+        return False
+    return next(
+        (
+            _has_tool_calls(message)
+            for message in reversed(messages)
+            if isinstance(message, AIMessage)
+        ),
+        False,
+    )
+
+
+def _discard_suffix(parts: list[str], suffix: list[str]) -> None:
+    for chunk in reversed(suffix):
+        if not parts or parts[-1] != chunk:
+            raise RuntimeError("streamed output suffix mismatch")
+        parts.pop()
+
+
+def _latest_final_answer(state: Mapping[str, Any]) -> str:
+    messages = state.get("messages")
+    if not isinstance(messages, list):
+        return ""
+    for message in reversed(messages):
+        if isinstance(message, AIMessage):
+            return "" if _has_tool_calls(message) else _message_text(message)
+    return ""

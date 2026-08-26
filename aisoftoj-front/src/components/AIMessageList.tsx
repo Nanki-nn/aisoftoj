@@ -4,7 +4,7 @@ import {
   Check,
   ChevronDown,
   Circle,
-  Loader2,
+  MessageSquareText,
   RotateCcw,
   Sparkles,
   Wrench,
@@ -13,7 +13,7 @@ import {
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { MessageGroup } from '../lib/aiMessageGroups';
-import { RunViewState, ToolStepState } from '../lib/aiEvents';
+import { ProcessNoteState, RunViewState, ToolStepState } from '../lib/aiEvents';
 
 type AIMessageListProps = {
   groups: MessageGroup[];
@@ -102,7 +102,7 @@ function toolCopy(tool: ToolStepState): { title: string; detail: string } {
 
 function ToolStep({ tool }: { tool: ToolStepState }) {
   const copy = toolCopy(tool);
-  const StatusIcon = tool.status === 'running' ? Loader2 : tool.status === 'failed' ? X : Check;
+  const StatusIcon = tool.status === 'failed' ? X : Check;
   return (
     <div className="grid min-h-12 grid-cols-[24px_minmax(0,1fr)] gap-2.5 py-1.5">
       <span className={`mt-0.5 flex h-6 w-6 items-center justify-center rounded-full ${
@@ -112,15 +112,32 @@ function ToolStep({ tool }: { tool: ToolStepState }) {
             ? 'bg-blue-50 text-blue-600'
             : 'bg-emerald-50 text-emerald-600'
       }`}>
-        <StatusIcon className={`h-3.5 w-3.5 ${tool.status === 'running' ? 'animate-spin' : ''}`} aria-hidden="true" />
+        {tool.status === 'running'
+          ? <span className="h-2 w-2 rounded-full bg-blue-500" aria-hidden="true" />
+          : <StatusIcon className="h-3.5 w-3.5" aria-hidden="true" />}
       </span>
       <span className="min-w-0">
-        <span className="block text-sm font-medium text-slate-800">{copy.title}</span>
+        <span className={`block text-sm font-medium ${tool.status === 'running' ? 'ai-sweep-text' : 'text-slate-800'}`}>
+          {copy.title}
+        </span>
         <span className="mt-0.5 block break-words text-xs leading-5 text-slate-500">
           {copy.detail}
           {tool.durationMs !== undefined && tool.status !== 'running' ? ` · ${tool.durationMs} ms` : ''}
         </span>
       </span>
+    </div>
+  );
+}
+
+function ProcessNote({ note, active }: { note: ProcessNoteState; active: boolean }) {
+  return (
+    <div className="grid grid-cols-[24px_minmax(0,1fr)] gap-2.5 py-1.5">
+      <span className="mt-0.5 flex h-6 w-6 items-center justify-center text-slate-400">
+        <MessageSquareText className="h-4 w-4" aria-hidden="true" />
+      </span>
+      <p className={`min-w-0 whitespace-pre-wrap break-words text-sm leading-6 ${active ? 'ai-sweep-text' : 'text-slate-600'}`}>
+        {note.text}
+      </p>
     </div>
   );
 }
@@ -135,6 +152,10 @@ function ProcessingPanel({ run }: { run: RunViewState }) {
   useEffect(() => setOpen(!terminal), [terminal]);
   const completed = run.tools.filter(tool => tool.status !== 'running').length;
   const label = terminal ? `完成 ${completed} 个步骤` : '正在处理';
+  const timeline = [
+    ...run.processNotes.map(note => ({ kind: 'note' as const, sequence: note.sequence, note })),
+    ...run.tools.map(tool => ({ kind: 'tool' as const, sequence: tool.sequence, tool })),
+  ].sort((left, right) => left.sequence - right.sequence);
 
   return (
     <div className="ml-10 border-l-2 border-slate-200 pl-3">
@@ -147,12 +168,20 @@ function ProcessingPanel({ run }: { run: RunViewState }) {
         {terminal ? (
           <Wrench className="h-4 w-4 text-slate-500" aria-hidden="true" />
         ) : (
-          <Loader2 className="h-4 w-4 animate-spin text-blue-600" aria-hidden="true" />
+          <Sparkles className="h-4 w-4 text-blue-600" aria-hidden="true" />
         )}
-        <span className="font-medium">{label}</span>
+        <span className={`font-medium ${terminal ? '' : 'ai-sweep-text'}`}>{label}</span>
         <ChevronDown className={`ml-auto h-4 w-4 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
       </button>
-      {open && <div className="pb-1">{run.tools.map(tool => <ToolStep key={tool.callId} tool={tool} />)}</div>}
+      <div className={`grid transition-[grid-template-rows,opacity] duration-300 ease-out ${open ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0'}`}>
+        <div className="overflow-hidden">
+          <div className="pb-1">
+            {timeline.map((item, index) => item.kind === 'note'
+              ? <ProcessNote key={`note-${item.sequence}-${index}`} note={item.note} active={!terminal && index === timeline.length - 1} />
+              : <ToolStep key={item.tool.callId} tool={item.tool} />)}
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
@@ -213,9 +242,18 @@ export function AIMessageList({ groups, onRetry }: AIMessageListProps) {
         return (
           <div key={group.key} className="flex items-start gap-2.5">
             <AssistantMark />
-            <div className="min-w-0 max-w-[82%] rounded-2xl rounded-tl-md bg-slate-100 px-3.5 py-2.5 text-sm leading-6 text-slate-800">
-              <div className="prose prose-sm max-w-none break-words text-slate-800 prose-p:my-1 prose-table:my-2">
-                <ReactMarkdown remarkPlugins={[remarkGfm]}>{group.content}</ReactMarkdown>
+            <div className="min-w-0 max-w-[82%] rounded-2xl rounded-tl-md border border-slate-200/80 bg-slate-50 px-4 py-3 text-sm leading-6 text-slate-800 shadow-sm shadow-slate-200/30">
+              <div className="markdown-body break-words">
+                <ReactMarkdown
+                  remarkPlugins={[remarkGfm]}
+                  components={{
+                    table: ({ children }) => (
+                      <div className="markdown-table-scroll"><table>{children}</table></div>
+                    ),
+                  }}
+                >
+                  {group.content}
+                </ReactMarkdown>
               </div>
               {group.streaming && (
                 <span className="mt-1 inline-flex items-center gap-1 text-xs text-slate-400">

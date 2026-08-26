@@ -8,6 +8,13 @@ export type ToolStepState = {
   summary?: Record<string, unknown>;
   message?: string;
   durationMs?: number;
+  sequence: number;
+};
+
+export type ProcessNoteState = {
+  text: string;
+  sequence: number;
+  local?: boolean;
 };
 
 export type RunPhase =
@@ -24,6 +31,7 @@ export type RunViewState = {
   phase: RunPhase;
   lastAppliedSequence: number;
   tools: ToolStepState[];
+  processNotes: ProcessNoteState[];
   answer: string;
   planTasks: never[];
   subtasks: never[];
@@ -37,6 +45,7 @@ type EventBase = { runId: string; sequence: number; createdAt?: string };
 export type NormalizedRunEvent =
   | (EventBase & { type: 'run.started' })
   | (EventBase & { type: 'answer.delta'; text: string })
+  | (EventBase & { type: 'process.note'; text: string })
   | (EventBase & {
       type: 'tool.started';
       callId: string;
@@ -125,6 +134,14 @@ export function normalizeEvent(
         : null,
     };
   }
+  if (persistedType === 'process.note') {
+    return {
+      sequence,
+      event: typeof payload.text === 'string' && payload.text.trim()
+        ? { ...base, type: 'process.note', text: payload.text }
+        : null,
+    };
+  }
   if (persistedType === 'tool.started') {
     return {
       sequence,
@@ -188,6 +205,7 @@ export function createRunViewState(runId: string): RunViewState {
     phase: 'idle',
     lastAppliedSequence: 0,
     tools: [],
+    processNotes: [],
     answer: '',
     planTasks: [],
     subtasks: [],
@@ -215,18 +233,40 @@ export function applyEvent(state: RunViewState, event: NormalizedRunEvent): RunV
   if (event.type === 'answer.delta') {
     return { ...next, phase: 'streaming', answer: state.answer + event.text };
   }
+  if (event.type === 'process.note') {
+    const exactSuffix = state.answer.endsWith(event.text);
+    const answer = exactSuffix
+      ? state.answer.slice(0, state.answer.length - event.text.length)
+      : state.answer;
+    const existingLocal = state.processNotes.find(note => note.local && note.text === event.text);
+    const processNotes = existingLocal
+      ? state.processNotes
+      : [...state.processNotes, { text: event.text, sequence: event.sequence }];
+    return { ...next, phase: 'running', answer, processNotes };
+  }
   if (event.type === 'tool.started') {
     const tool: ToolStepState = {
       callId: event.callId,
       toolName: event.toolName,
       input: event.input,
       status: 'running',
+      sequence: event.sequence,
     };
     const index = state.tools.findIndex(item => item.callId === event.callId);
     const tools = index >= 0
       ? state.tools.map((item, itemIndex) => itemIndex === index ? tool : item)
       : [...state.tools, tool];
-    return { ...next, phase: 'running', tools };
+    const shouldMoveLegacyPreamble = Boolean(state.answer) && state.processNotes.length === 0;
+    const processNotes = shouldMoveLegacyPreamble
+      ? [{ text: state.answer, sequence: event.sequence - 0.5, local: true }]
+      : state.processNotes;
+    return {
+      ...next,
+      phase: 'running',
+      tools,
+      processNotes,
+      answer: shouldMoveLegacyPreamble ? '' : state.answer,
+    };
   }
   if (event.type === 'tool.completed' || event.type === 'tool.failed') {
     const index = state.tools.findIndex(item => item.callId === event.callId);
@@ -235,6 +275,7 @@ export function applyEvent(state: RunViewState, event: NormalizedRunEvent): RunV
       toolName: event.toolName,
       input: {},
       status: 'running' as const,
+      sequence: event.sequence,
     };
     const tool: ToolStepState = event.type === 'tool.completed'
       ? { ...current, status: 'completed', summary: event.summary, durationMs: event.durationMs }

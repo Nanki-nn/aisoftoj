@@ -6,7 +6,6 @@ import {
   ChevronDown,
   FileSearch,
   History,
-  Loader2,
   Plus,
   Send,
   Sparkles,
@@ -392,8 +391,9 @@ export function AIAgentPanel() {
               </div>
             </div>
           ) : isLoading && messages.length === 0 ? (
-            <div className="flex h-full items-center justify-center text-slate-500">
-              <Loader2 className="h-5 w-5 animate-spin" aria-label="正在加载对话" />
+            <div className="flex h-full items-center justify-center gap-2 text-sm" role="status">
+              <Sparkles className="h-4 w-4 text-blue-600" aria-hidden="true" />
+              <span className="ai-sweep-text font-medium">正在加载对话</span>
             </div>
           ) : messages.length === 0 ? (
             <div className="flex min-h-full flex-col px-5 pb-8 pt-10">
