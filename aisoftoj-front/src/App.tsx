@@ -231,6 +231,8 @@ function AppShell({
 export default function App() {
   const [examConfigDraft, setExamConfigDraft] = useState<Partial<ExamConfigType> | null>(null);
   const pageHidePauseRef = useRef<Promise<void> | null>(null);
+  const currentSessionRef = useRef<ReturnType<typeof useExamSession>['currentSession']>(null);
+  const activeExamSessionIdRef = useRef<string | null>(null);
   const {
     currentSession,
     startExam,
@@ -243,6 +245,10 @@ export default function App() {
   const { isOpen: isAgentOpen, close: closeAgent } = useAgentPanel();
   const navigate = useNavigate();
   const location = useLocation();
+  currentSessionRef.current = currentSession;
+  activeExamSessionIdRef.current = location.pathname.startsWith(`${ROUTES.examSessionBase}/`)
+    ? currentSession?.id ?? null
+    : null;
   const agentVisibleOnRoute = !location.pathname.startsWith('/admin')
     && location.pathname !== ROUTES.auth
     && location.pathname !== ROUTES.forgotPassword;
@@ -346,8 +352,33 @@ export default function App() {
       return;
     }
 
-    await updatePracticeQuestionRecord(question.questionRecordId, answer, 0, true);
-    setSession(await continuePracticeSession(currentSession.id));
+    const updatedRecord = await updatePracticeQuestionRecord(question.questionRecordId, answer, 0, true);
+    if (activeExamSessionIdRef.current !== currentSession.id) {
+      return;
+    }
+    const latestSession = currentSessionRef.current;
+    if (!latestSession || latestSession.id !== currentSession.id) {
+      return;
+    }
+    setSession({
+      ...latestSession,
+      answers: {
+        ...latestSession.answers,
+        [questionId]: answer,
+      },
+      questions: latestSession.questions.map(item => item.id === questionId
+        ? {
+            ...item,
+            userAnswer: answer,
+            isSubmitted: updatedRecord.isSubmitted ?? item.isSubmitted,
+            isCorrect: updatedRecord.isCorrect ?? item.isCorrect,
+            spendTime: updatedRecord.spendTime ?? item.spendTime,
+            confirmedAt: updatedRecord.confirmedAt
+              ? new Date(updatedRecord.confirmedAt)
+              : item.confirmedAt,
+          }
+        : item),
+    });
   };
 
   const handleBackToHome = () => {
@@ -367,6 +398,8 @@ export default function App() {
   };
 
   const handleCleanupAfterPause = () => {
+    activeExamSessionIdRef.current = null;
+    currentSessionRef.current = null;
     resetSession();
     setExamConfigDraft(null);
   };

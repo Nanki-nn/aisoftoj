@@ -38,4 +38,15 @@ class PracticeSessionControllerTest {
         verify(authService).getCurrentUserId("Bearer user-token");
         verify(practiceSessionService).getPracticeSessionResult(7, 12);
     }
+
+    @Test
+    void resumeEndpointUsesAuthenticatedUserOwnershipBoundary() {
+        when(request.getHeader("Authorization")).thenReturn("Bearer user-token");
+        when(authService.getCurrentUserId("Bearer user-token")).thenReturn(7);
+
+        practiceSessionController.resumePracticeSession(12, request);
+
+        verify(authService).getCurrentUserId("Bearer user-token");
+        verify(practiceSessionService).resumePracticeSession(7, 12);
+    }
 }

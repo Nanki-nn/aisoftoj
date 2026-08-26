@@ -12,6 +12,8 @@ public interface PracticeSessionService {
 
     void pausePracticeSession(Integer userId, Integer sessionId);
 
+    void resumePracticeSession(Integer userId, Integer sessionId);
+
     PaperSubmitResponse submitPracticeSession(Integer userId, Integer sessionId, PaperSubmitRequest request);
 
 }

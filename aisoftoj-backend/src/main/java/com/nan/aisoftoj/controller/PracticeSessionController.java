@@ -76,6 +76,17 @@ public class PracticeSessionController {
         return ResultDTO.success();
     }
 
+    /**
+     * 显式恢复暂停中的刷题会话。普通详情读取不会改变计时状态。
+     */
+    @PatchMapping("/session/{sessionId}/resume")
+    public ResultDTO<Void> resumePracticeSession(@PathVariable Integer sessionId,
+                                                 HttpServletRequest request) {
+        Integer userId = authService.getCurrentUserId(request.getHeader("Authorization"));
+        practiceSessionService.resumePracticeSession(userId, sessionId);
+        return ResultDTO.success();
+    }
+
 
 
     /**
