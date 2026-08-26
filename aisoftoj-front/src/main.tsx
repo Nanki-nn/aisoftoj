@@ -1,14 +1,16 @@
 
   import { createRoot } from "react-dom/client";
-  import { BrowserRouter } from "react-router-dom";
+  import { createBrowserRouter, RouterProvider } from "react-router-dom";
   import App from "./App.tsx";
   import { AuthProvider } from "./hooks/useAuth";
   import { AgentPanelProvider } from "./hooks/useAgentPanel";
   import { ThemeProvider } from "./hooks/useTheme";
   import "./index.css";
 
-  createRoot(document.getElementById("root")!).render(
-    <BrowserRouter>
+  const router = createBrowserRouter([
+    {
+      path: "*",
+      element: (
       <ThemeProvider>
         <AuthProvider>
           <AgentPanelProvider>
@@ -16,6 +18,11 @@
           </AgentPanelProvider>
         </AuthProvider>
       </ThemeProvider>
-    </BrowserRouter>
+      ),
+    },
+  ]);
+
+  createRoot(document.getElementById("root")!).render(
+    <RouterProvider router={router} />
   );
   

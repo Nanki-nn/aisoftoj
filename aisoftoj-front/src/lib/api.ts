@@ -589,6 +589,20 @@ export async function pausePracticeSession(sessionId: string): Promise<void> {
   await request(`/session/${sessionId}/pause`, { method: 'PATCH' });
 }
 
+export function pausePracticeSessionOnPageHide(sessionId: string): Promise<void> {
+  const authToken = localStorage.getItem('authToken');
+  const headers = new Headers();
+  if (authToken) {
+    headers.set('Authorization', `Bearer ${authToken}`);
+  }
+
+  return fetch(`${API_BASE_URL}/session/${sessionId}/pause`, {
+    method: 'PATCH',
+    headers,
+    keepalive: true,
+  }).then(() => undefined).catch(() => undefined);
+}
+
 export async function updatePracticeQuestionRecord(
   questionRecordId: string,
   userAnswer: string | string[],

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { LearningLanding } from './components/LearningLanding';
 import { FoundationPage } from './components/FoundationPage';
@@ -34,6 +34,7 @@ import {
   continuePracticeSession,
   fetchPracticeSessionResult,
   pausePracticeSession,
+  pausePracticeSessionOnPageHide,
   startPaperSession,
   submitPracticeSession,
   updatePracticeQuestionRecord,
@@ -64,14 +65,20 @@ function SessionRoute({
   updateAnswer,
   onConfirmAnswer,
   onCompleteExam,
-  onBackToConfig,
+  onPause,
+  onCleanupAfterPause,
+  onPauseOnPageHide,
+  onResumeAfterPageShow,
 }: {
   currentSession: ReturnType<typeof useExamSession>['currentSession'];
   setSession: ReturnType<typeof useExamSession>['setSession'];
   updateAnswer: ReturnType<typeof useExamSession>['updateAnswer'];
   onConfirmAnswer: (questionId: string, answer: string | string[]) => Promise<void>;
-  onCompleteExam: () => void;
-  onBackToConfig: () => void | Promise<void>;
+  onCompleteExam: () => Promise<boolean>;
+  onPause: () => Promise<void>;
+  onCleanupAfterPause: () => void;
+  onPauseOnPageHide: () => void;
+  onResumeAfterPageShow: () => Promise<void>;
 }) {
   const { sessionId } = useParams();
   const [isLoading, setIsLoading] = useState(false);
@@ -126,7 +133,10 @@ function SessionRoute({
       onUpdateAnswer={updateAnswer}
       onConfirmAnswer={onConfirmAnswer}
       onCompleteExam={onCompleteExam}
-      onBackToConfig={onBackToConfig}
+      onPause={onPause}
+      onCleanupAfterPause={onCleanupAfterPause}
+      onPauseOnPageHide={onPauseOnPageHide}
+      onResumeAfterPageShow={onResumeAfterPageShow}
     />
   );
 }
@@ -220,6 +230,7 @@ function AppShell({
 
 export default function App() {
   const [examConfigDraft, setExamConfigDraft] = useState<Partial<ExamConfigType> | null>(null);
+  const pageHidePauseRef = useRef<Promise<void> | null>(null);
   const {
     currentSession,
     startExam,
@@ -271,24 +282,26 @@ export default function App() {
     }
   };
 
-  const handleCompleteExam = async () => {
+  const handleCompleteExam = async (): Promise<boolean> => {
     if (currentSession && !String(currentSession.id).startsWith('exam_')) {
       try {
         await submitPracticeSession(currentSession.id, currentSession.answers);
         const completedSession = await fetchPracticeSessionResult(currentSession.id);
         setSession(completedSession);
         navigate(`${ROUTES.examResultBase}/${completedSession.id}`);
-        return;
+        return true;
       } catch (error) {
         alert('交卷失败：' + (error as Error).message);
-        return;
+        return false;
       }
     }
 
     const session = completeExam();
     if (session) {
       navigate(`${ROUTES.examResultBase}/${session.id}`);
+      return true;
     }
+    return false;
   };
 
   const handleUpdateAnswer: UpdateAnswerFn = (questionId, answer) => {
@@ -343,7 +356,7 @@ export default function App() {
     navigate(ROUTES.home);
   };
 
-  const handleBackToConfig = async () => {
+  const handlePauseExam = async () => {
     if (
       currentSession
       && !currentSession.isCompleted
@@ -351,9 +364,34 @@ export default function App() {
     ) {
       await pausePracticeSession(currentSession.id);
     }
+  };
+
+  const handleCleanupAfterPause = () => {
     resetSession();
     setExamConfigDraft(null);
-    navigate(ROUTES.papers);
+  };
+
+  const handlePauseOnPageHide = () => {
+    if (
+      currentSession
+      && !currentSession.isCompleted
+      && !String(currentSession.id).startsWith('exam_')
+    ) {
+      pageHidePauseRef.current = pausePracticeSessionOnPageHide(currentSession.id);
+    }
+  };
+
+  const handleResumeAfterPageShow = async () => {
+    if (
+      !currentSession
+      || currentSession.isCompleted
+      || String(currentSession.id).startsWith('exam_')
+    ) {
+      return;
+    }
+    await pageHidePauseRef.current;
+    pageHidePauseRef.current = null;
+    setSession(await continuePracticeSession(currentSession.id));
   };
 
   const handleBackToPapers = () => {
@@ -484,7 +522,10 @@ export default function App() {
                 updateAnswer={handleUpdateAnswer}
                 onConfirmAnswer={handleConfirmAnswer}
                 onCompleteExam={handleCompleteExam}
-                onBackToConfig={handleBackToConfig}
+                onPause={handlePauseExam}
+                onCleanupAfterPause={handleCleanupAfterPause}
+                onPauseOnPageHide={handlePauseOnPageHide}
+                onResumeAfterPageShow={handleResumeAfterPageShow}
               />
             </AppShell>
           }

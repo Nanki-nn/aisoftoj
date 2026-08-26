@@ -1,5 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useSearchParams } from 'react-router-dom';
+import React, { useCallback, useState, useEffect, useRef } from 'react';
+import { useBlocker, useNavigate, useSearchParams } from 'react-router-dom';
 import { useAgentPanel } from '../hooks/useAgentPanel';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -105,25 +105,36 @@ interface ExamSessionProps {
   session: ExamSessionType;
   onUpdateAnswer: (questionId: string, answer: string | string[]) => void;
   onConfirmAnswer: (questionId: string, answer: string | string[]) => Promise<void>;
-  onCompleteExam: () => void;
-  onBackToConfig: () => void | Promise<void>;
+  onCompleteExam: () => Promise<boolean>;
+  onPause: () => Promise<void>;
+  onCleanupAfterPause: () => void;
+  onPauseOnPageHide: () => void;
+  onResumeAfterPageShow: () => Promise<void>;
 }
 
 export function ExamSession({ 
   session, 
   onUpdateAnswer, 
   onConfirmAnswer,
-  onCompleteExam, 
-  onBackToConfig 
+  onCompleteExam,
+  onPause,
+  onCleanupAfterPause,
+  onPauseOnPageHide,
+  onResumeAfterPageShow,
 }: ExamSessionProps) {
   const { publishQuestion, clearQuestion } = useAgentPanel();
   const questionCardRef = useRef<HTMLDivElement | null>(null);
   const hasMountedRef = useRef(false);
+  const completionInFlightRef = useRef(false);
+  const allowResultNavigationRef = useRef(false);
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
   const [timeLeft, setTimeLeft] = useState<number | null>(null);
   const [elapsedTime, setElapsedTime] = useState(0); // 已用时间（秒）
   const [isExiting, setIsExiting] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isRestoring, setIsRestoring] = useState(false);
   const [showConfirmExit, setShowConfirmExit] = useState(false);
   const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
   const [markedQuestions, setMarkedQuestions] = useState<Set<number>>(new Set());
@@ -159,10 +170,82 @@ export function ExamSession({
     return !!answer;
   }).length;
   const hasRevealedAnswers = isReadOnly || session.questions.some(question => Boolean(question.confirmedAt));
+  const shouldBlockNavigation = useCallback(({ nextLocation }: { nextLocation: { pathname: string } }) => {
+    if (isReadOnly) {
+      return false;
+    }
+    const resultPath = `/exam/result/${session.id}`;
+    return !(allowResultNavigationRef.current && nextLocation.pathname === resultPath);
+  }, [isReadOnly, session.id]);
+  const blocker = useBlocker(shouldBlockNavigation);
+
+  const completeExamSafely = useCallback(async () => {
+    if (isReadOnly || completionInFlightRef.current) {
+      return;
+    }
+
+    completionInFlightRef.current = true;
+    allowResultNavigationRef.current = true;
+    setIsSubmitting(true);
+    try {
+      const completed = await onCompleteExam();
+      if (!completed) {
+        allowResultNavigationRef.current = false;
+        completionInFlightRef.current = false;
+        setIsSubmitting(false);
+      }
+    } catch (error) {
+      allowResultNavigationRef.current = false;
+      completionInFlightRef.current = false;
+      setIsSubmitting(false);
+      alert('交卷失败：' + ((error as Error).message || '请稍后重试'));
+    }
+  }, [isReadOnly, onCompleteExam]);
 
   // 答题卡分页常量 - 5列3行
   const ITEMS_PER_PAGE = 15;
   const totalPages = Math.ceil(session.questions.length / ITEMS_PER_PAGE);
+
+  useEffect(() => {
+    if (blocker.state === 'blocked') {
+      setShowConfirmExit(true);
+    }
+  }, [blocker.state]);
+
+  useEffect(() => {
+    if (isReadOnly) {
+      return;
+    }
+
+    const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+      event.preventDefault();
+      event.returnValue = '';
+    };
+    const handlePageHide = () => {
+      setIsRestoring(true);
+      onPauseOnPageHide();
+    };
+    const handlePageShow = (event: PageTransitionEvent) => {
+      if (!event.persisted) {
+        return;
+      }
+      setIsRestoring(true);
+      void onResumeAfterPageShow()
+        .catch((error) => {
+          alert('恢复试卷失败：' + ((error as Error).message || '请刷新后重试'));
+        })
+        .finally(() => setIsRestoring(false));
+    };
+
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    window.addEventListener('pagehide', handlePageHide);
+    window.addEventListener('pageshow', handlePageShow);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+      window.removeEventListener('pagehide', handlePageHide);
+      window.removeEventListener('pageshow', handlePageShow);
+    };
+  }, [isReadOnly, onPauseOnPageHide, onResumeAfterPageShow]);
 
   useEffect(() => {
     const questionId = searchParams.get('questionId');
@@ -178,7 +261,7 @@ export function ExamSession({
 
   // 计时器逻辑
   useEffect(() => {
-    if (isReadOnly) return;
+    if (isReadOnly || isExiting || isSubmitting || isRestoring) return;
     if (!session.timeLimit) return;
 
     const totalSeconds = session.timeLimit * 60;
@@ -186,7 +269,7 @@ export function ExamSession({
     const remaining = totalSeconds - elapsed;
 
     if (remaining <= 0) {
-      onCompleteExam();
+      void completeExamSafely();
       return;
     }
 
@@ -195,7 +278,7 @@ export function ExamSession({
     const timer = setInterval(() => {
       setTimeLeft(prev => {
         if (prev === null || prev <= 1) {
-          onCompleteExam();
+          void completeExamSafely();
           return 0;
         }
         return prev - 1;
@@ -203,7 +286,7 @@ export function ExamSession({
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [isReadOnly, session.timeLimit, session.startTime, onCompleteExam]);
+  }, [completeExamSafely, isExiting, isReadOnly, isRestoring, isSubmitting, session.timeLimit, session.startTime]);
 
   // 已用时间计时器（从0开始）
   useEffect(() => {
@@ -212,6 +295,9 @@ export function ExamSession({
     if (isReadOnly) {
       const elapsed = Math.max(0, Math.floor(((endTime || startTime) - startTime) / 1000));
       setElapsedTime(elapsed);
+      return;
+    }
+    if (isExiting || isSubmitting || isRestoring) {
       return;
     }
     
@@ -226,7 +312,7 @@ export function ExamSession({
     }, 1000);
     
     return () => clearInterval(timer);
-  }, [isReadOnly, session.startTime, session.endTime]);
+  }, [isExiting, isReadOnly, isRestoring, isSubmitting, session.startTime, session.endTime]);
 
   // 自动切换答题卡页面（仅当题目切换时）
   useEffect(() => {
@@ -317,26 +403,27 @@ export function ExamSession({
     if (answeredCount < session.questions.length) {
       setShowConfirmSubmit(true);
     } else {
-      onCompleteExam();
+      void completeExamSafely();
     }
   };
 
   const handleExitRequest = () => {
-    if (isReadOnly) {
-      void onBackToConfig();
-      return;
-    }
-    setShowConfirmExit(true);
+    navigate('/papers');
   };
 
   const handleConfirmExit = async (event: React.MouseEvent<HTMLButtonElement>) => {
     event.preventDefault();
+    if (blocker.state !== 'blocked') {
+      return;
+    }
     setIsExiting(true);
     try {
-      await onBackToConfig();
+      await onPause();
+      blocker.proceed();
+      onCleanupAfterPause();
+      setShowConfirmExit(false);
     } catch (error) {
       alert('暂停试卷失败：' + ((error as Error).message || '请稍后重试'));
-    } finally {
       setIsExiting(false);
     }
   };
@@ -1004,9 +1091,10 @@ export function ExamSession({
                   <div className="mt-4 pt-4 border-t border-slate-100">
                     <Button
                       onClick={handleSubmit}
+                      disabled={isSubmitting || isRestoring}
                       className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2"
                     >
-                      交卷
+                      {isSubmitting ? '正在交卷...' : '交卷'}
                     </Button>
                   </div>
                 )}
@@ -1020,6 +1108,9 @@ export function ExamSession({
         open={showConfirmExit}
         onOpenChange={(open) => {
           if (!isExiting) {
+            if (!open && blocker.state === 'blocked') {
+              blocker.reset();
+            }
             setShowConfirmExit(open);
           }
         }}
@@ -1031,7 +1122,7 @@ export function ExamSession({
               确认退出试卷
             </AlertDialogTitle>
             <AlertDialogDescription>
-              退出后将返回刷真题首页，计时会暂停，本次试卷不会交卷。确定要退出吗？
+              离开后计时会暂停，本次试卷不会交卷。确定要离开当前答题页吗？
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
@@ -1041,7 +1132,7 @@ export function ExamSession({
               disabled={isExiting}
               className="bg-red-600 text-white hover:bg-red-700"
             >
-              {isExiting ? '正在退出...' : '退出试卷'}
+              {isExiting ? '正在退出...' : '离开试卷'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
@@ -1074,11 +1165,12 @@ export function ExamSession({
                 <Button 
                   onClick={() => {
                     setShowConfirmSubmit(false);
-                    onCompleteExam();
+                    void completeExamSafely();
                   }}
+                  disabled={isSubmitting || isRestoring}
                   className="flex-1"
                 >
-                  确认提交
+                  {isSubmitting ? '正在交卷...' : '确认提交'}
                 </Button>
               </div>
             </CardContent>
