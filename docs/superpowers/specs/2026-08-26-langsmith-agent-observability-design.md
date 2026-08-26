@@ -71,6 +71,17 @@ provider 负责以下职责：
 
 Worker 不直接读取 LangSmith 环境变量，也不实现脱敏算法。
 
+provider 的 tracing context 只负责把指定 Client 设为本次调用使用的 Client，不额外
+创建父 Run。Worker 调用 `graph.astream` 时通过 LangChain `RunnableConfig` 传入：
+
+- `run_name="aisoftoj-agent-run"`
+- 本设计定义的 `metadata`
+- 本设计定义的 `tags`
+- 既有 `configurable.thread_id`
+
+因此 LangGraph graph run 本身就是唯一顶层 Trace，模型和工具是其自动生成的子 Run，
+不会再套一层手工 Span。
+
 ## 配置契约
 
 LangSmith 配置全部通过环境变量提供，API Key 不进入 YAML、数据库或仓库：
@@ -83,6 +94,7 @@ LANGSMITH_PROJECT=aisoftoj-agent-dev
 LANGSMITH_TRACING_SAMPLING_RATE=1.0
 LANGSMITH_ENVIRONMENT=development
 LANGSMITH_AGENT_VERSION=local
+LANGSMITH_FLUSH_TIMEOUT_SECONDS=2
 ```
 
 行为约束：
@@ -90,10 +102,14 @@ LANGSMITH_AGENT_VERSION=local
 - `LANGSMITH_TRACING` 未设置或为 false 时，不要求其他 LangSmith 配置。
 - tracing 开启但 `LANGSMITH_API_KEY` 为空时，应用启动失败并输出不含密钥的配置错误。
 - 采样率必须是 `0..1` 的有限浮点数。
-- Endpoint 必须是 HTTP(S) URL，Project、Environment 和 Agent Version 必须是非空
-  且有长度上限的安全字符串。
+- Endpoint 必须是 HTTP(S) URL。
+- Project trim 后必须为 1..128 个可打印字符且不能包含控制字符。
+- Environment 和 Agent Version 必须匹配
+  `[A-Za-z0-9][A-Za-z0-9._-]{0,63}`。
+- flush timeout 必须是 `0.1..10` 秒的有限浮点数，默认 2 秒。
 - SDK 的标准环境变量保持兼容；项目自定义的 environment 和 agent version 只用于
   metadata/tags。
+- 运行依赖声明为 `langsmith>=0.11,<0.12`；`uv.lock` 继续锁定当前解析到的精确版本。
 
 ## Trace 数据模型
 
@@ -113,6 +129,7 @@ LANGSMITH_AGENT_VERSION=local
 
 tags 至少包含 environment、agent name 和 agent version，便于在 LangSmith UI 中快速
 过滤。业务 Run UUID 作为 metadata 保存，不强行替换 LangSmith 自身的 Trace ID。
+`question_id` 不存在时仍保留该 metadata 字段并写入 JSON `null`，不拒绝普通对话 Run。
 
 LangGraph 继续自动记录 messages、模型调用、工具调用和节点状态。项目不额外复制
 这些输入输出，也不把 SSE delta 逐条上报为独立 Span。
@@ -122,20 +139,30 @@ LangGraph 继续自动记录 messages、模型调用、工具调用和节点状�
 脱敏只作用于发送给 LangSmith 的序列化副本，不改变 Agent 实际输入、模型输出、
 工具参数、工具结果或持久化消息。
 
-递归字段名匹配至少覆盖以下不区分大小写的名称及常见连接形式：
+递归字段名先转为小写，再删除 `_`、`-`、`.` 和空格；规范化后的名称命中以下确定
+集合时，整个字段值替换为 `[REDACTED]`：
 
-- `api_key`、`apikey`
+- `apikey`
 - `authorization`
-- `cookie`、`set_cookie`
-- `token`、`access_token`、`refresh_token`、`bearer_token`
+- `cookie`、`setcookie`
+- `token`、`accesstoken`、`refreshtoken`、`bearertoken`
 - `password`
-- `secret`、`service_key`
+- `secret`、`servicekey`
+- `llmapikey`、`platformservicekey`、`langsmithapikey`
+
+只做上述精确字段名匹配，避免误删 `prompt_tokens`、`completion_tokens` 等观测指标。
 
 字符串内容过滤至少覆盖：
 
 - `Authorization: Bearer ...` 和独立的 Bearer Token。
-- 常见 API Key 前缀。
+- 常见 API Key 前缀后跟足够长度的凭据字符：OpenAI/兼容服务 `sk-`、`sk-proj-`，
+  Anthropic `sk-ant-`，Google `AIza`，GitHub `ghp_`、`github_pat_`，Slack `xoxb-`、
+  `xoxp-`。短前缀本身不视为秘密。
 - 当前进程已加载的 LLM Key、平台服务 Key 和 LangSmith Key 的精确值。
+
+显式秘密值长度至少为 8 个字符才参与正文替换，避免测试占位符或短普通词导致大面积
+误删。字段名命中不受该长度限制。Bearer 匹配要求 `Bearer` 后有至少 8 个合法 Token
+字符，并替换整个凭据部分。
 
 命中内容统一替换为 `[REDACTED]`。普通题干、用户问题、模型回答、Tool 业务参数和
 Tool 业务结果保持完整。脱敏器必须支持嵌套字典、列表、元组和字符串，并避免在日志
@@ -144,11 +171,13 @@ Tool 业务结果保持完整。脱敏器必须支持嵌套字典、列表、元
 ## 失败处理与资源约束
 
 - tracing 禁用时不创建 Client，也不启动后台上报工作。
-- SDK 使用异步或批量上报能力；不得在消息 delta 循环中同步发送网络请求。
+- SDK 使用后台批量上报能力；`Worker.execute` 请求路径不得显式调用 LangSmith HTTP
+  API、flush 或等待上报结果，也不得在消息 delta 循环中发送 tracing 网络请求。
 - LangSmith 超时、限流、连接失败或后台发送失败只写安全日志，不将已成功的 Agent
   Run 改为 failed。
-- 应用关闭时在既有 shutdown drain 之后执行 flush/close，并设置独立、有限的超时；
-  超时后记录警告并继续退出。
+- 应用关闭时在既有 shutdown drain 之后执行 flush/close，使用
+  `LANGSMITH_FLUSH_TIMEOUT_SECONDS` 的独立超时（默认 2 秒）；超时后记录警告并
+  继续退出。
 - 不上传文件二进制。当前 Agent 工具均为结构化只读工具；若未来引入大文档工具，
   应另行增加大小限制，而不是在本期静默截断普通问答正文。
 
@@ -189,7 +218,8 @@ Tool 业务结果保持完整。脱敏器必须支持嵌套字典、列表、元
 - Worker 为 Trace 注入正确的 run、thread、user、question、model、environment 和版本。
 - provider 禁用时 Agent 行为与当前一致。
 - LangSmith 上报不可用时 Agent 业务执行不失败。
-- flush 超时后应用仍能完成关闭。
+- Worker 请求路径不会调用 flush 或等待 LangSmith 网络响应。
+- flush 超过配置的超时时间后应用仍能完成关闭，默认测试边界为 2 秒。
 
 验证命令：
 
