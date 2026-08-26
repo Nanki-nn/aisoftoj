@@ -18,7 +18,7 @@
 - Create `aisoftoj-ai/packages/harness/aisoftoj_agent/observability/config.py`: environment parsing and validation, with no SDK/network work.
 - Create `aisoftoj-ai/packages/harness/aisoftoj_agent/observability/redaction.py`: pure recursive secret redaction.
 - Create `aisoftoj-ai/packages/harness/aisoftoj_agent/observability/langsmith.py`: Client construction, tracing context, safe error callback, bounded close.
-- Create `aisoftoj-ai/tests/harness/observability/test_config.py`: configuration contract tests.
+- Create `aisoftoj-ai/tests/harness/observability/test_langsmith_config.py`: configuration contract tests.
 - Create `aisoftoj-ai/tests/harness/observability/test_redaction.py`: redaction and preservation tests.
 - Create `aisoftoj-ai/tests/harness/observability/test_langsmith.py`: provider, context, error and close tests with fake clients.
 - Modify `aisoftoj-ai/packages/harness/aisoftoj_agent/runtime/worker.py`: inject provider and merge its RunnableConfig into graph execution.
@@ -34,7 +34,7 @@
 **Files:**
 - Create: `aisoftoj-ai/packages/harness/aisoftoj_agent/observability/config.py`
 - Create: `aisoftoj-ai/packages/harness/aisoftoj_agent/observability/__init__.py`
-- Test: `aisoftoj-ai/tests/harness/observability/test_config.py`
+- Test: `aisoftoj-ai/tests/harness/observability/test_langsmith_config.py`
 
 - [ ] **Step 1: Write failing configuration tests**
 
@@ -82,7 +82,7 @@ Run:
 
 ```bash
 cd aisoftoj-ai
-uv run pytest tests/harness/observability/test_config.py -q
+uv run pytest tests/harness/observability/test_langsmith_config.py -q
 ```
 
 Expected: collection fails because `observability.config` does not exist.
@@ -122,7 +122,7 @@ non-empty netloc, sampling is `0 <= value <= 1`, and flush timeout is finite in 
 
 ```bash
 cd aisoftoj-ai
-uv run pytest tests/harness/observability/test_config.py -q
+uv run pytest tests/harness/observability/test_langsmith_config.py -q
 uv run ruff check packages/harness/aisoftoj_agent/observability tests/harness/observability
 uv run mypy packages/harness/aisoftoj_agent/observability
 ```
@@ -134,7 +134,7 @@ Expected: all commands pass.
 ```bash
 git add aisoftoj-ai/packages/harness/aisoftoj_agent/observability/__init__.py \
   aisoftoj-ai/packages/harness/aisoftoj_agent/observability/config.py \
-  aisoftoj-ai/tests/harness/observability/test_config.py
+  aisoftoj-ai/tests/harness/observability/test_langsmith_config.py
 git commit -m "feat(ai): define LangSmith tracing configuration"
 ```
 
