@@ -3,6 +3,7 @@ from __future__ import annotations
 from contextlib import asynccontextmanager
 from types import SimpleNamespace
 from typing import Any
+from unittest.mock import AsyncMock
 
 from fastapi import FastAPI
 
@@ -122,6 +123,11 @@ async def test_lifespan_injects_and_closes_langsmith_tracing(
 
     monkeypatch.setattr(lifespan_module, "Worker", build_worker)
     monkeypatch.setattr(lifespan_module, "RunRepository", FakeRepository)
+    monkeypatch.setattr(
+        lifespan_module.DailyTokenQuotaService,
+        "recover_unsettled",
+        AsyncMock(return_value=0),
+    )
     monkeypatch.setattr(
         lifespan_module,
         "build_langsmith_tracing",
