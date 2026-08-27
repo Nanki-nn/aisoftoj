@@ -15,6 +15,8 @@ public interface AiPlatformReadService {
 
     AiQuestionDTO getQuestion(Integer questionId);
 
+    boolean isAiAssistantAvailable(Integer userId);
+
     AiWrongQuestionReviewDTO reviewWrongQuestion(Integer userId, Long wrongQuestionId);
 
     AiPracticeHistoryPageDTO listPracticeHistory(Integer userId, Integer page, Integer pageSize);

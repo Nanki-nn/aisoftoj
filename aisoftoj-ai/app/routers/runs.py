@@ -24,6 +24,7 @@ from packages.harness.aisoftoj_agent.contracts.events import (
     StreamEnd,
     StreamReset,
 )
+from packages.harness.aisoftoj_agent.integrations.aisoftoj.client import PlatformError
 from packages.harness.aisoftoj_agent.persistence.models import AiRun
 from packages.harness.aisoftoj_agent.persistence.repositories.messages import MessageRepository
 from packages.harness.aisoftoj_agent.persistence.repositories.runs import (
@@ -86,15 +87,29 @@ async def create_run(
     if existing is not None:
         response.status_code = status.HTTP_200_OK
         return run_response(existing)
+    # Ownership/idempotency reads autobegin a transaction. End it before
+    # making the cross-service availability check and reserving capacity.
+    await session.rollback()
+    try:
+        assistant_available = await container.platform_client.is_ai_assistant_available(
+            user.bearer_token
+        )
+    except PlatformError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="AI_AVAILABILITY_UNAVAILABLE",
+        ) from exc
+    if not assistant_available:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="AI_ASSISTANT_DISABLED_IN_EXAM_MODE",
+        )
     if container.quota_service is None:
         raise HTTPException(status_code=503, detail="AI_QUOTA_UNAVAILABLE")
     try:
         await container.quota_service.require_available(user.user_id)
     except SQLAlchemyError as exc:
         raise HTTPException(status_code=503, detail="AI_QUOTA_UNAVAILABLE") from exc
-    # The ownership/idempotency reads autobegin a transaction. End it before
-    # reserving capacity and entering the transaction that creates the run.
-    await session.rollback()
     try:
         await container.run_manager.reserve(user.user_id)
     except CapacityExceeded as exc:

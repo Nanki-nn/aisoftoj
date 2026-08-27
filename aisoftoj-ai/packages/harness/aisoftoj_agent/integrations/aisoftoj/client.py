@@ -99,6 +99,12 @@ class PlatformClient:
             await self._get(f"/internal/ai/questions/{question_id}", bearer_token, Question),
         )
 
+    async def is_ai_assistant_available(self, bearer_token: str) -> bool:
+        return cast(
+            bool,
+            await self._get("/internal/ai/assistant-availability", bearer_token, bool),
+        )
+
     async def review_wrong_question(
         self, bearer_token: str, wrong_question_id: int
     ) -> WrongQuestionReview:
