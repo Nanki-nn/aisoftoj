@@ -1,0 +1,90 @@
+server:
+  port: ${SERVER_PORT:8080}
+
+spring:
+  flyway:
+    enabled: ${FLYWAY_ENABLED:false}
+  datasource:
+    url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/aisoftoj?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+  mail:
+    host: ${MAIL_HOST:}
+    port: ${MAIL_PORT:587}
+    username: ${MAIL_USERNAME:}
+    password: ${MAIL_PASSWORD:}
+    default-encoding: UTF-8
+    properties:
+      mail:
+        smtp:
+          auth: ${MAIL_SMTP_AUTH:true}
+          connectiontimeout: ${MAIL_CONNECTION_TIMEOUT_MS:5000}
+          timeout: ${MAIL_READ_TIMEOUT_MS:10000}
+          writetimeout: ${MAIL_WRITE_TIMEOUT_MS:10000}
+          starttls:
+            enable: ${MAIL_STARTTLS_ENABLE:true}
+            required: ${MAIL_STARTTLS_REQUIRED:true}
+  servlet:
+    multipart:
+      max-file-size: 10MB
+      max-request-size: 10MB
+
+mybatis-plus:
+  mapper-locations: classpath:mapper/*.xml
+  type-aliases-package: com.nan.aisoftoj.entity
+  configuration:
+    map-underscore-to-camel-case: true
+
+file:
+  upload:
+    path: ${FILE_UPLOAD_PATH:./uploads/}
+    url-prefix: ${FILE_UPLOAD_URL_PREFIX:/uploads/}
+
+app:
+  cors:
+    allowed-origins: ${CORS_ALLOWED_ORIGINS:http://localhost:3000,http://127.0.0.1:3000,http://localhost:5173,http://127.0.0.1:5173}
+  content-crypto:
+    max-plaintext-bytes: ${CONTENT_CRYPTO_MAX_PLAINTEXT_BYTES:8388608}
+
+auth:
+  jwt:
+    secret: ${AUTH_JWT_SECRET:dev-only-change-me}
+    expire-hours: ${AUTH_JWT_EXPIRE_HOURS:168}
+  email:
+    code-secret: ${AUTH_EMAIL_CODE_SECRET:dev-only-email-code-secret}
+    from: ${MAIL_FROM:}
+    from-name: ${MAIL_FROM_NAME:知构软考}
+    worker-delay-ms: ${AUTH_EMAIL_WORKER_DELAY_MS:1000}
+
+logging:
+  level:
+    com.nan.aisoftoj: ${APP_LOG_LEVEL:info}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info
+  endpoint:
+    health:
+      show-details: never
+      probes:
+        enabled: true
+
+claude:
+  api-key: ${CLAUDE_API_KEY:}
+  model: claude-sonnet-4-6
+
+aliyun:
+  oss:
+    endpoint: ${OSS_ENDPOINT:}
+    access-key-id: ${OSS_ACCESS_KEY_ID:}
+    access-key-secret: ${OSS_ACCESS_KEY_SECRET:}
+    bucket-name: ${OSS_BUCKET_NAME:}
+    base-url: ${OSS_BASE_URL:}
+    dir-prefix: ${OSS_DIR_PREFIX:aisoftoj/}
+
+ai:
+  internal:
+    service-key: ${AI_INTERNAL_SERVICE_KEY:dev-only-ai-service-key}

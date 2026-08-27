@@ -17,9 +17,8 @@
 **/.env.local
 **/.env.production
 
-# Local backend runtime configuration
-/aisoftoj-backend/src/main/resources/application.yml
-/aisoftoj-backend/src/main/resources/application-prod.yml
+# Local backend runtime secrets belong in environment files. The checked-in
+# Spring configuration below contains environment-variable references only.
 
 target/
 */target/
