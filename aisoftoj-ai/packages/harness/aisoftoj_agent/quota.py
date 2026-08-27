@@ -39,6 +39,16 @@ class QuotaSnapshot:
     updated_at: datetime | None = None
 
 
+@dataclass(frozen=True, slots=True)
+class AdminQuotaUsage:
+    user_id: int
+    usage_date: date
+    limit: int
+    consumed: int
+    reserved: int
+    remaining: int
+
+
 class DailyTokenQuotaExceeded(RuntimeError):
     def __init__(self, snapshot: QuotaSnapshot) -> None:
         super().__init__("daily AI token quota exceeded")
@@ -70,6 +80,27 @@ class DailyTokenQuotaService:
         if current.remaining <= 0:
             raise DailyTokenQuotaExceeded(current)
         return current
+
+    async def usage_for_users(
+        self,
+        user_ids: list[int],
+        usage_date: date,
+    ) -> list[AdminQuotaUsage]:
+        async with self.session_factory() as session:
+            config = await self._config(session)
+            usages: dict[int, AiDailyTokenUsage] = {}
+            if user_ids:
+                rows = await session.scalars(
+                    select(AiDailyTokenUsage).where(
+                        AiDailyTokenUsage.user_id.in_(user_ids),
+                        AiDailyTokenUsage.usage_date == usage_date,
+                    )
+                )
+                usages = {row.user_id: row for row in rows}
+            return [
+                admin_usage(config, usages.get(user_id), user_id, usage_date)
+                for user_id in user_ids
+            ]
 
     async def update_limit(self, daily_token_limit: int, admin_user_id: int) -> QuotaSnapshot:
         async with self.session_factory.begin() as session:
@@ -302,4 +333,22 @@ def snapshot(
         reset_at=reset_at(usage_date),
         updated_by_user_id=config.updated_by_user_id,
         updated_at=config.update_time,
+    )
+
+
+def admin_usage(
+    config: AiQuotaConfig,
+    usage: AiDailyTokenUsage | None,
+    user_id: int,
+    usage_date: date,
+) -> AdminQuotaUsage:
+    consumed = usage.consumed_tokens if usage is not None else 0
+    reserved = usage.reserved_tokens if usage is not None else 0
+    return AdminQuotaUsage(
+        user_id=user_id,
+        usage_date=usage_date,
+        limit=config.daily_token_limit,
+        consumed=consumed,
+        reserved=reserved,
+        remaining=max(0, config.daily_token_limit - consumed - reserved),
     )

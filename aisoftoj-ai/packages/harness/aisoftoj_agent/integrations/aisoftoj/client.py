@@ -9,6 +9,7 @@ import httpx
 from pydantic import TypeAdapter, ValidationError
 
 from .models import (
+    AdminUserPage,
     Paper,
     PracticeHistoryPage,
     Profile,
@@ -67,6 +68,27 @@ class PlatformClient:
 
     async def get_profile(self, bearer_token: str) -> Profile:
         return cast(Profile, await self._get("/internal/ai/me", bearer_token, Profile))
+
+    async def list_admin_users(
+        self,
+        bearer_token: str,
+        *,
+        keyword: str | None,
+        page: int,
+        page_size: int,
+    ) -> AdminUserPage:
+        params: dict[str, Any] = {"page": page, "pageSize": page_size}
+        if keyword:
+            params["keyword"] = keyword
+        return cast(
+            AdminUserPage,
+            await self._get(
+                "/admin/users",
+                bearer_token,
+                AdminUserPage,
+                params=params,
+            ),
+        )
 
     async def list_papers(self, bearer_token: str) -> list[Paper]:
         return cast(list[Paper], await self._get("/internal/ai/papers", bearer_token, list[Paper]))

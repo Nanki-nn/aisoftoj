@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import date, datetime
 from typing import Literal
 
 from pydantic import BaseModel, ConfigDict, Field, field_validator
@@ -142,3 +142,23 @@ class QuotaConfigUpdateRequest(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     daily_token_limit: int = Field(strict=True, ge=1_000, le=10_000_000)
+
+
+class AdminQuotaUsageItem(BaseModel):
+    user_id: int = Field(gt=0)
+    login_name: str | None
+    nick_name: str | None
+    email: str | None
+    usage_date: date
+    limit: int = Field(ge=0)
+    consumed: int = Field(ge=0)
+    reserved: int = Field(ge=0)
+    remaining: int = Field(ge=0)
+
+
+class AdminQuotaUsagePage(BaseModel):
+    records: list[AdminQuotaUsageItem]
+    total: int = Field(ge=0)
+    page: int = Field(ge=1)
+    page_size: int = Field(ge=1, le=100)
+    usage_date: date

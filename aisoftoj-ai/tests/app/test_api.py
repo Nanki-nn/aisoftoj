@@ -16,6 +16,10 @@ from app.main import create_app
 from config import PROJECT_ROOT
 from packages.harness.aisoftoj_agent.integrations.aisoftoj.client import PlatformClient
 from packages.harness.aisoftoj_agent.integrations.aisoftoj.context import TrustedUser
+from packages.harness.aisoftoj_agent.integrations.aisoftoj.models import (
+    AdminUserPage,
+    AdminUserSummary,
+)
 from packages.harness.aisoftoj_agent.persistence.models import (
     AiDailyTokenUsage,
     AiQuotaConfig,
@@ -130,6 +134,93 @@ async def test_quota_endpoints_enforce_role_and_apply_updates_immediately(
         bearer_token="jwt",
     )
     assert (await client.get("/api/ai/quota")).json()["limit"] == 45_000
+
+
+async def test_admin_quota_usage_lists_users_with_daily_usage(
+    api_client: tuple[httpx.AsyncClient, PlatformClient, Any],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, platform, app = api_client
+    assert (await client.get("/api/ai/admin/quota-usage")).status_code == 403
+    app.dependency_overrides[get_trusted_user] = lambda: TrustedUser(
+        user_id=1,
+        username="admin",
+        nickname=None,
+        role="ADMIN",
+        bearer_token="admin-jwt",
+    )
+    captured: dict[str, object] = {}
+
+    async def list_users(
+        bearer_token: str,
+        *,
+        keyword: str | None,
+        page: int,
+        page_size: int,
+    ) -> AdminUserPage:
+        captured.update({
+            "bearer_token": bearer_token,
+            "keyword": keyword,
+            "page": page,
+            "page_size": page_size,
+        })
+        return AdminUserPage(
+            records=[
+                AdminUserSummary(
+                    id=7,
+                    login_name="reader",
+                    nick_name="软考学员",
+                    email="reader@example.com",
+                ),
+                AdminUserSummary(
+                    id=8,
+                    login_name="new-user",
+                    nick_name=None,
+                    email=None,
+                ),
+            ],
+            total=2,
+            page=1,
+            page_size=10,
+        )
+
+    monkeypatch.setattr(platform, "list_admin_users", list_users)
+    async with app.state.container.session_factory.begin() as session:
+        session.add(
+            AiDailyTokenUsage(
+                user_id=7,
+                usage_date=beijing_date(),
+                consumed_tokens=12_000,
+                reserved_tokens=3_000,
+            )
+        )
+
+    response = await client.get(
+        f"/api/ai/admin/quota-usage?date={beijing_date().isoformat()}&keyword=reader"
+    )
+
+    assert response.status_code == 200
+    assert captured == {
+        "bearer_token": "admin-jwt",
+        "keyword": "reader",
+        "page": 1,
+        "page_size": 10,
+    }
+    payload = response.json()
+    assert payload["total"] == 2
+    assert payload["records"][0] == {
+        "user_id": 7,
+        "login_name": "reader",
+        "nick_name": "软考学员",
+        "email": "reader@example.com",
+        "usage_date": beijing_date().isoformat(),
+        "limit": 30_000,
+        "consumed": 12_000,
+        "reserved": 3_000,
+        "remaining": 15_000,
+    }
+    assert payload["records"][1]["consumed"] == 0
+    assert payload["records"][1]["remaining"] == 30_000
 
 
 async def test_exhausted_quota_rejects_run_without_persisting_message(

@@ -86,6 +86,44 @@ async def test_profile_forwards_both_credentials_and_validates_contract() -> Non
     assert profile.practice_session_count == 2
 
 
+async def test_admin_user_page_forwards_filters_and_validates_contract() -> None:
+    async def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/admin/users"
+        assert dict(request.url.params) == {
+            "keyword": "nan",
+            "page": "2",
+            "pageSize": "20",
+        }
+        return response(
+            {
+                "records": [
+                    {
+                        "id": 7,
+                        "loginName": "reader",
+                        "nickName": "软考学员",
+                        "email": "reader@example.com",
+                    }
+                ],
+                "total": 21,
+                "page": 2,
+                "pageSize": 20,
+            }
+        )
+
+    client = PlatformClient(
+        base_url="http://127.0.0.1:8080",
+        service_key="service-key",
+        transport=httpx.MockTransport(handler),
+    )
+    page = await client.list_admin_users(
+        "jwt-value", keyword="nan", page=2, page_size=20
+    )
+    await client.close()
+
+    assert page.total == 21
+    assert page.records[0].login_name == "reader"
+
+
 async def test_invalid_response_is_not_exposed() -> None:
     logger, handler = capture_platform_logs()
     client = PlatformClient(

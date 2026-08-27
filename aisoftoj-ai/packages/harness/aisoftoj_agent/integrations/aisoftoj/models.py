@@ -33,6 +33,20 @@ class Profile(JavaModel):
     wrong_question_count: int = Field(ge=0)
 
 
+class AdminUserSummary(JavaModel):
+    id: int = Field(gt=0)
+    login_name: str | None = None
+    nick_name: str | None = None
+    email: str | None = None
+
+
+class AdminUserPage(JavaModel):
+    records: list[AdminUserSummary]
+    total: int = Field(ge=0)
+    page: int = Field(ge=1)
+    page_size: int = Field(ge=1, le=100)
+
+
 class Paper(JavaModel):
     paper_id: int = Field(gt=0)
     name: str = Field(min_length=1)
