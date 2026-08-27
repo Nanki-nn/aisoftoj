@@ -26,7 +26,7 @@ def is_rollout_allowed(user: TrustedUser, settings: Settings) -> bool:
     allowed = getattr(settings, "rollout_allowed_user_ids", None)
     # Lightweight test containers predating the rollout setting remain open;
     # production Settings always provides an explicit (possibly empty) set.
-    return user.role == "admin" or allowed is None or user.user_id in allowed
+    return user.role.upper() == "ADMIN" or allowed is None or user.user_id in allowed
 
 
 async def capability_for(

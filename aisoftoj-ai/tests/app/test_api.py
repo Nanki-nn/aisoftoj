@@ -133,6 +133,16 @@ async def test_capability_and_business_routes_enforce_rollout_allowlist(
     assert (await client.get("/api/ai/capability")).json()["ai_enabled"] is True
     assert (await client.post("/api/ai/threads", json={})).status_code == 201
 
+    app.dependency_overrides[get_trusted_user] = lambda: TrustedUser(
+        user_id=1,
+        username="admin",
+        nickname=None,
+        role="ADMIN",
+        bearer_token="jwt",
+    )
+    app.state.container.settings.rollout_allowed_user_ids = frozenset()
+    assert (await client.get("/api/ai/capability")).json()["ai_enabled"] is True
+
 
 async def test_quota_endpoints_enforce_role_and_apply_updates_immediately(
     api_client: tuple[httpx.AsyncClient, PlatformClient, Any],
