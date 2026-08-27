@@ -1,6 +1,6 @@
 import React from 'react';
 import { Link, useLocation } from 'react-router-dom';
-import { LayoutDashboard, Users, BookOpen, ImageUp, ChevronLeft, Bot } from 'lucide-react';
+import { LayoutDashboard, Users, BookOpen, ImageUp, ChevronLeft, Bot, Gauge } from 'lucide-react';
 
 const NAV_ITEMS = [
   { path: '/admin', label: '数据概览', icon: LayoutDashboard, exact: true },
@@ -8,6 +8,7 @@ const NAV_ITEMS = [
   { path: '/admin/questions', label: '题库管理', icon: BookOpen, exact: false },
   { path: '/admin/oss', label: '图片上传', icon: ImageUp, exact: false },
   { path: '/admin/ai', label: 'AI 助手设置', icon: Bot, exact: false },
+  { path: '/admin/token-usage', label: 'Token 用量', icon: Gauge, exact: false },
 ];
 
 export function AdminLayout({ children }: { children: React.ReactNode }) {
