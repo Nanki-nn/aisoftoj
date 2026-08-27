@@ -176,6 +176,11 @@ LangGraph 继续自动记录 messages、模型调用、工具调用和节点状�
 Tool 业务结果保持完整。脱敏器必须支持嵌套字典、列表、元组和字符串，并避免在日志
 或异常消息中回显原始秘密。
 
+隐藏推理使用独立规则处理：规范化字段名 `reasoningcontent` 的值替换为
+`[HIDDEN_REASONING]`；当内容块的 `type` 为 `reasoning` 或 `thinking` 时，只保留
+块类型，其余内容字段替换为 `[HIDDEN_REASONING]`。普通答案的 `text` 字段以及业务
+对象中不属于上述结构的普通 `reasoning` 字段不做泛化删除，避免误伤可见解释。
+
 ## 失败处理与资源约束
 
 - tracing 禁用时不创建 Client，也不启动后台上报工作。
@@ -222,6 +227,7 @@ Tool 业务结果保持完整。脱敏器必须支持嵌套字典、列表、元
 - tracing 开启但 API Key 缺失时配置校验失败。
 - 采样率拒绝 NaN、Infinity、小于 0 或大于 1 的值。
 - 嵌套对象、HTTP Header 和正文中的敏感字段或敏感值被替换。
+- provider 的 `reasoning_content` 与 reasoning/thinking 内容块不可进入 Trace 正文。
 - 普通用户输入、模型回答和 Tool 业务结果保持原样。
 - Worker 为 Trace 注入正确的 run、thread、user、question、model、environment 和版本。
 - provider 禁用时 Agent 行为与当前一致。

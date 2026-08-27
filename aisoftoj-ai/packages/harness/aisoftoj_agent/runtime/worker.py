@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 import asyncio
-from collections.abc import Mapping
+from collections.abc import AsyncIterator, Mapping
 from dataclasses import replace
 from datetime import UTC, datetime
 from typing import Any
@@ -12,12 +12,14 @@ from langchain_core.messages import (
     HumanMessage,
     SystemMessage,
 )
+from langchain_core.runnables import RunnableConfig
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from ..agents.context import AgentContext
 from ..agents.factory import AgentGraph
 from ..contracts.events import PersistedEvent
 from ..integrations.aisoftoj.client import PlatformError
+from ..observability import LangSmithTracing
 from ..persistence.models import AiRunEvent
 from ..persistence.repositories.messages import MessageRepository
 from ..persistence.repositories.runs import RunRepository
@@ -37,12 +39,16 @@ class Worker:
         stream_bridge: StreamBridge,
         *,
         max_run_seconds: int,
+        tracing: LangSmithTracing | None = None,
+        model_name: str = "unknown",
     ) -> None:
         self.session_factory = session_factory
         self.agent = agent
         self.stream_bridge = stream_bridge
         self.event_sequence = RunEventSequence()
         self.max_run_seconds = max_run_seconds
+        self.tracing = tracing or LangSmithTracing.disabled()
+        self.model_name = model_name
 
     async def execute(self, run_id: str, context: AgentContext) -> None:
         await self._initialize_event_sequence(run_id)
@@ -105,11 +111,11 @@ class Worker:
         pending_has_tool_calls = False
         pending_discarded = False
         latest_state: Mapping[str, Any] | None = None
-        async for item in self.agent.graph.astream(
-            {"messages": messages, "todos": [], "files": {}},
-            context=runtime_context,
-            config={"configurable": {"thread_id": run_id}},
-            stream_mode=["messages", "values"],
+        async for item in self._stream_agent(
+            run_id,
+            runtime_context,
+            messages,
+            question_id,
         ):
             mode, payload = _stream_item(item)
             if mode == "values" and isinstance(payload, Mapping):
@@ -160,6 +166,32 @@ class Worker:
         if not final_text and latest_state is not None:
             final_text = _latest_final_answer(latest_state)
         await self._complete(run_id, context.thread_id, final_text)
+
+    async def _stream_agent(
+        self,
+        run_id: str,
+        context: AgentContext,
+        messages: list[BaseMessage],
+        question_id: int | None,
+    ) -> AsyncIterator[Any]:
+        with self.tracing.trace_run(
+            run_id=run_id,
+            thread_id=context.thread_id,
+            user_id=context.user_id,
+            question_id=question_id,
+            model=self.model_name,
+        ) as trace_config:
+            graph_config: RunnableConfig = {
+                **trace_config,
+                "configurable": {"thread_id": run_id},
+            }
+            async for item in self.agent.graph.astream(
+                {"messages": messages, "todos": [], "files": {}},
+                context=context,
+                config=graph_config,
+                stream_mode=["messages", "values"],
+            ):
+                yield item
 
     async def _load_question_id(self, run_id: str) -> int | None:
         question_id, _input_message_id = await self._load_run_context(run_id)

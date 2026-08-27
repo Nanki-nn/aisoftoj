@@ -11,6 +11,10 @@ from app.logging_config import configure_application_logging
 from config import Settings, load_settings
 from packages.harness.aisoftoj_agent.agents.factory import AgentGraph, build_agent_graph
 from packages.harness.aisoftoj_agent.integrations.aisoftoj.client import PlatformClient
+from packages.harness.aisoftoj_agent.observability import (
+    LangSmithTracing,
+    build_langsmith_tracing,
+)
 from packages.harness.aisoftoj_agent.persistence.engine import create_engine, create_session_factory
 from packages.harness.aisoftoj_agent.persistence.repositories.runs import RunRepository
 from packages.harness.aisoftoj_agent.quota import DailyTokenQuotaService
@@ -33,6 +37,9 @@ class AppState:
     worker: Worker
     quota_service: DailyTokenQuotaService | None = None
     skill_registry: SkillRegistry = field(default_factory=SkillRegistry.empty)
+    langsmith_tracing: LangSmithTracing = field(
+        default_factory=LangSmithTracing.disabled
+    )
 
 
 @asynccontextmanager
@@ -65,6 +72,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         skill_tools=skill_tools,
         quota_service=quota_service,
     )
+    langsmith_tracing = build_langsmith_tracing(settings)
     stream_bridge = StreamBridge()
     run_manager = RunManager(
         max_runs=settings.agent_max_concurrent_runs,
@@ -75,6 +83,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         agent,
         stream_bridge,
         max_run_seconds=settings.agent_max_run_seconds,
+        tracing=langsmith_tracing,
+        model_name=settings.llm_default_model,
     )
     async with session_factory.begin() as session:
         await RunRepository(session).interrupt_unfinished()
@@ -91,6 +101,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         worker=worker,
         quota_service=quota_service,
         skill_registry=skill_registry,
+        langsmith_tracing=langsmith_tracing,
     )
     app.state.container = container
     app.state.platform_client = platform_client
@@ -99,5 +110,6 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     finally:
         container.ready = False
         await run_manager.shutdown(settings.shutdown_drain_seconds)
+        await langsmith_tracing.aclose()
         await platform_client.close()
         await engine.dispose()

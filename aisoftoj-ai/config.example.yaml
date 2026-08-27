@@ -1,3 +1,6 @@
+# LangSmith tracing credentials and sampling settings are environment-only.
+# Do not add LANGSMITH_API_KEY or other observability secrets to this YAML file.
+
 database_url: mysql+asyncmy://aisoftoj_ai:change-me@127.0.0.1:3306/aisoftoj
 
 platform_base_url: http://127.0.0.1:8080
