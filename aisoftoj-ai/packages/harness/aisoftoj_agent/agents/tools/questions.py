@@ -16,7 +16,7 @@ def build_get_question_tool(client: PlatformClient) -> BaseTool:
         question_id: Annotated[int, Field(gt=0)],
         runtime: ToolRuntime[AgentContext],
     ) -> dict[str, object]:
-        """按题目 ID 读取题干、选项、题型和难度；不会返回答案或解析。"""
+        """按题目 ID 读取题干、选项、题型、难度、标准答案和官方解析。"""
         question = await client.get_question(runtime.context.bearer_token, question_id)
         return question.model_dump(mode="json")
 

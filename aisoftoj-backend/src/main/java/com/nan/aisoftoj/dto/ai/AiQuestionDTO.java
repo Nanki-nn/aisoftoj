@@ -13,4 +13,6 @@ public class AiQuestionDTO {
     private List<AiQuestionOptionDTO> options = new ArrayList<>();
     private String questionType;
     private String difficulty;
+    private String correctAnswer;
+    private String analysis;
 }

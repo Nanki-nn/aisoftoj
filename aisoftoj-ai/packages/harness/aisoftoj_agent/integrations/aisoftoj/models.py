@@ -85,6 +85,8 @@ class Question(JavaModel):
     options: list[QuestionOption]
     question_type: QuestionType
     difficulty: Difficulty
+    correct_answer: str | None = None
+    analysis: str | None = None
 
 
 class WrongQuestionReview(JavaModel):

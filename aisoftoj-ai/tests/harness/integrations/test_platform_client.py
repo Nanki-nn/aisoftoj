@@ -86,6 +86,23 @@ async def test_profile_forwards_both_credentials_and_validates_contract() -> Non
     assert profile.practice_session_count == 2
 
 
+async def test_ai_assistant_availability_validates_boolean_contract() -> None:
+    async def handler(request: httpx.Request) -> httpx.Response:
+        assert request.url.path == "/internal/ai/assistant-availability"
+        assert request.headers["Authorization"] == "Bearer jwt-value"
+        return response(False)
+
+    client = PlatformClient(
+        base_url="http://127.0.0.1:8080",
+        service_key="service-key",
+        transport=httpx.MockTransport(handler),
+    )
+    available = await client.is_ai_assistant_available("jwt-value")
+    await client.close()
+
+    assert available is False
+
+
 async def test_admin_user_page_forwards_filters_and_validates_contract() -> None:
     async def handler(request: httpx.Request) -> httpx.Response:
         assert request.url.path == "/admin/users"

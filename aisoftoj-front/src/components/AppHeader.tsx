@@ -35,6 +35,7 @@ import { useAgentPanel } from '../hooks/useAgentPanel';
 interface AppHeaderProps {
   onShowAuth: () => void;
   onShowProfile: () => void;
+  aiAssistantDisabled?: boolean;
 }
 
 const EXAM_START_AT = new Date('2026-10-24T00:00:00+08:00').getTime();
@@ -70,7 +71,11 @@ function isCurrentRoute(currentPath: string, path: string) {
   return currentPath === path || currentPath.startsWith(`${path}/`);
 }
 
-export function AppHeader({ onShowAuth, onShowProfile }: AppHeaderProps) {
+export function AppHeader({
+  onShowAuth,
+  onShowProfile,
+  aiAssistantDisabled = false,
+}: AppHeaderProps) {
   const { user, logout, isAuthenticated } = useAuth();
   const { isOpen: isAgentOpen, toggle: toggleAgent } = useAgentPanel();
   const navigate = useNavigate();
@@ -177,19 +182,25 @@ export function AppHeader({ onShowAuth, onShowProfile }: AppHeaderProps) {
 
           <Button
             type="button"
-            onClick={toggleAgent}
+            onClick={aiAssistantDisabled ? undefined : toggleAgent}
+            disabled={aiAssistantDisabled}
             variant={isAgentOpen ? 'default' : 'outline'}
             className={`h-10 gap-2 rounded-lg px-2.5 font-medium sm:px-3 ${
               isAgentOpen
                 ? 'bg-blue-600 text-white shadow-sm shadow-blue-600/20 hover:bg-blue-700'
                 : 'border-slate-300 bg-white text-blue-700 shadow-sm hover:border-blue-200 hover:bg-blue-50'
             }`}
-            aria-label={isAgentOpen ? '关闭 AI 助手' : '打开 AI 助手'}
+            aria-label={aiAssistantDisabled
+              ? '考试模式下 AI 助手已禁用'
+              : isAgentOpen ? '关闭 AI 助手' : '打开 AI 助手'}
             aria-expanded={isAgentOpen}
             aria-controls="ai-agent-panel"
+            title={aiAssistantDisabled ? '考试模式下 AI 助手不可用' : undefined}
           >
             <Sparkles className="h-4 w-4" aria-hidden="true" />
-            <span className="hidden sm:inline">AI 助手</span>
+            <span className="hidden sm:inline">
+              {aiAssistantDisabled ? 'AI 已禁用' : 'AI 助手'}
+            </span>
           </Button>
 
           <a

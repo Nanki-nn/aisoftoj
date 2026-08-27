@@ -20,7 +20,9 @@ import java.time.Instant;
 import java.util.Date;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -71,6 +73,8 @@ class AiPlatformReadServiceImplTest {
         Question question = questionWithOptions(1027,
                 "[{\"key\":\"A\",\"text\":\"services\"},"
                         + "{\"key\":\"B\",\"text\":\"architectures\"}]");
+        question.setAnswer("B");
+        question.setAnalysis("官方解析");
         when(questionMapper.selectById(1027)).thenReturn(question);
         when(questionMapper.countPublishedPaperRelations(1027)).thenReturn(1);
 
@@ -81,6 +85,22 @@ class AiPlatformReadServiceImplTest {
         assertEquals("services", result.getOptions().get(0).getContent());
         assertEquals("B", result.getOptions().get(1).getKey());
         assertEquals("architectures", result.getOptions().get(1).getContent());
+        assertEquals("B", result.getCorrectAnswer());
+        assertEquals("官方解析", result.getAnalysis());
+    }
+
+    @Test
+    void aiAssistantIsDisabledWhileAnExamSessionIsActive() {
+        when(practiceSessionMapper.countActiveExamSessionsByUserId(9)).thenReturn(1L);
+
+        assertFalse(service.isAiAssistantAvailable(9));
+    }
+
+    @Test
+    void aiAssistantIsAvailableWithoutAnActiveExamSession() {
+        when(practiceSessionMapper.countActiveExamSessionsByUserId(9)).thenReturn(0L);
+
+        assertTrue(service.isAiAssistantAvailable(9));
     }
 
     @Test

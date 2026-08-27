@@ -47,6 +47,7 @@ function storageKey(): string {
 function errorMessage(error: unknown): string {
   if (error instanceof AIApiError) {
     if (error.status === 401 || error.code === 'AUTH_EXPIRED') return '登录状态已失效，请重新登录';
+    if (error.code === 'AI_ASSISTANT_DISABLED_IN_EXAM_MODE') return '考试模式下 AI 助手不可用';
     if (error.code === 'AI_DAILY_TOKEN_QUOTA_EXCEEDED') return '今日 AI 助手额度已用完';
     if (error.status === 429) return 'AI 助手当前繁忙，请稍后重试';
     return error.message;

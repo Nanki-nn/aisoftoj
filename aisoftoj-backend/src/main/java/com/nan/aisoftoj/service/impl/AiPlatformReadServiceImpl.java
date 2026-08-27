@@ -143,7 +143,18 @@ public class AiPlatformReadServiceImpl implements AiPlatformReadService {
         dto.setOptions(parseOptions(question.getOptions()));
         dto.setQuestionType(mapQuestionType(question.getQuestionType()));
         dto.setDifficulty(mapDifficulty(question.getDifficulty()));
+        dto.setCorrectAnswer(question.getAnswer());
+        dto.setAnalysis(question.getAnalysis());
         return dto;
+    }
+
+    @Override
+    public boolean isAiAssistantAvailable(Integer userId) {
+        if (userId == null || userId <= 0) {
+            throw new IllegalArgumentException("userId 必须为正整数");
+        }
+        Long activeExamCount = practiceSessionMapper.countActiveExamSessionsByUserId(userId);
+        return activeExamCount == null || activeExamCount == 0;
     }
 
     @Override

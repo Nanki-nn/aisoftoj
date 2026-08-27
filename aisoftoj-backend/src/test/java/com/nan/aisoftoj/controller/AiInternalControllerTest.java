@@ -49,4 +49,19 @@ class AiInternalControllerTest {
         verify(authenticator).authenticate("service-key", "Bearer jwt");
         verify(readService).getProfile(23);
     }
+
+    @Test
+    void assistantAvailabilityUsesAuthenticatedUser() {
+        when(request.getHeader("X-AI-Service-Key")).thenReturn("service-key");
+        when(request.getHeader("Authorization")).thenReturn("Bearer jwt");
+        when(authenticator.authenticate("service-key", "Bearer jwt")).thenReturn(23);
+        when(readService.isAiAssistantAvailable(23)).thenReturn(false);
+
+        ResponseEntity<ResultDTO<Boolean>> response =
+                controller.getAssistantAvailability(request);
+
+        assertEquals(200, response.getStatusCodeValue());
+        assertEquals(Boolean.FALSE, response.getBody().getData());
+        verify(readService).isAiAssistantAvailable(23);
+    }
 }

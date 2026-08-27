@@ -239,7 +239,7 @@ def test_bundled_question_explanation_skill_is_loadable() -> None:
     skill = registry.get("question-explanation")
     assert skill is not None
     assert "get_question" in skill.content
-    assert "不得声称某个选项一定正确" in skill.content
+    assert "优先以这两项可信数据为依据" in skill.content
 
 
 def test_bundled_essay_writing_coach_is_discoverable_and_complete() -> None:

@@ -53,6 +53,13 @@ public class AiInternalController {
         return noStore(ResultDTO.success(readService.getQuestion(questionId)));
     }
 
+    @GetMapping("/assistant-availability")
+    public ResponseEntity<ResultDTO<Boolean>> getAssistantAvailability(
+            HttpServletRequest request) {
+        Integer userId = authenticate(request);
+        return noStore(ResultDTO.success(readService.isAiAssistantAvailable(userId)));
+    }
+
     @GetMapping("/wrong-questions/{wrongQuestionId}/review")
     public ResponseEntity<ResultDTO<AiWrongQuestionReviewDTO>> reviewWrongQuestion(
             @PathVariable Long wrongQuestionId,

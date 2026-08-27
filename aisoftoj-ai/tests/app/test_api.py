@@ -46,10 +46,18 @@ async def api_client() -> AsyncGenerator[tuple[httpx.AsyncClient, PlatformClient
     async with async_sessionmaker(engine, expire_on_commit=False).begin() as setup:
         setup.add(AiQuotaConfig(id=1, daily_token_limit=30_000))
     session_factory = async_sessionmaker(engine, expire_on_commit=False)
+    def platform_handler(request: httpx.Request) -> httpx.Response:
+        if request.url.path == "/internal/ai/assistant-availability":
+            return httpx.Response(
+                200,
+                json={"code": 200, "message": "ok", "data": True, "timestamp": 1},
+            )
+        return httpx.Response(500)
+
     platform = PlatformClient(
         base_url="http://127.0.0.1:8080",
         service_key="test",
-        transport=httpx.MockTransport(lambda _: httpx.Response(500)),
+        transport=httpx.MockTransport(platform_handler),
     )
     app = create_app()
     app.router.lifespan_context = _empty_lifespan
@@ -334,6 +342,30 @@ async def test_run_creation_is_idempotent(
     assert first.status_code == 202
     assert second.status_code == 200
     assert first.json()["id"] == second.json()["id"]
+
+
+async def test_run_creation_is_disabled_during_exam_mode(
+    api_client: tuple[httpx.AsyncClient, PlatformClient, object],
+) -> None:
+    client, platform, _app = api_client
+    thread_id = (await client.post("/api/ai/threads", json={})).json()["id"]
+    original = platform.is_ai_assistant_available
+
+    async def unavailable(_bearer_token: str) -> bool:
+        return False
+
+    platform.is_ai_assistant_available = unavailable  # type: ignore[method-assign]
+    try:
+        response = await client.post(
+            f"/api/ai/threads/{thread_id}/runs",
+            json={"message": "告诉我答案"},
+            headers={"Idempotency-Key": "exam-mode-disabled"},
+        )
+    finally:
+        platform.is_ai_assistant_available = original  # type: ignore[method-assign]
+
+    assert response.status_code == 403
+    assert response.json()["error"]["code"] == "AI_ASSISTANT_DISABLED_IN_EXAM_MODE"
 
 
 async def test_run_persists_first_question_context_across_idempotent_replay(

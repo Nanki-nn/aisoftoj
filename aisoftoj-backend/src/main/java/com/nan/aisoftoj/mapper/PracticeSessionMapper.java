@@ -64,6 +64,11 @@ public interface  PracticeSessionMapper extends BaseMapper<PracticeSession> {
             "WHERE ps.user_id = #{userId} AND ps.is_deleted = 0 AND ps.status IN (0, 1)")
     Long countPracticeHistoryByUserId(@Param("userId") Integer userId);
 
+    @Select("SELECT COUNT(1) FROM practice_session " +
+            "WHERE user_id = #{userId} AND is_deleted = 0 " +
+            "AND status = 0 AND exam_mode = 'exam'")
+    Long countActiveExamSessionsByUserId(@Param("userId") Integer userId);
+
     @Select("SELECT " +
             "COUNT(1) AS totalCount, " +
             "COALESCE(SUM(CASE WHEN ps.status = 0 THEN 1 ELSE 0 END), 0) AS inProgressCount, " +

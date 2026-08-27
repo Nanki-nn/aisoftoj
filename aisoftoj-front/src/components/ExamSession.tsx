@@ -149,11 +149,12 @@ export function ExamSession({
   const currentQuestion = session.questions[currentQuestionIndex];
 
   useEffect(() => {
+    if (session.examMode === 'exam' && !session.isCompleted) return;
     const questionId = Number(currentQuestion?.id);
     if (!Number.isSafeInteger(questionId) || questionId <= 0) return;
     publishQuestion(questionId);
     return () => clearQuestion(questionId);
-  }, [clearQuestion, currentQuestion?.id, publishQuestion]);
+  }, [clearQuestion, currentQuestion?.id, publishQuestion, session.examMode, session.isCompleted]);
   const isReadOnly = session.isCompleted;
   isReadOnlyRef.current = isReadOnly;
   pauseOnUnmountRef.current = onPause;
