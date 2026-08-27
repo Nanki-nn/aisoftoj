@@ -13,6 +13,8 @@ llm_default_model: gpt-5-mini
 llm_request_timeout_seconds: 60
 llm_max_retries: 1
 
+mineru_api_key: change-me
+
 agent_max_run_tokens: 32000
 agent_max_run_seconds: 180
 agent_summary_trigger_tokens: 24000
