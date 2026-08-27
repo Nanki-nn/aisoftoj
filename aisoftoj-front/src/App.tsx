@@ -145,6 +145,15 @@ function SessionRoute({
 
 type UpdateAnswerFn = ReturnType<typeof useExamSession>['updateAnswer'];
 
+export function isAiAssistantDisabledForSession(
+  pathname: string,
+  session: ReturnType<typeof useExamSession>['currentSession'],
+): boolean {
+  return pathname.startsWith(`${ROUTES.examSessionBase}/`)
+    && session?.examMode === 'exam'
+    && !session.isCompleted;
+}
+
 function ResultRoute({
   currentSession,
   setSession,
@@ -217,14 +226,20 @@ function AppShell({
   children,
   onShowAuth,
   onShowProfile,
+  aiAssistantDisabled = false,
 }: {
   children: React.ReactNode;
   onShowAuth: () => void;
   onShowProfile: () => void;
+  aiAssistantDisabled?: boolean;
 }) {
   return (
     <>
-      <AppHeader onShowAuth={onShowAuth} onShowProfile={onShowProfile} />
+      <AppHeader
+        onShowAuth={onShowAuth}
+        onShowProfile={onShowProfile}
+        aiAssistantDisabled={aiAssistantDisabled}
+      />
       {children}
     </>
   );
@@ -251,9 +266,14 @@ export default function App() {
   activeExamSessionIdRef.current = location.pathname.startsWith(`${ROUTES.examSessionBase}/`)
     ? currentSession?.id ?? null
     : null;
+  const aiDisabledByExamMode = isAiAssistantDisabledForSession(
+    location.pathname,
+    currentSession,
+  );
   const agentVisibleOnRoute = !location.pathname.startsWith('/admin')
     && location.pathname !== ROUTES.auth
-    && location.pathname !== ROUTES.forgotPassword;
+    && location.pathname !== ROUTES.forgotPassword
+    && !aiDisabledByExamMode;
 
   // 检查用户登录状态
   useEffect(() => {
@@ -550,7 +570,11 @@ export default function App() {
         <Route
           path={`${ROUTES.examSessionBase}/:sessionId`}
           element={
-            <AppShell onShowAuth={handleShowAuth} onShowProfile={handleShowProfile}>
+            <AppShell
+              onShowAuth={handleShowAuth}
+              onShowProfile={handleShowProfile}
+              aiAssistantDisabled={aiDisabledByExamMode}
+            >
               <SessionRoute
                 currentSession={currentSession}
                 setSession={setSession}
