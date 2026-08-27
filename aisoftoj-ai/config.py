@@ -54,6 +54,8 @@ class Settings(BaseModel):
     llm_request_timeout_seconds: float = Field(default=60, gt=0)
     llm_max_retries: int = Field(default=1, ge=0, le=3)
 
+    mineru_api_key: SecretStr | None = None
+
     agent_max_run_tokens: int = Field(default=32_000, gt=0)
     agent_max_output_tokens: int = Field(default=2_048, gt=0)
     agent_quota_reservation_margin_percent: int = Field(default=10, ge=0, le=100)
