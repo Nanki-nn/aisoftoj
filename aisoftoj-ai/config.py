@@ -57,6 +57,7 @@ class Settings(BaseModel):
     host: str = "127.0.0.1"
     port: int = Field(default=8000, ge=1, le=65_535)
     log_level: str = "info"
+    rollout_allowed_user_ids: frozenset[int] = Field(default_factory=frozenset)
 
     @field_validator("database_url")
     @classmethod
@@ -98,6 +99,18 @@ class Settings(BaseModel):
             raise ValueError("loop warning threshold must be below hard threshold")
         return self
 
+    @field_validator("rollout_allowed_user_ids", mode="before")
+    @classmethod
+    def parse_rollout_allowed_user_ids(cls, value: object) -> object:
+        if isinstance(value, str):
+            if not value.strip():
+                return frozenset()
+            try:
+                return frozenset(int(item.strip()) for item in value.split(","))
+            except ValueError as exc:
+                raise ValueError("rollout user ids must be comma-separated integers") from exc
+        return value
+
     @property
     def resolved_skills_root(self) -> Path:
         return PROJECT_ROOT / self.skills_root
@@ -111,6 +124,13 @@ class Settings(BaseModel):
             payload: Any = yaml.safe_load(handle)
         if not isinstance(payload, dict):
             raise ValueError("configuration root must be an object")
+        overrides = {
+            "database_url": os.environ.get("AI_DATABASE_URL"),
+            "platform_service_key": os.environ.get("AI_INTERNAL_SERVICE_KEY"),
+            "llm_api_key": os.environ.get("LLM_API_KEY"),
+            "rollout_allowed_user_ids": os.environ.get("AI_ROLLOUT_ALLOWED_USER_IDS"),
+        }
+        payload.update({key: value for key, value in overrides.items() if value is not None})
         return cls.model_validate(payload)
 
 

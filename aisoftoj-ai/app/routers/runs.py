@@ -11,7 +11,7 @@ from fastapi import APIRouter, Header, HTTPException, Query, Request, Response, 
 from fastapi.responses import StreamingResponse
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.dependencies import Container, CurrentUser, DatabaseSession
+from app.dependencies import AiCurrentUser, Container, DatabaseSession
 from packages.harness.aisoftoj_agent.agents.context import AgentContext
 from packages.harness.aisoftoj_agent.contracts.api import (
     RunCreateRequest,
@@ -24,7 +24,6 @@ from packages.harness.aisoftoj_agent.contracts.events import (
     StreamEnd,
     StreamReset,
 )
-from packages.harness.aisoftoj_agent.integrations.aisoftoj.client import PlatformError
 from packages.harness.aisoftoj_agent.persistence.models import AiRun
 from packages.harness.aisoftoj_agent.persistence.repositories.messages import MessageRepository
 from packages.harness.aisoftoj_agent.persistence.repositories.runs import (
@@ -56,7 +55,7 @@ def run_response(run: AiRun) -> RunResponse:
 
 
 async def owned_run(
-    thread_id: str, run_id: str, user: CurrentUser, session: DatabaseSession
+    thread_id: str, run_id: str, user: AiCurrentUser, session: DatabaseSession
 ) -> AiRun:
     thread = await ThreadRepository(session).get_owned(user.user_id, thread_id)
     if thread is None:
@@ -71,7 +70,7 @@ async def owned_run(
 async def create_run(
     thread_id: str,
     body: RunCreateRequest,
-    user: CurrentUser,
+    user: AiCurrentUser,
     session: DatabaseSession,
     container: Container,
     response: Response,
@@ -88,22 +87,8 @@ async def create_run(
         response.status_code = status.HTTP_200_OK
         return run_response(existing)
     # Ownership/idempotency reads autobegin a transaction. End it before
-    # making the cross-service availability check and reserving capacity.
+    # reserving capacity.
     await session.rollback()
-    try:
-        assistant_available = await container.platform_client.is_ai_assistant_available(
-            user.bearer_token
-        )
-    except PlatformError as exc:
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail="AI_AVAILABILITY_UNAVAILABLE",
-        ) from exc
-    if not assistant_available:
-        raise HTTPException(
-            status_code=status.HTTP_403_FORBIDDEN,
-            detail="AI_ASSISTANT_DISABLED_IN_EXAM_MODE",
-        )
     if container.quota_service is None:
         raise HTTPException(status_code=503, detail="AI_QUOTA_UNAVAILABLE")
     try:
@@ -169,7 +154,7 @@ async def create_run(
 @router.get("", response_model=RunPageResponse)
 async def list_runs(
     thread_id: str,
-    user: CurrentUser,
+    user: AiCurrentUser,
     session: DatabaseSession,
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
@@ -188,7 +173,7 @@ async def list_runs(
 
 @router.get("/{run_id}", response_model=RunResponse)
 async def get_run(
-    thread_id: str, run_id: str, user: CurrentUser, session: DatabaseSession
+    thread_id: str, run_id: str, user: AiCurrentUser, session: DatabaseSession
 ) -> RunResponse:
     return run_response(await owned_run(thread_id, run_id, user, session))
 
@@ -197,7 +182,7 @@ async def get_run(
 async def cancel_run(
     thread_id: str,
     run_id: str,
-    user: CurrentUser,
+    user: AiCurrentUser,
     session: DatabaseSession,
     container: Container,
     response: Response,
@@ -215,7 +200,7 @@ async def cancel_run(
 async def list_run_events(
     thread_id: str,
     run_id: str,
-    user: CurrentUser,
+    user: AiCurrentUser,
     session: DatabaseSession,
     after_sequence: int = Query(default=0, ge=0),
     limit: int = Query(default=200, ge=1, le=500),
@@ -246,7 +231,7 @@ async def stream_run(
     request: Request,
     thread_id: str,
     run_id: str,
-    user: CurrentUser,
+    user: AiCurrentUser,
     session: DatabaseSession,
     container: Container,
     after_seq: int = Query(default=0, ge=0),

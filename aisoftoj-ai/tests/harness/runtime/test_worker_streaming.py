@@ -7,6 +7,7 @@ from types import SimpleNamespace
 from typing import Any
 from unittest.mock import AsyncMock
 
+import pytest
 from langchain_core.messages import AIMessage, AIMessageChunk, HumanMessage
 
 from packages.harness.aisoftoj_agent.agents.context import AgentContext
@@ -158,6 +159,39 @@ async def test_worker_passes_business_metadata_to_root_trace() -> None:
     assert config["run_name"] == "aisoftoj-agent-run"
     assert config["configurable"] == {"thread_id": "run-1"}
     assert config["metadata"]["question_id"] == 123
+
+
+async def test_worker_discards_output_when_exam_starts_before_publish() -> None:
+    platform = SimpleNamespace(is_ai_assistant_available=AsyncMock(side_effect=[True, False]))
+    worker = Worker(
+        session_factory=object(),  # type: ignore[arg-type]
+        agent=SimpleNamespace(graph=FakeGraph()),  # type: ignore[arg-type]
+        stream_bridge=object(),  # type: ignore[arg-type]
+        platform_client=platform,  # type: ignore[arg-type]
+        max_run_seconds=30,
+    )
+    worker._load_run_context = AsyncMock(return_value=(None, "input-1"))  # type: ignore[method-assign]
+    worker._load_messages = AsyncMock(return_value=[])  # type: ignore[method-assign]
+    worker._transition_and_event = AsyncMock()  # type: ignore[method-assign]
+    worker._append_event = AsyncMock()  # type: ignore[method-assign]
+    worker._publish_delta = AsyncMock()  # type: ignore[method-assign]
+    worker._complete = AsyncMock()  # type: ignore[method-assign]
+    context = AgentContext(
+        user_id=1,
+        username="tester",
+        nickname=None,
+        thread_id="thread-1",
+        run_id="run-1",
+        bearer_token="secret",
+    )
+
+    from app.auth.access import AiDisabledDuringExam
+
+    with pytest.raises(AiDisabledDuringExam):
+        await worker._execute("run-1", context)
+
+    worker._publish_delta.assert_not_awaited()
+    worker._complete.assert_not_awaited()
 
 
 def test_message_text_excludes_provider_reasoning_blocks() -> None:

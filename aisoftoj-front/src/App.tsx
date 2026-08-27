@@ -41,6 +41,8 @@ import {
   submitPracticeSession,
   updatePracticeQuestionRecord,
 } from './lib/api';
+import { fetchAICapability } from './lib/aiApi';
+import { AI_ASSISTANT_ENABLED } from './lib/aiAvailability';
 
 const ROUTES = {
   home: '/',
@@ -258,7 +260,8 @@ export default function App() {
     resetSession,
     setSession,
   } = useExamSession();
-  const { checkAuthStatus } = useAuth();
+  const { checkAuthStatus, user } = useAuth();
+  const [aiCapabilityEnabled, setAiCapabilityEnabled] = useState(false);
   const { isOpen: isAgentOpen, close: closeAgent } = useAgentPanel();
   const navigate = useNavigate();
   const location = useLocation();
@@ -270,7 +273,8 @@ export default function App() {
     location.pathname,
     currentSession,
   );
-  const agentVisibleOnRoute = !location.pathname.startsWith('/admin')
+  const agentVisibleOnRoute = aiCapabilityEnabled
+    && !location.pathname.startsWith('/admin')
     && location.pathname !== ROUTES.auth
     && location.pathname !== ROUTES.forgotPassword
     && !aiDisabledByExamMode;
@@ -279,6 +283,22 @@ export default function App() {
   useEffect(() => {
     checkAuthStatus();
   }, [checkAuthStatus]);
+
+  useEffect(() => {
+    let active = true;
+    if (!user || !AI_ASSISTANT_ENABLED) {
+      setAiCapabilityEnabled(false);
+      return () => { active = false; };
+    }
+    fetchAICapability()
+      .then((value) => {
+        if (active) setAiCapabilityEnabled(value.ai_enabled);
+      })
+      .catch(() => {
+        if (active) setAiCapabilityEnabled(false);
+      });
+    return () => { active = false; };
+  }, [user?.id]);
 
   useEffect(() => {
     if (!agentVisibleOnRoute && isAgentOpen) {

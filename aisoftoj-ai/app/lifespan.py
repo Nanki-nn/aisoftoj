@@ -86,6 +86,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         tracing=langsmith_tracing,
         model_name=settings.llm_default_model,
     )
+    worker.platform_client = platform_client
     async with session_factory.begin() as session:
         await RunRepository(session).interrupt_unfinished()
     await quota_service.recover_unsettled()

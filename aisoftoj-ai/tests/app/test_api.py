@@ -113,6 +113,27 @@ async def test_thread_and_message_endpoints_are_owner_scoped(
     assert messages.json()["items"] == []
 
 
+async def test_capability_and_business_routes_enforce_rollout_allowlist(
+    api_client: tuple[httpx.AsyncClient, PlatformClient, Any],
+) -> None:
+    client, _platform, app = api_client
+    app.state.container.settings.rollout_allowed_user_ids = frozenset()
+
+    capability = await client.get("/api/ai/capability")
+    assert capability.status_code == 200
+    assert capability.json() == {
+        "ai_enabled": False,
+        "reason": "AI_ROLLOUT_NOT_ENABLED",
+    }
+    denied = await client.post("/api/ai/threads", json={})
+    assert denied.status_code == 403
+    assert denied.json()["error"]["code"] == "AI_ROLLOUT_NOT_ENABLED"
+
+    app.state.container.settings.rollout_allowed_user_ids = frozenset({7})
+    assert (await client.get("/api/ai/capability")).json()["ai_enabled"] is True
+    assert (await client.post("/api/ai/threads", json={})).status_code == 201
+
+
 async def test_quota_endpoints_enforce_role_and_apply_updates_immediately(
     api_client: tuple[httpx.AsyncClient, PlatformClient, Any],
 ) -> None:
@@ -365,7 +386,7 @@ async def test_run_creation_is_disabled_during_exam_mode(
         platform.is_ai_assistant_available = original  # type: ignore[method-assign]
 
     assert response.status_code == 403
-    assert response.json()["error"]["code"] == "AI_ASSISTANT_DISABLED_IN_EXAM_MODE"
+    assert response.json()["error"]["code"] == "AI_DISABLED_DURING_EXAM"
 
 
 async def test_run_persists_first_question_context_across_idempotent_replay(

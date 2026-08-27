@@ -81,6 +81,7 @@ def test_enabled_provider_builds_batched_secret_safe_client() -> None:
         )
     })
     assert "secret" not in redacted["text"]
+    assert redacted["text"] == {"redacted": True, "chars": 65}
     assert provider.enabled is True
 
 
@@ -110,7 +111,8 @@ def test_trace_run_yields_root_runnable_config(
     ) as runnable:
         assert runnable["run_name"] == "aisoftoj-agent-run"
         assert runnable["metadata"]["question_id"] is None
-        assert runnable["metadata"]["user_id"] == 7
+        assert "user_id" not in runnable["metadata"]
+        assert len(runnable["metadata"]["user_id_hash"]) == 16
         assert "environment:development" in runnable["tags"]
 
     assert contexts[0]["project_name"] == "aisoftoj-agent-dev"

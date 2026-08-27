@@ -7,7 +7,7 @@ services:
     container_name: aisoftoj-ai
     network_mode: host
     env_file:
-      - /etc/aisoftoj/aisoftoj.env
+      - /etc/aisoftoj/ai.env
     environment:
       AGENT_CONFIG_FILE: /etc/aisoftoj/ai-config.yaml
     volumes:
@@ -17,9 +17,9 @@ services:
       - /tmp:rw,noexec,nosuid,size=64m,mode=1777
     restart: unless-stopped
     stop_grace_period: 30s
-    mem_limit: 1g
-    mem_reservation: 256m
-    cpus: 2
+    mem_limit: 448m
+    mem_reservation: 192m
+    cpus: 1.5
     pids_limit: 128
     security_opt:
       - no-new-privileges:true

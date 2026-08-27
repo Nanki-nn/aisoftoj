@@ -184,6 +184,15 @@ export type AIQuota = {
   reset_at: string;
 };
 
+export type AICapability = {
+  ai_enabled: boolean;
+  reason: string | null;
+};
+
+export function fetchAICapability(): Promise<AICapability> {
+  return aiAdminRequest<AICapability>('/api/ai/capability');
+}
+
 export type AIQuotaConfig = {
   daily_token_limit: number;
   updated_by_user_id: number | null;

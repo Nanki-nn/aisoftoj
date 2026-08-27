@@ -15,10 +15,12 @@ from langchain_core.messages import (
 from langchain_core.runnables import RunnableConfig
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
+from app.auth.access import AiDisabledDuringExam, require_exam_available
+
 from ..agents.context import AgentContext
 from ..agents.factory import AgentGraph
 from ..contracts.events import PersistedEvent
-from ..integrations.aisoftoj.client import PlatformError
+from ..integrations.aisoftoj.client import PlatformClient, PlatformError
 from ..observability import LangSmithTracing
 from ..persistence.models import AiRunEvent
 from ..persistence.repositories.messages import MessageRepository
@@ -37,6 +39,7 @@ class Worker:
         session_factory: async_sessionmaker[AsyncSession],
         agent: AgentGraph,
         stream_bridge: StreamBridge,
+        platform_client: PlatformClient | None = None,
         *,
         max_run_seconds: int,
         tracing: LangSmithTracing | None = None,
@@ -49,6 +52,7 @@ class Worker:
         self.max_run_seconds = max_run_seconds
         self.tracing = tracing or LangSmithTracing.disabled()
         self.model_name = model_name
+        self.platform_client = platform_client
 
     async def execute(self, run_id: str, context: AgentContext) -> None:
         await self._initialize_event_sequence(run_id)
@@ -64,6 +68,8 @@ class Worker:
             await self._finish_failure(run_id, "failed", "EVENT_PERSISTENCE_FAILED")
         except PlatformError as exc:
             await self._finish_failure(run_id, "failed", exc.code)
+        except AiDisabledDuringExam:
+            await self._finish_failure(run_id, "cancelled", "AI_DISABLED_DURING_EXAM")
         except DailyTokenQuotaExceeded:
             await self._finish_failure(run_id, "failed", "AI_DAILY_TOKEN_QUOTA_EXCEEDED")
         except DailyTokenQuotaUnavailable:
@@ -76,6 +82,7 @@ class Worker:
             await self.event_sequence.close(run_id)
 
     async def _execute(self, run_id: str, context: AgentContext) -> None:
+        await self._require_exam_available(context)
         question_id, input_message_id = await self._load_run_context(run_id)
         await self._transition_and_event(run_id, "running", "run.started", {})
         messages = await self._load_messages(
@@ -104,6 +111,7 @@ class Worker:
                 self.stream_bridge,
                 self.event_sequence,
                 run_id,
+                access_check=lambda: self._require_exam_available(context),
             ),
         )
         output_parts: list[str] = []
@@ -148,6 +156,7 @@ class Worker:
             if not pending_has_tool_calls:
                 pending_model_text.append(delta)
                 output_parts.append(delta)
+                await self._require_exam_available(context)
                 await self._publish_delta(run_id, delta)
             if _has_tool_calls(message):
                 pending_has_tool_calls = True
@@ -165,7 +174,13 @@ class Worker:
         final_text = "".join(output_parts)
         if not final_text and latest_state is not None:
             final_text = _latest_final_answer(latest_state)
+        await self._require_exam_available(context)
         await self._complete(run_id, context.thread_id, final_text)
+
+    async def _require_exam_available(self, context: AgentContext) -> None:
+        if self.platform_client is None:
+            return
+        await require_exam_available(self.platform_client, context.bearer_token)
 
     async def _stream_agent(
         self,

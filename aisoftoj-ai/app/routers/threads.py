@@ -3,7 +3,7 @@ from __future__ import annotations
 from fastapi import APIRouter, HTTPException, Query, Response, status
 from sqlalchemy import select
 
-from app.dependencies import CurrentUser, DatabaseSession
+from app.dependencies import AiCurrentUser, DatabaseSession
 from packages.harness.aisoftoj_agent.contracts.api import (
     MessagePageResponse,
     MessageResponse,
@@ -31,7 +31,7 @@ def thread_response(thread: AiThread) -> ThreadResponse:
 @router.post("", response_model=ThreadResponse, status_code=status.HTTP_201_CREATED)
 async def create_thread(
     body: ThreadCreateRequest,
-    user: CurrentUser,
+    user: AiCurrentUser,
     session: DatabaseSession,
 ) -> ThreadResponse:
     async with session.begin():
@@ -41,7 +41,7 @@ async def create_thread(
 
 @router.get("", response_model=ThreadPageResponse)
 async def list_threads(
-    user: CurrentUser,
+    user: AiCurrentUser,
     session: DatabaseSession,
     page: int = Query(default=1, ge=1),
     page_size: int = Query(default=20, ge=1, le=100),
@@ -56,7 +56,9 @@ async def list_threads(
 
 
 @router.get("/{thread_id}", response_model=ThreadResponse)
-async def get_thread(thread_id: str, user: CurrentUser, session: DatabaseSession) -> ThreadResponse:
+async def get_thread(
+    thread_id: str, user: AiCurrentUser, session: DatabaseSession
+) -> ThreadResponse:
     thread = await ThreadRepository(session).get_owned(user.user_id, thread_id)
     if thread is None:
         raise HTTPException(status_code=404, detail="thread not found")
@@ -67,7 +69,7 @@ async def get_thread(thread_id: str, user: CurrentUser, session: DatabaseSession
 async def update_thread(
     thread_id: str,
     body: ThreadUpdateRequest,
-    user: CurrentUser,
+    user: AiCurrentUser,
     session: DatabaseSession,
 ) -> ThreadResponse:
     async with session.begin():
@@ -80,7 +82,7 @@ async def update_thread(
 
 
 @router.delete("/{thread_id}", status_code=status.HTTP_204_NO_CONTENT)
-async def delete_thread(thread_id: str, user: CurrentUser, session: DatabaseSession) -> Response:
+async def delete_thread(thread_id: str, user: AiCurrentUser, session: DatabaseSession) -> Response:
     async with session.begin():
         repository = ThreadRepository(session)
         thread = await repository.get_owned(user.user_id, thread_id, for_update=True)
@@ -101,7 +103,7 @@ async def delete_thread(thread_id: str, user: CurrentUser, session: DatabaseSess
 @router.get("/{thread_id}/messages", response_model=MessagePageResponse)
 async def list_messages(
     thread_id: str,
-    user: CurrentUser,
+    user: AiCurrentUser,
     session: DatabaseSession,
     before_sequence: int | None = Query(default=None, ge=1),
     limit: int = Query(default=50, ge=1, le=100),

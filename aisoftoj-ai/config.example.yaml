@@ -22,8 +22,8 @@ agent_quota_reservation_margin_percent: 10
 agent_max_run_seconds: 180
 agent_summary_trigger_tokens: 24000
 agent_summary_keep_messages: 12
-agent_max_concurrent_runs: 4
-agent_max_user_concurrent_runs: 2
+agent_max_concurrent_runs: 1
+agent_max_user_concurrent_runs: 1
 agent_max_user_message_chars: 20000
 agent_loop_warn_repetitions: 3
 agent_loop_hard_repetitions: 5

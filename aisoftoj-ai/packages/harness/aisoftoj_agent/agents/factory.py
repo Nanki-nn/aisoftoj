@@ -62,7 +62,9 @@ def build_agent_graph(
         model=model or build_chat_model(settings),
         tools=build_agent_tools(platform_client, skill_tools),
         system_prompt=SYSTEM_PROMPT,
-        middleware=build_middlewares(settings, skill_registry, quota_service),
+        middleware=build_middlewares(
+            settings, skill_registry, platform_client, quota_service
+        ),
         subagents=[],
         skills=None,
         memory=None,
