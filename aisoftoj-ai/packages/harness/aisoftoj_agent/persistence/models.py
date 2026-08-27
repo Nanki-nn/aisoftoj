@@ -156,6 +156,20 @@ class AiQuotaConfig(Base):
     )
 
 
+class AiUserQuotaOverride(Base):
+    __tablename__ = "ai_user_quota_overrides"
+
+    user_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    daily_token_limit: Mapped[int] = mapped_column(Integer, nullable=False)
+    updated_by_user_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    create_time: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), nullable=False
+    )
+    update_time: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+
 class AiDailyTokenUsage(Base):
     __tablename__ = "ai_daily_token_usage"
     __table_args__ = (

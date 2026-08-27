@@ -3,13 +3,15 @@ from __future__ import annotations
 from datetime import date, datetime
 from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Query, status
+from fastapi import APIRouter, HTTPException, Path, Query, status
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.dependencies import Container, CurrentUser
 from packages.harness.aisoftoj_agent.contracts.api import (
     AdminQuotaUsageItem,
     AdminQuotaUsagePage,
+    AdminUserQuotaResponse,
+    AdminUserQuotaUpdateRequest,
     QuotaConfigResponse,
     QuotaConfigUpdateRequest,
     QuotaResponse,
@@ -69,7 +71,7 @@ async def get_quota_config(user: CurrentUser, container: Container) -> QuotaConf
     if user.role != "ADMIN":
         raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="admin required")
     try:
-        value = await require_quota_service(container).status(user.user_id)
+        value = await require_quota_service(container).global_status()
     except SQLAlchemyError as exc:
         raise HTTPException(status_code=503, detail="AI_QUOTA_UNAVAILABLE") from exc
     return config_response(value)
@@ -135,6 +137,7 @@ async def list_quota_usage(
                 consumed=usage.consumed,
                 reserved=usage.reserved,
                 remaining=usage.remaining,
+                limit_source=usage.limit_source,
             )
         )
     return AdminQuotaUsagePage(
@@ -144,3 +147,53 @@ async def list_quota_usage(
         page_size=users.page_size,
         usage_date=selected_date,
     )
+
+
+def user_quota_response(user_id: int, value: QuotaSnapshot) -> AdminUserQuotaResponse:
+    return AdminUserQuotaResponse(
+        user_id=user_id,
+        limit=value.limit,
+        consumed=value.consumed,
+        reserved=value.reserved,
+        remaining=value.remaining,
+        reset_at=value.reset_at,
+        limit_source=value.limit_source,
+    )
+
+
+@router.patch("/admin/quota-users/{user_id}", response_model=AdminUserQuotaResponse)
+async def update_user_quota(
+    body: AdminUserQuotaUpdateRequest,
+    user: CurrentUser,
+    container: Container,
+    user_id: Annotated[int, Path(gt=0)],
+) -> AdminUserQuotaResponse:
+    if user.role != "ADMIN":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="admin required")
+    try:
+        updated = await require_quota_service(container).set_user_limit(
+            user_id,
+            body.daily_token_limit,
+            user.user_id,
+        )
+    except SQLAlchemyError as exc:
+        raise HTTPException(status_code=503, detail="AI_QUOTA_UNAVAILABLE") from exc
+    return user_quota_response(user_id, updated)
+
+
+@router.delete("/admin/quota-users/{user_id}", response_model=AdminUserQuotaResponse)
+async def delete_user_quota(
+    user: CurrentUser,
+    container: Container,
+    user_id: Annotated[int, Path(gt=0)],
+) -> AdminUserQuotaResponse:
+    if user.role != "ADMIN":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="admin required")
+    try:
+        updated = await require_quota_service(container).remove_user_limit(
+            user_id,
+            user.user_id,
+        )
+    except SQLAlchemyError as exc:
+        raise HTTPException(status_code=503, detail="AI_QUOTA_UNAVAILABLE") from exc
+    return user_quota_response(user_id, updated)

@@ -99,3 +99,21 @@ async def test_release_and_crash_recovery_are_idempotent() -> None:
         assert current is not None
         assert current.status == CHARGED_ESTIMATE
     await engine.dispose()
+
+
+async def test_user_limit_override_takes_precedence_and_can_be_removed() -> None:
+    engine, factory, _run_id = await quota_fixture()
+    service = DailyTokenQuotaService(factory)
+
+    overridden = await service.set_user_limit(7, 45_000, admin_user_id=1)
+    assert overridden.limit == 45_000
+    assert overridden.limit_source == "user"
+    assert (await service.global_status()).limit == 30_000
+    await service.update_limit(20_000, admin_user_id=1)
+    assert (await service.status(7)).limit == 45_000
+    assert (await service.status(8)).limit == 20_000
+
+    restored = await service.remove_user_limit(7, admin_user_id=1)
+    assert restored.limit == 20_000
+    assert restored.limit_source == "global"
+    await engine.dispose()

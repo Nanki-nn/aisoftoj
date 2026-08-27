@@ -218,9 +218,29 @@ async def test_admin_quota_usage_lists_users_with_daily_usage(
         "consumed": 12_000,
         "reserved": 3_000,
         "remaining": 15_000,
+        "limit_source": "global",
     }
     assert payload["records"][1]["consumed"] == 0
     assert payload["records"][1]["remaining"] == 30_000
+
+    updated = await client.patch(
+        "/api/ai/admin/quota-users/7",
+        json={"daily_token_limit": 50_000},
+    )
+    assert updated.status_code == 200
+    assert updated.json()["limit"] == 50_000
+    assert updated.json()["limit_source"] == "user"
+
+    overridden = await client.get(
+        f"/api/ai/admin/quota-usage?date={beijing_date().isoformat()}"
+    )
+    assert overridden.json()["records"][0]["limit"] == 50_000
+    assert overridden.json()["records"][0]["limit_source"] == "user"
+
+    restored = await client.delete("/api/ai/admin/quota-users/7")
+    assert restored.status_code == 200
+    assert restored.json()["limit"] == 30_000
+    assert restored.json()["limit_source"] == "global"
 
 
 async def test_exhausted_quota_rejects_run_without_persisting_message(

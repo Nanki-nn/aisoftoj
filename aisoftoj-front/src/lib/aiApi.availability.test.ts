@@ -64,7 +64,14 @@ describe('disabled AI API', () => {
     await expect(api.listAdminAIQuotaUsage({ date: '2026-08-27' })).resolves.toMatchObject({
       total: 0,
     });
-    expect(fetchMock).toHaveBeenCalledTimes(2);
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({ user_id: 7, limit: 45_000, limit_source: 'user' }),
+    });
+    await expect(api.updateAdminAIUserQuota(7, 45_000)).resolves.toMatchObject({
+      limit_source: 'user',
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(3);
     localStorage.removeItem('authToken');
   });
 });

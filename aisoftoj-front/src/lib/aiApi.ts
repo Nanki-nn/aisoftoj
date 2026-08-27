@@ -200,6 +200,7 @@ export type AdminAIQuotaUsage = {
   consumed: number;
   reserved: number;
   remaining: number;
+  limit_source: 'global' | 'user';
 };
 
 export type AdminAIQuotaUsagePage = {
@@ -208,6 +209,16 @@ export type AdminAIQuotaUsagePage = {
   page: number;
   page_size: number;
   usage_date: string;
+};
+
+export type AdminAIUserQuota = {
+  user_id: number;
+  limit: number;
+  consumed: number;
+  reserved: number;
+  remaining: number;
+  reset_at: string;
+  limit_source: 'global' | 'user';
 };
 
 export function getAIQuota(): Promise<AIQuota> {
@@ -238,6 +249,22 @@ export function listAdminAIQuotaUsage(params: {
   });
   if (params.keyword) query.set('keyword', params.keyword);
   return aiAdminRequest(`/api/ai/admin/quota-usage?${query.toString()}`);
+}
+
+export function updateAdminAIUserQuota(
+  userId: number,
+  dailyTokenLimit: number,
+): Promise<AdminAIUserQuota> {
+  return aiAdminRequest(`/api/ai/admin/quota-users/${userId}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ daily_token_limit: dailyTokenLimit }),
+  });
+}
+
+export function restoreAdminAIUserQuota(userId: number): Promise<AdminAIUserQuota> {
+  return aiAdminRequest(`/api/ai/admin/quota-users/${userId}`, {
+    method: 'DELETE',
+  });
 }
 
 export function createAIThread(title?: string): Promise<AIThread> {

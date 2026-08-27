@@ -1,8 +1,30 @@
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import { CalendarDays, ChevronLeft, ChevronRight, Gauge, Search } from 'lucide-react';
-import { AdminAIQuotaUsage, listAdminAIQuotaUsage } from '../../lib/aiApi';
+import {
+  CalendarDays,
+  Check,
+  ChevronLeft,
+  ChevronRight,
+  Gauge,
+  RotateCcw,
+  Search,
+  SlidersHorizontal,
+  X,
+} from 'lucide-react';
+import {
+  AdminAIQuotaUsage,
+  listAdminAIQuotaUsage,
+  restoreAdminAIUserQuota,
+  updateAdminAIUserQuota,
+} from '../../lib/aiApi';
 
 const PAGE_SIZE = 10;
+const MIN_LIMIT = 1_000;
+const MAX_LIMIT = 10_000_000;
+
+type QuotaEdit = {
+  userId: number;
+  value: string;
+};
 
 function beijingDate(): string {
   return new Intl.DateTimeFormat('en-CA', {
@@ -31,6 +53,9 @@ export function AdminTokenUsage() {
   const [inputKeyword, setInputKeyword] = useState('');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [edit, setEdit] = useState<QuotaEdit | null>(null);
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -68,6 +93,38 @@ export function AdminTokenUsage() {
   const search = () => {
     setPage(1);
     setKeyword(inputKeyword.trim());
+  };
+
+  const saveUserLimit = async () => {
+    if (!edit) return;
+    const limit = Number(edit.value);
+    if (!Number.isInteger(limit) || limit < MIN_LIMIT || limit > MAX_LIMIT) return;
+    setEditSaving(true);
+    setEditError(null);
+    try {
+      await updateAdminAIUserQuota(edit.userId, limit);
+      setEdit(null);
+      await load();
+    } catch (saveError) {
+      setEditError((saveError as Error).message || '专属额度保存失败');
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  const restoreGlobalLimit = async () => {
+    if (!edit) return;
+    setEditSaving(true);
+    setEditError(null);
+    try {
+      await restoreAdminAIUserQuota(edit.userId);
+      setEdit(null);
+      await load();
+    } catch (restoreError) {
+      setEditError((restoreError as Error).message || '恢复全局额度失败');
+    } finally {
+      setEditSaving(false);
+    }
   };
 
   return (
@@ -150,14 +207,15 @@ export function AdminTokenUsage() {
               <th className="px-4 py-3">处理中</th>
               <th className="px-4 py-3">剩余</th>
               <th className="w-56 px-5 py-3">使用率</th>
+              <th className="px-4 py-3 text-right">操作</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
-              <tr><td colSpan={6} className="py-14 text-center text-slate-400">正在汇总 Token 用量…</td></tr>
+              <tr><td colSpan={7} className="py-14 text-center text-slate-400">正在汇总 Token 用量…</td></tr>
             ) : records.length === 0 ? (
               <tr>
-                <td colSpan={6} className="py-14 text-center">
+                <td colSpan={7} className="py-14 text-center">
                   <Gauge className="mx-auto mb-2 h-6 w-6 text-slate-300" />
                   <p className="text-sm text-slate-500">没有找到匹配用户</p>
                   <p className="mt-1 text-xs text-slate-400">调整日期或搜索条件后重试</p>
@@ -165,15 +223,30 @@ export function AdminTokenUsage() {
               </tr>
             ) : records.map(item => {
               const percent = usagePercent(item);
+              const isEditing = edit?.userId === item.user_id;
+              const editLimit = Number(edit?.value);
+              const editValid = Number.isInteger(editLimit)
+                && editLimit >= MIN_LIMIT
+                && editLimit <= MAX_LIMIT;
               return (
-                <tr key={item.user_id} className="border-b border-slate-100 last:border-b-0 hover:bg-slate-50/70">
+                <React.Fragment key={item.user_id}>
+                <tr className={`border-b border-slate-100 hover:bg-slate-50/70 ${isEditing ? 'bg-blue-50/40' : ''}`}>
                   <td className="px-5 py-3.5">
                     <div className="font-medium text-slate-800">{item.login_name || `用户 #${item.user_id}`}</div>
                     <div className="mt-0.5 text-xs text-slate-400">
                       {[item.nick_name, item.email].filter(Boolean).join(' · ') || `ID ${item.user_id}`}
                     </div>
                   </td>
-                  <td className="px-4 py-3.5 tabular-nums text-slate-600">{formatTokens(item.limit)}</td>
+                  <td className="px-4 py-3.5 tabular-nums text-slate-600">
+                    <div>{formatTokens(item.limit)}</div>
+                    <span className={`mt-1 inline-flex rounded px-1.5 py-0.5 text-[10px] font-medium ${
+                      item.limit_source === 'user'
+                        ? 'bg-amber-100 text-amber-700'
+                        : 'bg-slate-100 text-slate-500'
+                    }`}>
+                      {item.limit_source === 'user' ? '专属额度' : '全局额度'}
+                    </span>
+                  </td>
                   <td className="px-4 py-3.5 tabular-nums font-medium text-slate-900">{formatTokens(item.consumed)}</td>
                   <td className="px-4 py-3.5 tabular-nums text-amber-600">{formatTokens(item.reserved)}</td>
                   <td className="px-4 py-3.5 tabular-nums text-slate-600">{formatTokens(item.remaining)}</td>
@@ -188,7 +261,79 @@ export function AdminTokenUsage() {
                       <span className="w-9 text-right text-xs tabular-nums text-slate-500">{percent}%</span>
                     </div>
                   </td>
+                  <td className="px-4 py-3.5 text-right">
+                    <button
+                      type="button"
+                      aria-label={`调整 ${item.login_name || `用户 ${item.user_id}`} 的额度`}
+                      onClick={() => {
+                        setEdit({ userId: item.user_id, value: String(item.limit) });
+                        setEditError(null);
+                      }}
+                      className="inline-flex items-center gap-1.5 rounded-md px-2.5 py-1.5 text-xs font-medium text-slate-500 hover:bg-blue-50 hover:text-blue-600"
+                    >
+                      <SlidersHorizontal className="h-3.5 w-3.5" /> 调整
+                    </button>
+                  </td>
                 </tr>
+                {isEditing && (
+                  <tr className="border-b border-blue-100 bg-blue-50/40">
+                    <td colSpan={7} className="px-5 py-4">
+                      <div className="flex items-start justify-between gap-6">
+                        <div>
+                          <div className="text-sm font-medium text-slate-800">
+                            设置 {item.login_name || `用户 #${item.user_id}`} 的专属每日额度
+                          </div>
+                          <p className="mt-1 text-xs text-slate-500">
+                            立即生效，不清空今日已消耗 Token；恢复全局后将使用系统统一额度。
+                          </p>
+                          {editError && <p role="alert" className="mt-2 text-xs text-red-600">{editError}</p>}
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="flex h-9 items-center overflow-hidden rounded-lg border border-slate-300 bg-white focus-within:border-blue-500 focus-within:ring-2 focus-within:ring-blue-100">
+                            <input
+                              autoFocus
+                              aria-label="专属每日额度"
+                              type="number"
+                              min={MIN_LIMIT}
+                              max={MAX_LIMIT}
+                              value={edit.value}
+                              disabled={editSaving}
+                              onChange={event => setEdit({ ...edit, value: event.target.value })}
+                              onKeyDown={event => event.key === 'Enter' && void saveUserLimit()}
+                              className="w-36 border-0 px-3 text-sm tabular-nums outline-none"
+                            />
+                            <span className="border-l border-slate-200 px-2.5 text-xs text-slate-400">Token / 天</span>
+                          </div>
+                          <button
+                            type="button"
+                            disabled={!editValid || editSaving}
+                            onClick={() => void saveUserLimit()}
+                            className="inline-flex h-9 items-center gap-1.5 rounded-lg bg-blue-600 px-3 text-xs font-medium text-white hover:bg-blue-700 disabled:cursor-not-allowed disabled:bg-slate-200 disabled:text-slate-500"
+                          ><Check className="h-3.5 w-3.5" /> 保存</button>
+                          {item.limit_source === 'user' && (
+                            <button
+                              type="button"
+                              disabled={editSaving}
+                              onClick={() => void restoreGlobalLimit()}
+                              className="inline-flex h-9 items-center gap-1.5 rounded-lg border border-amber-200 bg-amber-50 px-3 text-xs font-medium text-amber-700 hover:bg-amber-100 disabled:opacity-50"
+                            ><RotateCcw className="h-3.5 w-3.5" /> 恢复全局</button>
+                          )}
+                          <button
+                            type="button"
+                            aria-label="取消调整额度"
+                            disabled={editSaving}
+                            onClick={() => setEdit(null)}
+                            className="rounded-lg p-2 text-slate-400 hover:bg-white hover:text-slate-600 disabled:opacity-50"
+                          ><X className="h-4 w-4" /></button>
+                        </div>
+                      </div>
+                      {!editValid && edit.value && (
+                        <p className="mt-2 text-right text-xs text-red-600">请输入 1,000–10,000,000 范围内的整数</p>
+                      )}
+                    </td>
+                  </tr>
+                )}
+                </React.Fragment>
               );
             })}
           </tbody>
