@@ -1,5 +1,14 @@
-.venv
-config.yaml
 .git
+.env
+.env.*
+!.env.example
+config.yaml
+.venv
+.mypy_cache
+.pytest_cache
+.ruff_cache
+**/__pycache__
+**/*.py[cod]
 tests
-__pycache__
+.DS_Store
+._*
