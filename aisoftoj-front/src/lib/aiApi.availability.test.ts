@@ -35,7 +35,7 @@ describe('disabled AI API', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('allows administrators to configure quota while the user assistant is disabled', async () => {
+  it('allows administrators to manage quota while the user assistant is disabled', async () => {
     localStorage.setItem('authToken', 'admin-token');
     const fetchMock = vi.fn().mockResolvedValue({
       ok: true,
@@ -51,7 +51,20 @@ describe('disabled AI API', () => {
     await expect(api.getAIQuotaConfig()).resolves.toMatchObject({
       daily_token_limit: 30_000,
     });
-    expect(fetchMock).toHaveBeenCalledOnce();
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      json: async () => ({
+        records: [],
+        total: 0,
+        page: 1,
+        page_size: 10,
+        usage_date: '2026-08-27',
+      }),
+    });
+    await expect(api.listAdminAIQuotaUsage({ date: '2026-08-27' })).resolves.toMatchObject({
+      total: 0,
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
     localStorage.removeItem('authToken');
   });
 });

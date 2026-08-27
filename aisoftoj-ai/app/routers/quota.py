@@ -1,14 +1,20 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, HTTPException, status
+from datetime import date, datetime
+from typing import Annotated
+
+from fastapi import APIRouter, HTTPException, Query, status
 from sqlalchemy.exc import SQLAlchemyError
 
 from app.dependencies import Container, CurrentUser
 from packages.harness.aisoftoj_agent.contracts.api import (
+    AdminQuotaUsageItem,
+    AdminQuotaUsagePage,
     QuotaConfigResponse,
     QuotaConfigUpdateRequest,
     QuotaResponse,
 )
+from packages.harness.aisoftoj_agent.integrations.aisoftoj.client import PlatformError
 from packages.harness.aisoftoj_agent.quota import (
     BEIJING,
     DailyTokenQuotaService,
@@ -84,3 +90,57 @@ async def update_quota_config(
     except SQLAlchemyError as exc:
         raise HTTPException(status_code=503, detail="AI_QUOTA_UNAVAILABLE") from exc
     return config_response(updated)
+
+
+@router.get("/admin/quota-usage", response_model=AdminQuotaUsagePage)
+async def list_quota_usage(
+    user: CurrentUser,
+    container: Container,
+    usage_date: Annotated[date | None, Query(alias="date")] = None,
+    keyword: Annotated[str | None, Query(max_length=100)] = None,
+    page: Annotated[int, Query(ge=1)] = 1,
+    page_size: Annotated[int, Query(ge=1, le=100)] = 10,
+) -> AdminQuotaUsagePage:
+    if user.role != "ADMIN":
+        raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail="admin required")
+    selected_date = usage_date or datetime.now(BEIJING).date()
+    normalized_keyword = keyword.strip() if keyword else None
+    try:
+        users = await container.platform_client.list_admin_users(
+            user.bearer_token,
+            keyword=normalized_keyword,
+            page=page,
+            page_size=page_size,
+        )
+        usages = await require_quota_service(container).usage_for_users(
+            [item.id for item in users.records],
+            selected_date,
+        )
+    except PlatformError as exc:
+        raise HTTPException(status_code=exc.status_code, detail=exc.code) from exc
+    except SQLAlchemyError as exc:
+        raise HTTPException(status_code=503, detail="AI_QUOTA_UNAVAILABLE") from exc
+    usage_by_user = {item.user_id: item for item in usages}
+    records = []
+    for account in users.records:
+        usage = usage_by_user[account.id]
+        records.append(
+            AdminQuotaUsageItem(
+                user_id=account.id,
+                login_name=account.login_name,
+                nick_name=account.nick_name,
+                email=account.email,
+                usage_date=usage.usage_date,
+                limit=usage.limit,
+                consumed=usage.consumed,
+                reserved=usage.reserved,
+                remaining=usage.remaining,
+            )
+        )
+    return AdminQuotaUsagePage(
+        records=records,
+        total=users.total,
+        page=users.page,
+        page_size=users.page_size,
+        usage_date=selected_date,
+    )

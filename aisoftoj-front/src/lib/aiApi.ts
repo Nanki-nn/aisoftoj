@@ -190,6 +190,26 @@ export type AIQuotaConfig = {
   updated_at: string | null;
 };
 
+export type AdminAIQuotaUsage = {
+  user_id: number;
+  login_name: string | null;
+  nick_name: string | null;
+  email: string | null;
+  usage_date: string;
+  limit: number;
+  consumed: number;
+  reserved: number;
+  remaining: number;
+};
+
+export type AdminAIQuotaUsagePage = {
+  records: AdminAIQuotaUsage[];
+  total: number;
+  page: number;
+  page_size: number;
+  usage_date: string;
+};
+
 export function getAIQuota(): Promise<AIQuota> {
   return aiRequest('/api/ai/quota');
 }
@@ -203,6 +223,21 @@ export function updateAIQuotaConfig(dailyTokenLimit: number): Promise<AIQuotaCon
     method: 'PATCH',
     body: JSON.stringify({ daily_token_limit: dailyTokenLimit }),
   });
+}
+
+export function listAdminAIQuotaUsage(params: {
+  date: string;
+  keyword?: string;
+  page?: number;
+  pageSize?: number;
+}): Promise<AdminAIQuotaUsagePage> {
+  const query = new URLSearchParams({
+    date: params.date,
+    page: String(params.page ?? 1),
+    page_size: String(params.pageSize ?? 10),
+  });
+  if (params.keyword) query.set('keyword', params.keyword);
+  return aiAdminRequest(`/api/ai/admin/quota-usage?${query.toString()}`);
 }
 
 export function createAIThread(title?: string): Promise<AIThread> {
