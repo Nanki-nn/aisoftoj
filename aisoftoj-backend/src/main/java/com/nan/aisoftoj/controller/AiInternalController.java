@@ -7,6 +7,8 @@ import com.nan.aisoftoj.dto.ai.AiPaperDTO;
 import com.nan.aisoftoj.dto.ai.AiQuestionDTO;
 import com.nan.aisoftoj.dto.ai.AiPracticeHistoryPageDTO;
 import com.nan.aisoftoj.dto.ai.AiWrongQuestionReviewDTO;
+import com.nan.aisoftoj.dto.ai.AiAdminUserBatchDTO;
+import com.nan.aisoftoj.dto.ai.AiAdminUserBatchRequest;
 import com.nan.aisoftoj.service.AiPlatformReadService;
 import org.springframework.http.CacheControl;
 import org.springframework.http.ResponseEntity;
@@ -15,6 +17,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.validation.annotation.Validated;
 
 import javax.servlet.http.HttpServletRequest;
 import java.util.List;
@@ -79,8 +84,22 @@ public class AiInternalController {
                 readService.listPracticeHistory(userId, page, pageSize)));
     }
 
+    @PostMapping("/admin/users:batch-get")
+    public ResponseEntity<ResultDTO<AiAdminUserBatchDTO>> listAdminUsers(
+            @Validated @RequestBody AiAdminUserBatchRequest body,
+            HttpServletRequest request) {
+        authenticateAdmin(request);
+        return noStore(ResultDTO.success(readService.listAdminUsers(body.getUserIds())));
+    }
+
     private Integer authenticate(HttpServletRequest request) {
         return authenticator.authenticate(
+                request.getHeader("X-AI-Service-Key"),
+                request.getHeader("Authorization"));
+    }
+
+    private Integer authenticateAdmin(HttpServletRequest request) {
+        return authenticator.authenticateAdmin(
                 request.getHeader("X-AI-Service-Key"),
                 request.getHeader("Authorization"));
     }

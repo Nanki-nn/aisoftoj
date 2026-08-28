@@ -179,3 +179,64 @@ class AdminUserQuotaResponse(BaseModel):
     remaining: int = Field(ge=0)
     reset_at: datetime
     limit_source: Literal["global", "user"]
+
+
+class AccessConfigResponse(BaseModel):
+    globally_enabled: bool
+    rollout_user_count: int = Field(ge=0)
+    updated_by_user_id: int | None
+    updated_at: datetime | None
+
+
+class AccessConfigUpdateRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    globally_enabled: bool = Field(strict=True)
+
+
+class RolloutStatusBatchRequest(BaseModel):
+    model_config = ConfigDict(extra="forbid")
+
+    user_ids: list[int] = Field(min_length=1, max_length=100)
+
+    @field_validator("user_ids")
+    @classmethod
+    def validate_user_ids(cls, value: list[int]) -> list[int]:
+        if any(isinstance(item, bool) or item <= 0 for item in value):
+            raise ValueError("user_ids must contain positive integers")
+        if len(set(value)) != len(value):
+            raise ValueError("user_ids must be unique")
+        return value
+
+
+class RolloutStatusBatchResponse(BaseModel):
+    globally_enabled: bool
+    statuses: dict[int, bool]
+
+
+RolloutAccountStatus = Literal["active", "disabled", "deleted", "missing"]
+
+
+class RolloutUserResponse(BaseModel):
+    user_id: int = Field(gt=0)
+    login_name: str | None
+    nick_name: str | None
+    email: str | None
+    role: str | None
+    account_status: RolloutAccountStatus
+    created_by_user_id: int = Field(gt=0)
+    updated_by_user_id: int = Field(gt=0)
+    created_at: datetime
+    updated_at: datetime
+
+
+class RolloutUserPageResponse(BaseModel):
+    records: list[RolloutUserResponse]
+    total: int = Field(ge=0)
+    page: int = Field(ge=1)
+    page_size: int = Field(ge=1, le=100)
+
+
+class RolloutMutationResponse(BaseModel):
+    user_id: int = Field(gt=0)
+    enabled: bool

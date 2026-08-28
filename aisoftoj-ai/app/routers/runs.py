@@ -136,6 +136,7 @@ async def create_run(
             user_id=user.user_id,
             username=user.username,
             nickname=user.nickname,
+            role=user.role,
             thread_id=thread_id,
             run_id=run.id,
             bearer_token=user.bearer_token,

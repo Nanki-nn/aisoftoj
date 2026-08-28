@@ -14,15 +14,20 @@ from app.auth.dependencies import get_trusted_user
 from app.lifespan import AppState
 from app.main import create_app
 from config import PROJECT_ROOT
+from packages.harness.aisoftoj_agent.access_control import AiAccessControlService
 from packages.harness.aisoftoj_agent.integrations.aisoftoj.client import PlatformClient
 from packages.harness.aisoftoj_agent.integrations.aisoftoj.context import TrustedUser
 from packages.harness.aisoftoj_agent.integrations.aisoftoj.models import (
+    AdminUserBatch,
+    AdminUserDetail,
     AdminUserPage,
     AdminUserSummary,
 )
 from packages.harness.aisoftoj_agent.persistence.models import (
+    AiAccessConfig,
     AiDailyTokenUsage,
     AiQuotaConfig,
+    AiRolloutUser,
     Base,
 )
 from packages.harness.aisoftoj_agent.persistence.repositories.runs import RunRepository
@@ -45,6 +50,14 @@ async def api_client() -> AsyncGenerator[tuple[httpx.AsyncClient, PlatformClient
         await connection.run_sync(Base.metadata.create_all)
     async with async_sessionmaker(engine, expire_on_commit=False).begin() as setup:
         setup.add(AiQuotaConfig(id=1, daily_token_limit=30_000))
+        setup.add(AiAccessConfig(id=1, globally_enabled=True))
+        setup.add(
+            AiRolloutUser(
+                user_id=7,
+                created_by_user_id=1,
+                updated_by_user_id=1,
+            )
+        )
     session_factory = async_sessionmaker(engine, expire_on_commit=False)
     def platform_handler(request: httpx.Request) -> httpx.Response:
         if request.url.path == "/internal/ai/assistant-availability":
@@ -72,6 +85,7 @@ async def api_client() -> AsyncGenerator[tuple[httpx.AsyncClient, PlatformClient
         run_manager=RunManager(max_runs=4, max_user_runs=2),
         worker=cast(Any, IdleWorker()),
         quota_service=DailyTokenQuotaService(session_factory),
+        access_control_service=AiAccessControlService(session_factory),
     )
     app.state.platform_client = platform
     assert app.state.container.langsmith_tracing.enabled is False
@@ -117,7 +131,7 @@ async def test_capability_and_business_routes_enforce_rollout_allowlist(
     api_client: tuple[httpx.AsyncClient, PlatformClient, Any],
 ) -> None:
     client, _platform, app = api_client
-    app.state.container.settings.rollout_allowed_user_ids = frozenset()
+    await app.state.container.access_control_service.remove_rollout_user(7, 1)
 
     capability = await client.get("/api/ai/capability")
     assert capability.status_code == 200
@@ -129,7 +143,7 @@ async def test_capability_and_business_routes_enforce_rollout_allowlist(
     assert denied.status_code == 403
     assert denied.json()["error"]["code"] == "AI_ROLLOUT_NOT_ENABLED"
 
-    app.state.container.settings.rollout_allowed_user_ids = frozenset({7})
+    await app.state.container.access_control_service.add_rollout_user(7, 1)
     assert (await client.get("/api/ai/capability")).json()["ai_enabled"] is True
     assert (await client.post("/api/ai/threads", json={})).status_code == 201
 
@@ -140,8 +154,14 @@ async def test_capability_and_business_routes_enforce_rollout_allowlist(
         role="ADMIN",
         bearer_token="jwt",
     )
-    app.state.container.settings.rollout_allowed_user_ids = frozenset()
     assert (await client.get("/api/ai/capability")).json()["ai_enabled"] is True
+
+    await app.state.container.access_control_service.update_global(False, 1)
+    disabled = await client.get("/api/ai/capability")
+    assert disabled.json() == {
+        "ai_enabled": False,
+        "reason": "AI_GLOBALLY_DISABLED",
+    }
 
 
 async def test_quota_endpoints_enforce_role_and_apply_updates_immediately(
@@ -173,6 +193,80 @@ async def test_quota_endpoints_enforce_role_and_apply_updates_immediately(
         bearer_token="jwt",
     )
     assert (await client.get("/api/ai/quota")).json()["limit"] == 45_000
+
+
+async def test_admin_access_endpoints_manage_global_and_rollout_access(
+    api_client: tuple[httpx.AsyncClient, PlatformClient, Any],
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    client, platform, app = api_client
+    assert (await client.get("/api/ai/admin/access-config")).status_code == 403
+
+    app.dependency_overrides[get_trusted_user] = lambda: TrustedUser(
+        user_id=1,
+        username="admin",
+        nickname=None,
+        role="ADMIN",
+        bearer_token="admin-jwt",
+    )
+
+    async def get_users(_bearer_token: str, user_ids: list[int]) -> AdminUserBatch:
+        return AdminUserBatch(
+            records=[
+                AdminUserDetail(
+                    id=user_id,
+                    login_name=f"user-{user_id}",
+                    nick_name=None,
+                    email=f"user-{user_id}@example.com",
+                    role="USER",
+                    is_enabled=True,
+                    is_deleted=False,
+                )
+                for user_id in user_ids
+                if user_id != 404
+            ],
+            missing_user_ids=[user_id for user_id in user_ids if user_id == 404],
+        )
+
+    monkeypatch.setattr(platform, "get_admin_users_by_ids", get_users)
+
+    config = await client.get("/api/ai/admin/access-config")
+    assert config.status_code == 200
+    assert config.json()["globally_enabled"] is True
+    assert config.json()["rollout_user_count"] == 1
+
+    disabled = await client.patch(
+        "/api/ai/admin/access-config", json={"globally_enabled": False}
+    )
+    assert disabled.status_code == 200
+    assert disabled.json()["globally_enabled"] is False
+
+    added = await client.put("/api/ai/admin/rollout-users/8")
+    assert added.status_code == 200
+    assert added.json() == {"user_id": 8, "enabled": True}
+
+    statuses = await client.post(
+        "/api/ai/admin/rollout-user-status:batch-get",
+        json={"user_ids": [7, 8, 9]},
+    )
+    assert statuses.status_code == 200
+    assert statuses.json() == {
+        "globally_enabled": False,
+        "statuses": {"7": True, "8": True, "9": False},
+    }
+
+    listed = await client.get("/api/ai/admin/rollout-users?page=1&page_size=10")
+    assert listed.status_code == 200
+    assert listed.json()["total"] == 2
+    assert listed.json()["records"][1]["login_name"] == "user-8"
+
+    missing = await client.put("/api/ai/admin/rollout-users/404")
+    assert missing.status_code == 404
+    assert missing.json()["error"]["code"] == "AI_ROLLOUT_USER_NOT_FOUND"
+
+    removed = await client.delete("/api/ai/admin/rollout-users/8")
+    assert removed.status_code == 200
+    assert removed.json() == {"user_id": 8, "enabled": False}
 
 
 async def test_admin_quota_usage_lists_users_with_daily_usage(

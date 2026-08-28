@@ -6,9 +6,11 @@ from langchain.agents.middleware import AgentMiddleware
 
 from config import Settings
 
+from ...access_control import AiAccessControlService
 from ...integrations.aisoftoj.client import PlatformClient
 from ...quota import DailyTokenQuotaService
 from ...skills import SkillRegistry
+from .access_control import AccessControlMiddleware
 from .daily_token_quota import DailyTokenQuotaMiddleware
 from .exam_access import ExamAccessMiddleware
 from .loop_detection import LoopDetectionMiddleware
@@ -26,13 +28,17 @@ def build_middlewares(
     skill_registry: SkillRegistry,
     platform_client: PlatformClient,
     quota_service: DailyTokenQuotaService | None = None,
+    access_control_service: AiAccessControlService | None = None,
 ) -> list[AgentMiddleware[Any, Any, Any]]:
-    middlewares: list[AgentMiddleware[Any, Any, Any]] = [
+    middlewares: list[AgentMiddleware[Any, Any, Any]] = []
+    if access_control_service is not None:
+        middlewares.append(AccessControlMiddleware(access_control_service))
+    middlewares.extend([
         ExamAccessMiddleware(platform_client),
         PersistentSummaryMiddleware(),
         SkillActivationMiddleware(skill_registry),
         TokenBudgetMiddleware(settings.agent_max_run_tokens),
-    ]
+    ])
     if quota_service is not None:
         middlewares.append(
             DailyTokenQuotaMiddleware(

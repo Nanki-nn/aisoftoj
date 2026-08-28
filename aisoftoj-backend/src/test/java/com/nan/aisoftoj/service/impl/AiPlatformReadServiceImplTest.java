@@ -2,6 +2,7 @@ package com.nan.aisoftoj.service.impl;
 
 import com.nan.aisoftoj.dto.ai.AiQuestionDTO;
 import com.nan.aisoftoj.dto.ai.AiProfileDTO;
+import com.nan.aisoftoj.dto.ai.AiAdminUserBatchDTO;
 import com.nan.aisoftoj.entity.Question;
 import com.nan.aisoftoj.entity.User;
 import com.nan.aisoftoj.mapper.PaperMapper;
@@ -18,6 +19,8 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.util.Date;
+import java.util.Arrays;
+import java.util.Collections;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
@@ -101,6 +104,33 @@ class AiPlatformReadServiceImplTest {
         when(practiceSessionMapper.countActiveExamSessionsByUserId(9)).thenReturn(0L);
 
         assertTrue(service.isAiAssistantAvailable(9));
+    }
+
+    @Test
+    void adminUserBatchPreservesRequestedOrderAndReportsMissingUsers() {
+        User first = new User();
+        first.setId(7);
+        first.setLoginName("reader");
+        first.setRole("USER");
+        first.setIsEnabled(true);
+        first.setIsDeleted(false);
+        User second = new User();
+        second.setId(8);
+        second.setLoginName("admin");
+        second.setRole("ADMIN");
+        second.setIsEnabled(true);
+        second.setIsDeleted(false);
+        when(userMapper.selectBatchIds(Arrays.asList(8, 404, 7)))
+                .thenReturn(Arrays.asList(first, second));
+
+        AiAdminUserBatchDTO result = service.listAdminUsers(
+                Arrays.asList(8, 404, 7, 8));
+
+        assertEquals(Arrays.asList(8, 7), Arrays.asList(
+                result.getRecords().get(0).getId(),
+                result.getRecords().get(1).getId()));
+        assertEquals(Collections.singletonList(404), result.getMissingUserIds());
+        assertEquals("ADMIN", result.getRecords().get(0).getRole());
     }
 
     @Test

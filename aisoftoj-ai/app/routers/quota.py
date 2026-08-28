@@ -6,7 +6,7 @@ from typing import Annotated
 from fastapi import APIRouter, HTTPException, Path, Query, status
 from sqlalchemy.exc import SQLAlchemyError
 
-from app.dependencies import Container, CurrentUser
+from app.dependencies import AiCurrentUser, Container, CurrentUser
 from packages.harness.aisoftoj_agent.contracts.api import (
     AdminQuotaUsageItem,
     AdminQuotaUsagePage,
@@ -58,7 +58,7 @@ def require_quota_service(container: Container) -> DailyTokenQuotaService:
 
 
 @router.get("/quota", response_model=QuotaResponse)
-async def get_quota(user: CurrentUser, container: Container) -> QuotaResponse:
+async def get_quota(user: AiCurrentUser, container: Container) -> QuotaResponse:
     try:
         value = await require_quota_service(container).status(user.user_id)
     except SQLAlchemyError as exc:

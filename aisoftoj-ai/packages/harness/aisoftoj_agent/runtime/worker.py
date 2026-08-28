@@ -17,6 +17,7 @@ from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from app.auth.access import AiDisabledDuringExam, require_exam_available
 
+from ..access_control import AiAccessControlUnavailable, AiAccessDenied
 from ..agents.context import AgentContext
 from ..agents.factory import AgentGraph
 from ..contracts.events import PersistedEvent
@@ -69,7 +70,11 @@ class Worker:
         except PlatformError as exc:
             await self._finish_failure(run_id, "failed", exc.code)
         except AiDisabledDuringExam:
-            await self._finish_failure(run_id, "cancelled", "AI_DISABLED_DURING_EXAM")
+            await self._finish_failure(run_id, "failed", "AI_DISABLED_DURING_EXAM")
+        except AiAccessDenied as exc:
+            await self._finish_failure(run_id, "failed", exc.code)
+        except AiAccessControlUnavailable:
+            await self._finish_failure(run_id, "failed", "AI_ACCESS_CONFIG_UNAVAILABLE")
         except DailyTokenQuotaExceeded:
             await self._finish_failure(run_id, "failed", "AI_DAILY_TOKEN_QUOTA_EXCEEDED")
         except DailyTokenQuotaUnavailable:

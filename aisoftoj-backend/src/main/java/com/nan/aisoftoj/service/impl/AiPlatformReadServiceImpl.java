@@ -19,6 +19,8 @@ import com.nan.aisoftoj.dto.ai.AiPracticeHistoryItemDTO;
 import com.nan.aisoftoj.dto.ai.AiPracticeHistoryPageDTO;
 import com.nan.aisoftoj.dto.ai.AiPracticeHistorySummaryDTO;
 import com.nan.aisoftoj.dto.ai.AiWrongQuestionReviewDTO;
+import com.nan.aisoftoj.dto.ai.AiAdminUserBatchDTO;
+import com.nan.aisoftoj.dto.ai.AiAdminUserDTO;
 import com.nan.aisoftoj.dto.PracticeHistorySummaryDTO;
 import com.nan.aisoftoj.entity.Paper;
 import com.nan.aisoftoj.entity.PracticeSession;
@@ -45,6 +47,7 @@ import java.time.LocalDateTime;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.stream.Collectors;
+import java.util.LinkedHashSet;
 
 @Service
 public class AiPlatformReadServiceImpl implements AiPlatformReadService {
@@ -91,6 +94,32 @@ public class AiPlatformReadServiceImpl implements AiPlatformReadService {
         profile.setPracticeSessionCount(practiceCount == null ? 0L : practiceCount);
         profile.setWrongQuestionCount(wrongCount == null ? 0L : wrongCount);
         return profile;
+    }
+
+    @Override
+    public AiAdminUserBatchDTO listAdminUsers(List<Integer> userIds) {
+        List<Integer> uniqueIds = new ArrayList<>(new LinkedHashSet<>(userIds));
+        Map<Integer, User> usersById = userMapper.selectBatchIds(uniqueIds).stream()
+                .collect(Collectors.toMap(User::getId, user -> user));
+        List<AiAdminUserDTO> records = new ArrayList<>();
+        List<Integer> missingUserIds = new ArrayList<>();
+        for (Integer userId : uniqueIds) {
+            User user = usersById.get(userId);
+            if (user == null) {
+                missingUserIds.add(userId);
+                continue;
+            }
+            AiAdminUserDTO dto = new AiAdminUserDTO();
+            dto.setId(user.getId());
+            dto.setLoginName(user.getLoginName());
+            dto.setNickName(user.getNickName());
+            dto.setEmail(user.getEmail());
+            dto.setRole(UserRole.normalize(user.getRole()));
+            dto.setIsEnabled(Boolean.TRUE.equals(user.getIsEnabled()));
+            dto.setIsDeleted(Boolean.TRUE.equals(user.getIsDeleted()));
+            records.add(dto);
+        }
+        return new AiAdminUserBatchDTO(records, missingUserIds);
     }
 
     @Override

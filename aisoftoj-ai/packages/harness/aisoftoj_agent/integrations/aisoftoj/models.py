@@ -47,6 +47,21 @@ class AdminUserPage(JavaModel):
     page_size: int = Field(ge=1, le=100)
 
 
+class AdminUserDetail(JavaModel):
+    id: int = Field(gt=0)
+    login_name: str | None = None
+    nick_name: str | None = None
+    email: str | None = None
+    role: str = Field(min_length=1)
+    is_enabled: bool
+    is_deleted: bool
+
+
+class AdminUserBatch(JavaModel):
+    records: list[AdminUserDetail]
+    missing_user_ids: list[int]
+
+
 class Paper(JavaModel):
     paper_id: int = Field(gt=0)
     name: str = Field(min_length=1)

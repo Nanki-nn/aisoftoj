@@ -3,8 +3,13 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from fastapi import HTTPException, status
+from sqlalchemy.exc import SQLAlchemyError
 
-from config import Settings
+from packages.harness.aisoftoj_agent.access_control import (
+    AI_ACCESS_CONFIG_UNAVAILABLE,
+    AiAccessControlService,
+    AiAccessControlUnavailable,
+)
 from packages.harness.aisoftoj_agent.integrations.aisoftoj.client import (
     PlatformClient,
     PlatformError,
@@ -22,38 +27,40 @@ class AiCapability:
     reason: str | None = None
 
 
-def is_rollout_allowed(user: TrustedUser, settings: Settings) -> bool:
-    allowed = getattr(settings, "rollout_allowed_user_ids", None)
-    # Lightweight test containers predating the rollout setting remain open;
-    # production Settings always provides an explicit (possibly empty) set.
-    return user.role.upper() == "ADMIN" or allowed is None or user.user_id in allowed
-
-
 async def capability_for(
-    user: TrustedUser, settings: Settings, platform_client: PlatformClient
+    user: TrustedUser,
+    access_control_service: AiAccessControlService,
+    platform_client: PlatformClient,
 ) -> AiCapability:
-    if not is_rollout_allowed(user, settings):
-        return AiCapability(False, "AI_ROLLOUT_NOT_ENABLED")
+    try:
+        access = await access_control_service.decision(user.user_id, user.role)
+    except (AiAccessControlUnavailable, SQLAlchemyError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail=AI_ACCESS_CONFIG_UNAVAILABLE,
+        ) from exc
+    if not access.enabled:
+        return AiCapability(False, access.reason)
     try:
         available = await platform_client.is_ai_assistant_available(user.bearer_token)
-    except PlatformError:
-        return AiCapability(False, "AI_AVAILABILITY_UNAVAILABLE")
+    except PlatformError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+            detail="AI_AVAILABILITY_UNAVAILABLE",
+        ) from exc
     if not available:
         return AiCapability(False, "AI_DISABLED_DURING_EXAM")
     return AiCapability(True)
 
 
 async def require_ai_access(
-    user: TrustedUser, settings: Settings, platform_client: PlatformClient
+    user: TrustedUser,
+    access_control_service: AiAccessControlService,
+    platform_client: PlatformClient,
 ) -> None:
-    capability = await capability_for(user, settings, platform_client)
+    capability = await capability_for(user, access_control_service, platform_client)
     if capability.enabled:
         return
-    if capability.reason == "AI_AVAILABILITY_UNAVAILABLE":
-        raise HTTPException(
-            status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
-            detail=capability.reason,
-        )
     raise HTTPException(status_code=status.HTTP_403_FORBIDDEN, detail=capability.reason)
 
 

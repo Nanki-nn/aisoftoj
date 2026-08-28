@@ -29,7 +29,13 @@ CurrentUser = Annotated[TrustedUser, Depends(get_trusted_user)]
 
 async def get_ai_user(request: Request, user: CurrentUser) -> TrustedUser:
     container = get_container(request)
-    await require_ai_access(user, container.settings, container.platform_client)
+    if container.access_control_service is None:
+        raise HTTPException(status_code=503, detail="AI_ACCESS_CONFIG_UNAVAILABLE")
+    await require_ai_access(
+        user,
+        container.access_control_service,
+        container.platform_client,
+    )
     return user
 
 

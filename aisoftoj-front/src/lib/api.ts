@@ -772,6 +772,7 @@ export type AdminUserDTO = {
   email: string;
   phone: string;
   avatar: string;
+  role: 'USER' | 'ADMIN';
   isEnabled: boolean;
   createTime: string;
   updateTime: string;

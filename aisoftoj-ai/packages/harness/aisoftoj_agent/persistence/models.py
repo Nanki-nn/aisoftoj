@@ -156,6 +156,53 @@ class AiQuotaConfig(Base):
     )
 
 
+class AiAccessConfig(Base):
+    __tablename__ = "ai_access_config"
+
+    id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    globally_enabled: Mapped[bool] = mapped_column(Boolean, nullable=False, default=True)
+    updated_by_user_id: Mapped[int | None] = mapped_column(Integer)
+    create_time: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), nullable=False
+    )
+    update_time: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+
+class AiRolloutUser(Base):
+    __tablename__ = "ai_rollout_users"
+
+    user_id: Mapped[int] = mapped_column(Integer, primary_key=True)
+    created_by_user_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    updated_by_user_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    create_time: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), nullable=False
+    )
+    update_time: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+
+
+class AiAccessAuditLog(Base):
+    __tablename__ = "ai_access_audit_log"
+    __table_args__ = (Index("ix_ai_access_audit_created", "create_time", "id"),)
+
+    id: Mapped[int] = mapped_column(
+        BigInteger().with_variant(Integer, "sqlite"),
+        primary_key=True,
+        autoincrement=True,
+    )
+    action: Mapped[str] = mapped_column(String(32), nullable=False)
+    admin_user_id: Mapped[int] = mapped_column(Integer, nullable=False)
+    target_user_id: Mapped[int | None] = mapped_column(Integer)
+    old_value: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    new_value: Mapped[bool] = mapped_column(Boolean, nullable=False)
+    create_time: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), nullable=False
+    )
+
+
 class AiUserQuotaOverride(Base):
     __tablename__ = "ai_user_quota_overrides"
 

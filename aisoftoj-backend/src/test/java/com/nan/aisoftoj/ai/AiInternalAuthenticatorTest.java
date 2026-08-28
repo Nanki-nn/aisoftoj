@@ -50,6 +50,19 @@ class AiInternalAuthenticatorTest {
     }
 
     @Test
+    void adminAuthenticationRequiresServiceKeyAndAdminRole() {
+        when(authService.getCurrentUserId("Bearer admin-token")).thenReturn(17);
+        when(authService.requireAdmin("Bearer admin-token")).thenReturn(17);
+
+        Integer userId = authenticator.authenticateAdmin(
+                "server-secret", "Bearer admin-token");
+
+        assertEquals(17, userId);
+        verify(authService).getCurrentUserId("Bearer admin-token");
+        verify(authService).requireAdmin("Bearer admin-token");
+    }
+
+    @Test
     void blankConfiguredKeyFailsStartupValidation() {
         AiInternalProperties properties = new AiInternalProperties();
 

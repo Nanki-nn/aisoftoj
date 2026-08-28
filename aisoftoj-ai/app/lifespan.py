@@ -9,6 +9,7 @@ from sqlalchemy.ext.asyncio import AsyncEngine, AsyncSession, async_sessionmaker
 
 from app.logging_config import configure_application_logging
 from config import Settings, load_settings
+from packages.harness.aisoftoj_agent.access_control import AiAccessControlService
 from packages.harness.aisoftoj_agent.agents.factory import AgentGraph, build_agent_graph
 from packages.harness.aisoftoj_agent.integrations.aisoftoj.client import PlatformClient
 from packages.harness.aisoftoj_agent.observability import (
@@ -36,6 +37,7 @@ class AppState:
     run_manager: RunManager
     worker: Worker
     quota_service: DailyTokenQuotaService | None = None
+    access_control_service: AiAccessControlService | None = None
     skill_registry: SkillRegistry = field(default_factory=SkillRegistry.empty)
     langsmith_tracing: LangSmithTracing = field(
         default_factory=LangSmithTracing.disabled
@@ -65,12 +67,14 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         max_response_bytes=settings.platform_max_response_bytes,
     )
     quota_service = DailyTokenQuotaService(session_factory)
+    access_control_service = AiAccessControlService(session_factory)
     agent = build_agent_graph(
         settings,
         platform_client,
         skill_registry=skill_registry,
         skill_tools=skill_tools,
         quota_service=quota_service,
+        access_control_service=access_control_service,
     )
     langsmith_tracing = build_langsmith_tracing(settings)
     stream_bridge = StreamBridge()
@@ -101,6 +105,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         run_manager=run_manager,
         worker=worker,
         quota_service=quota_service,
+        access_control_service=access_control_service,
         skill_registry=skill_registry,
         langsmith_tracing=langsmith_tracing,
     )
