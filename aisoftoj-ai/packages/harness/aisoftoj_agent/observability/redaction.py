@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import json
 import re
 from collections.abc import Iterable, Mapping
 from typing import Any, cast
@@ -25,6 +26,7 @@ _SENSITIVE_KEYS = frozenset({
 })
 _REASONING_CONTENT_KEY = "reasoningcontent"
 _PRIVATE_BLOCK_TYPES = frozenset({"reasoning", "thinking"})
+_CONTENT_KEYS = frozenset({"input", "inputs", "output", "outputs", "messages", "content", "text"})
 _KEY_SEPARATORS = re.compile(r"[_\-. ]")
 _CREDENTIAL_PATTERNS = (
     re.compile(r"sk-proj-[A-Za-z0-9_-]{16,}"),
@@ -39,12 +41,13 @@ _CREDENTIAL_PATTERNS = (
 
 
 class SecretRedactor:
-    def __init__(self, secrets: Iterable[str]) -> None:
+    def __init__(self, secrets: Iterable[str], *, hide_content: bool = False) -> None:
         self._secrets = tuple(sorted(
             {item for item in secrets if len(item) >= 8},
             key=len,
             reverse=True,
         ))
+        self._hide_content = hide_content
 
     def __call__(self, payload: dict[str, Any]) -> dict[str, Any]:
         return cast(dict[str, Any], self._redact(payload))
@@ -57,6 +60,8 @@ class SecretRedactor:
                 normalized_key = _normalize_key(key)
                 if normalized_key in _SENSITIVE_KEYS:
                     result[key] = REDACTED
+                elif self._hide_content and normalized_key in _CONTENT_KEYS:
+                    result[key] = _content_summary(item)
                 elif normalized_key == _REASONING_CONTENT_KEY:
                     result[key] = HIDDEN_REASONING
                 elif private_block is not None and normalized_key != "type":
@@ -97,3 +102,11 @@ def _private_block_type(value: Mapping[object, object]) -> str | None:
                 else None
             )
     return None
+
+
+def _content_summary(value: object) -> dict[str, object]:
+    try:
+        serialized = value if isinstance(value, str) else json.dumps(value, ensure_ascii=False)
+    except (TypeError, ValueError):
+        serialized = ""
+    return {"redacted": True, "chars": len(serialized)}

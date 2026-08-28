@@ -6,6 +6,7 @@ from typing import Annotated
 from fastapi import Depends, HTTPException, Request, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
+from app.auth.access import require_ai_access
 from app.auth.dependencies import get_trusted_user
 from app.lifespan import AppState
 from packages.harness.aisoftoj_agent.integrations.aisoftoj.context import TrustedUser
@@ -24,5 +25,20 @@ async def get_session(request: Request) -> AsyncIterator[AsyncSession]:
 
 
 CurrentUser = Annotated[TrustedUser, Depends(get_trusted_user)]
+
+
+async def get_ai_user(request: Request, user: CurrentUser) -> TrustedUser:
+    container = get_container(request)
+    if container.access_control_service is None:
+        raise HTTPException(status_code=503, detail="AI_ACCESS_CONFIG_UNAVAILABLE")
+    await require_ai_access(
+        user,
+        container.access_control_service,
+        container.platform_client,
+    )
+    return user
+
+
+AiCurrentUser = Annotated[TrustedUser, Depends(get_ai_user)]
 DatabaseSession = Annotated[AsyncSession, Depends(get_session)]
 Container = Annotated[AppState, Depends(get_container)]

@@ -9,6 +9,7 @@ import httpx
 from pydantic import TypeAdapter, ValidationError
 
 from .models import (
+    AdminUserBatch,
     AdminUserPage,
     Paper,
     PracticeHistoryPage,
@@ -90,6 +91,22 @@ class PlatformClient:
             ),
         )
 
+    async def get_admin_users_by_ids(
+        self,
+        bearer_token: str,
+        user_ids: list[int],
+    ) -> AdminUserBatch:
+        return cast(
+            AdminUserBatch,
+            await self._request(
+                "POST",
+                "/internal/ai/admin/users:batch-get",
+                bearer_token,
+                AdminUserBatch,
+                json_body={"userIds": user_ids},
+            ),
+        )
+
     async def list_papers(self, bearer_token: str) -> list[Paper]:
         return cast(list[Paper], await self._get("/internal/ai/papers", bearer_token, list[Paper]))
 
@@ -138,6 +155,20 @@ class PlatformClient:
         *,
         params: dict[str, Any] | None = None,
     ) -> Any:
+        return await self._request(
+            "GET", path, bearer_token, data_type, params=params
+        )
+
+    async def _request(
+        self,
+        method: str,
+        path: str,
+        bearer_token: str,
+        data_type: Any,
+        *,
+        params: dict[str, Any] | None = None,
+        json_body: dict[str, Any] | None = None,
+    ) -> Any:
         headers = {
             "Authorization": f"Bearer {bearer_token}",
             "X-AI-Service-Key": self._service_key,
@@ -146,12 +177,19 @@ class PlatformClient:
         response: httpx.Response | None = None
         for attempt in range(2):
             try:
-                response = await self._client.get(path, headers=headers, params=params)
+                response = await self._client.request(
+                    method,
+                    path,
+                    headers=headers,
+                    params=params,
+                    json=json_body,
+                )
             except (httpx.TimeoutException, httpx.TransportError) as exc:
                 if attempt == 0:
                     await asyncio.sleep(0.1)
                     continue
                 self._raise_failure(
+                    method,
                     path,
                     "PLATFORM_UNAVAILABLE",
                     503,
@@ -166,22 +204,29 @@ class PlatformClient:
         assert response is not None
         if len(response.content) > self._max_response_bytes:
             self._raise_failure(
-                path, "PLATFORM_RESPONSE_TOO_LARGE", 502, attempt + 1, started, response
+                method, path, "PLATFORM_RESPONSE_TOO_LARGE", 502, attempt + 1, started, response
             )
         if response.status_code == 401:
-            self._raise_failure(path, "AUTH_EXPIRED", 401, attempt + 1, started, response)
+            self._raise_failure(method, path, "AUTH_EXPIRED", 401, attempt + 1, started, response)
         if response.status_code == 403:
-            self._raise_failure(path, "PLATFORM_FORBIDDEN", 403, attempt + 1, started, response)
+            self._raise_failure(
+                method, path, "PLATFORM_FORBIDDEN", 403, attempt + 1, started, response
+            )
         if response.status_code == 404:
-            self._raise_failure(path, "PLATFORM_NOT_FOUND", 404, attempt + 1, started, response)
+            self._raise_failure(
+                method, path, "PLATFORM_NOT_FOUND", 404, attempt + 1, started, response
+            )
         if response.status_code == 409:
-            self._raise_failure(path, "PLATFORM_CONFLICT", 409, attempt + 1, started, response)
+            self._raise_failure(
+                method, path, "PLATFORM_CONFLICT", 409, attempt + 1, started, response
+            )
         if response.status_code >= 500:
             self._raise_failure(
-                path, "PLATFORM_UNAVAILABLE", 503, attempt + 1, started, response
+                method, path, "PLATFORM_UNAVAILABLE", 503, attempt + 1, started, response
             )
         if response.status_code >= 400:
             self._raise_failure(
+                method,
                 path,
                 "PLATFORM_BAD_REQUEST",
                 response.status_code,
@@ -194,6 +239,7 @@ class PlatformClient:
             envelope = TypeAdapter(envelope_type).validate_json(response.content)
         except (ValidationError, ValueError, TypeError) as exc:
             self._raise_failure(
+                method,
                 path,
                 "PLATFORM_INVALID_RESPONSE",
                 502,
@@ -205,6 +251,7 @@ class PlatformClient:
             )
         if envelope.code != 200:
             self._raise_failure(
+                method,
                 path,
                 "PLATFORM_INVALID_RESPONSE",
                 502,
@@ -217,6 +264,7 @@ class PlatformClient:
 
     def _raise_failure(
         self,
+        method: str,
         path: str,
         code: str,
         status_code: int,
@@ -235,9 +283,10 @@ class PlatformClient:
             response_bytes = len(response.content)
             content_type = _safe_text(response.headers.get("content-type", "none"), 64)
         logger.warning(
-            "event=platform_request_failed method=GET path=%s http_status=%s code=%s "
+            "event=platform_request_failed method=%s path=%s http_status=%s code=%s "
             "attempts=%d duration_ms=%d response_bytes=%d content_type=%s "
             "validation=%s exception=%s",
+            _safe_text(method, 16),
             _safe_text(path, 256),
             http_status,
             code,

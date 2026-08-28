@@ -7,15 +7,13 @@ services:
     network_mode: host
     user: "${APP_UID:?APP_UID is required}:${APP_GID:?APP_GID is required}"
     env_file:
-      - /etc/aisoftoj/aisoftoj.env
+      - /etc/aisoftoj/backend.env
     environment:
       SERVER_ADDRESS: 127.0.0.1
       SERVER_PORT: "8080"
       FILE_UPLOAD_PATH: /app/uploads/
-      FLYWAY_ENABLED: "true"
-      FLYWAY_BASELINE_ON_MIGRATE: "true"
-      FLYWAY_BASELINE_VERSION: "${FLYWAY_BASELINE_VERSION:?FLYWAY_BASELINE_VERSION is required}"
-      JAVA_TOOL_OPTIONS: -Xms128m -Xmx512m -XX:+ExitOnOutOfMemoryError
+      FLYWAY_ENABLED: "false"
+      JAVA_TOOL_OPTIONS: -Xms128m -Xmx320m -XX:+ExitOnOutOfMemoryError
     volumes:
       - /opt/aisoftoj/uploads:/app/uploads
     read_only: true
@@ -23,8 +21,8 @@ services:
       - /tmp:rw,noexec,nosuid,size=64m,mode=1777
     restart: unless-stopped
     stop_grace_period: 30s
-    mem_limit: 700m
-    mem_reservation: 384m
+    mem_limit: 448m
+    mem_reservation: 256m
     cpus: 1.5
     pids_limit: 256
     security_opt:
@@ -48,10 +46,12 @@ services:
       - 127.0.0.1:8081:8080
     read_only: true
     tmpfs:
-      - /tmp:rw,noexec,nosuid,size=16m,mode=1777
+      - /tmp:rw,noexec,nosuid,size=8m,mode=0770,uid=101,gid=101
+      - /var/cache/nginx:rw,noexec,nosuid,size=16m,mode=0770,uid=101,gid=101
+      - /var/run:rw,noexec,nosuid,size=4m,mode=0770,uid=101,gid=101
     restart: unless-stopped
     stop_grace_period: 10s
-    mem_limit: 128m
+    mem_limit: 64m
     mem_reservation: 32m
     cpus: 0.5
     pids_limit: 64
@@ -63,6 +63,40 @@ services:
       timeout: 3s
       retries: 4
       start_period: 5s
+    logging:
+      driver: json-file
+      options:
+        max-size: 10m
+        max-file: "3"
+
+  ai:
+    image: aisoftoj-ai:${RELEASE_SHA:?RELEASE_SHA is required}
+    container_name: aisoftoj-ai
+    network_mode: host
+    user: "10001:${AI_APP_GID:?AI_APP_GID is required}"
+    env_file:
+      - /etc/aisoftoj/ai.env
+    environment:
+      AGENT_CONFIG_FILE: /etc/aisoftoj/ai-config.yaml
+    volumes:
+      - /etc/aisoftoj/ai-config.yaml:/etc/aisoftoj/ai-config.yaml:ro
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=64m,mode=1777
+    restart: unless-stopped
+    stop_grace_period: 30s
+    mem_limit: 448m
+    mem_reservation: 192m
+    cpus: 1.5
+    pids_limit: 128
+    security_opt:
+      - no-new-privileges:true
+    healthcheck:
+      test: ["CMD", "/app/.venv/bin/python", "-c", "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/readyz', timeout=2)"]
+      interval: 5s
+      timeout: 3s
+      retries: 12
+      start_period: 30s
     logging:
       driver: json-file
       options:

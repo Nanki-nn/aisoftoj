@@ -1,18 +1,14 @@
-# LangSmith tracing credentials and sampling settings are environment-only.
-# Do not add LANGSMITH_API_KEY or other observability secrets to this YAML file.
-
-database_url: mysql+asyncmy://aisoftoj_ai:change-me@127.0.0.1:3306/aisoftoj
-
+database_url: mysql+asyncmy://placeholder:placeholder@10.20.0.21:3306/aisoftoj
 platform_base_url: http://127.0.0.1:8080
-platform_service_key: change-me
+platform_service_key: placeholder
 platform_connect_timeout_seconds: 2
 platform_read_timeout_seconds: 5
 platform_max_response_bytes: 2097152
 
-llm_base_url: https://api.openai.com/v1
+llm_base_url: https://api.deepseek.com/v1
 llm_endpoint_mode: openai_base
-llm_api_key: change-me
-llm_default_model: gpt-5-mini
+llm_api_key: placeholder
+llm_default_model: deepseek-v4-flash
 llm_request_timeout_seconds: 60
 llm_max_retries: 1
 

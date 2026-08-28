@@ -141,6 +141,43 @@ async def test_admin_user_page_forwards_filters_and_validates_contract() -> None
     assert page.records[0].login_name == "reader"
 
 
+async def test_admin_user_batch_posts_ids_and_validates_full_account_state() -> None:
+    async def handler(request: httpx.Request) -> httpx.Response:
+        assert request.method == "POST"
+        assert request.url.path == "/internal/ai/admin/users:batch-get"
+        assert request.headers["Authorization"] == "Bearer admin-jwt"
+        assert request.headers["X-AI-Service-Key"] == "service-key"
+        assert request.read() == b'{"userIds":[7,8]}'
+        return response(
+            {
+                "records": [
+                    {
+                        "id": 7,
+                        "loginName": "reader",
+                        "nickName": "软考学员",
+                        "email": "reader@example.com",
+                        "role": "USER",
+                        "isEnabled": True,
+                        "isDeleted": False,
+                    }
+                ],
+                "missingUserIds": [8],
+            }
+        )
+
+    client = PlatformClient(
+        base_url="http://127.0.0.1:8080",
+        service_key="service-key",
+        transport=httpx.MockTransport(handler),
+    )
+    batch = await client.get_admin_users_by_ids("admin-jwt", [7, 8])
+    await client.close()
+
+    assert batch.records[0].role == "USER"
+    assert batch.records[0].is_enabled is True
+    assert batch.missing_user_ids == [8]
+
+
 async def test_invalid_response_is_not_exposed() -> None:
     logger, handler = capture_platform_logs()
     client = PlatformClient(

@@ -7,6 +7,11 @@ import {
   updateAdminUser,
   deleteAdminUser,
 } from '../../lib/api';
+import {
+  disableAdminAIRolloutUser,
+  enableAdminAIRolloutUser,
+  getAdminAIRolloutStatuses,
+} from '../../lib/aiApi';
 
 const PAGE_SIZE = 10;
 
@@ -51,6 +56,10 @@ export function AdminUsers() {
   const [enabledFilter, setEnabledFilter] = useState<'' | 'true' | 'false'>('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [aiStatuses, setAIStatuses] = useState<Record<string, boolean>>({});
+  const [aiGloballyEnabled, setAIGloballyEnabled] = useState<boolean | null>(null);
+  const [aiStatusError, setAIStatusError] = useState<string | null>(null);
+  const [aiBusyId, setAIBusyId] = useState<number | null>(null);
 
   const [editState, setEditState] = useState<EditState | null>(null);
   const [editLoading, setEditLoading] = useState(false);
@@ -60,21 +69,37 @@ export function AdminUsers() {
   const [deleteLoading, setDeleteLoading] = useState(false);
 
   const load = useCallback(
-    (p: number, kw: string, enabled: '' | 'true' | 'false') => {
+    async (p: number, kw: string, enabled: '' | 'true' | 'false') => {
       setLoading(true);
       setError(null);
-      listAdminUsers({
-        keyword: kw || undefined,
-        enabled: enabled === '' ? undefined : enabled === 'true',
-        page: p,
-        pageSize: PAGE_SIZE,
-      })
-        .then((res) => {
-          setUsers(res.records);
-          setTotal(res.total);
-        })
-        .catch((err: Error) => setError(err.message))
-        .finally(() => setLoading(false));
+      setAIStatusError(null);
+      try {
+        const res = await listAdminUsers({
+          keyword: kw || undefined,
+          enabled: enabled === '' ? undefined : enabled === 'true',
+          page: p,
+          pageSize: PAGE_SIZE,
+        });
+        setUsers(res.records);
+        setTotal(res.total);
+        if (res.records.length) {
+          try {
+            const statusResult = await getAdminAIRolloutStatuses(res.records.map(user => user.id));
+            setAIStatuses(statusResult.statuses);
+            setAIGloballyEnabled(statusResult.globally_enabled);
+          } catch (statusError) {
+            setAIStatuses({});
+            setAIGloballyEnabled(null);
+            setAIStatusError((statusError as Error).message || 'AI 内测状态加载失败');
+          }
+        } else {
+          setAIStatuses({});
+        }
+      } catch (err) {
+        setError((err as Error).message);
+      } finally {
+        setLoading(false);
+      }
     },
     []
   );
@@ -129,6 +154,25 @@ export function AdminUsers() {
     }
   }
 
+  async function handleAIToggle(user: AdminUserDTO) {
+    if (user.role === 'ADMIN' || aiBusyId !== null) return;
+    const current = Boolean(aiStatuses[String(user.id)]);
+    setAIBusyId(user.id);
+    setAIStatusError(null);
+    try {
+      if (current) {
+        await disableAdminAIRolloutUser(user.id);
+      } else {
+        await enableAdminAIRolloutUser(user.id);
+      }
+      setAIStatuses(previous => ({ ...previous, [String(user.id)]: !current }));
+    } catch (toggleError) {
+      setAIStatusError((toggleError as Error).message || 'AI 内测状态修改失败');
+    } finally {
+      setAIBusyId(null);
+    }
+  }
+
   const totalPages = Math.max(1, Math.ceil(total / PAGE_SIZE));
 
   return (
@@ -170,10 +214,20 @@ export function AdminUsers() {
           {error}
         </div>
       )}
+      {aiStatusError && (
+        <div className="mb-4 rounded-lg border border-amber-200 bg-amber-50 p-3 text-sm text-amber-700">
+          {aiStatusError}，请刷新后重试。
+        </div>
+      )}
+      {aiGloballyEnabled === false && (
+        <div className="mb-4 rounded-lg bg-slate-100 p-3 text-sm text-slate-600">
+          AI 功能总开关当前关闭；内测名单仍可编辑，但暂不生效。
+        </div>
+      )}
 
       {/* Table */}
       <div className="bg-white rounded-xl border border-slate-200 overflow-x-auto">
-        <table className="w-full text-sm" style={{ minWidth: 1180 }}>
+        <table className="w-full text-sm" style={{ minWidth: 1280 }}>
           <thead>
             <tr className="border-b border-slate-200 bg-slate-50">
               <th className="text-left px-4 py-3 text-slate-600 font-medium">ID</th>
@@ -185,19 +239,20 @@ export function AdminUsers() {
               <th className="text-left px-4 py-3 text-slate-600 font-medium">刷题次数</th>
               <th className="text-left px-4 py-3 text-slate-600 font-medium">错题数</th>
               <th className="text-left px-4 py-3 text-slate-600 font-medium">状态</th>
+              <th className="text-left px-4 py-3 text-slate-600 font-medium whitespace-nowrap">AI 内测</th>
               <th className="text-left px-4 py-3 text-slate-600 font-medium">操作</th>
             </tr>
           </thead>
           <tbody>
             {loading ? (
               <tr>
-                <td colSpan={10} className="text-center py-10 text-slate-400">
+                <td colSpan={11} className="text-center py-10 text-slate-400">
                   加载中...
                 </td>
               </tr>
             ) : users.length === 0 ? (
               <tr>
-                <td colSpan={10} className="text-center py-10 text-slate-400">
+                <td colSpan={11} className="text-center py-10 text-slate-400">
                   暂无数据
                 </td>
               </tr>
@@ -226,6 +281,25 @@ export function AdminUsers() {
                     >
                       {user.isEnabled ? '启用' : '禁用'}
                     </span>
+                  </td>
+                  <td className="px-4 py-3">
+                    {user.role === 'ADMIN' ? (
+                      <span className="whitespace-nowrap text-xs font-medium text-blue-700">管理员默认开放</span>
+                    ) : aiStatusError && !(String(user.id) in aiStatuses) ? (
+                      <span className="text-xs text-slate-400">状态未知</span>
+                    ) : (
+                      <button
+                        type="button"
+                        role="switch"
+                        aria-label={`${user.loginName || user.email || `用户 ${user.id}`} AI 内测`}
+                        aria-checked={Boolean(aiStatuses[String(user.id)])}
+                        disabled={aiBusyId !== null || (!user.isEnabled && !aiStatuses[String(user.id)])}
+                        onClick={() => void handleAIToggle(user)}
+                        className={`relative inline-flex h-6 w-11 items-center rounded-full transition-colors disabled:opacity-40 ${aiStatuses[String(user.id)] ? 'bg-blue-600' : 'bg-slate-300'}`}
+                      >
+                        <span className={`inline-block h-4 w-4 rounded-full bg-white shadow transition-transform ${aiStatuses[String(user.id)] ? 'translate-x-6' : 'translate-x-1'}`} />
+                      </button>
+                    )}
                   </td>
                   <td className="px-4 py-3">
                     <div className="flex items-center gap-2">

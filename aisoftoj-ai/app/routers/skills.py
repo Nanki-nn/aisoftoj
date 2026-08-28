@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from fastapi import APIRouter
 
-from app.dependencies import Container, CurrentUser
+from app.dependencies import AiCurrentUser, Container
 from packages.harness.aisoftoj_agent.contracts.api import SkillListResponse, SkillResponse
 
 router = APIRouter(prefix="/api/ai/skills", tags=["skills"])
 
 
 @router.get("", response_model=SkillListResponse)
-async def list_skills(_user: CurrentUser, container: Container) -> SkillListResponse:
+async def list_skills(_user: AiCurrentUser, container: Container) -> SkillListResponse:
     items = [
         SkillResponse(
             name=skill.name,

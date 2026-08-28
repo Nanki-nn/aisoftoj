@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import hashlib
 import logging
 from collections.abc import Callable, Iterator, Mapping
 from contextlib import contextmanager
@@ -46,7 +47,7 @@ class LangSmithTracing:
         metadata = {
             "run_id": run_id,
             "thread_id": thread_id,
-            "user_id": user_id,
+            "user_id_hash": hashlib.sha256(str(user_id).encode()).hexdigest()[:16],
             "question_id": question_id,
             "agent_name": "aisoftoj-assistant",
             "agent_version": self.config.agent_version,
@@ -102,11 +103,15 @@ def build_langsmith_tracing(
     if not config.enabled or config.api_key is None:
         return LangSmithTracing(config, None)
     api_key = config.api_key.get_secret_value()
-    redactor = SecretRedactor([
-        settings.llm_api_key.get_secret_value(),
-        settings.platform_service_key.get_secret_value(),
-        api_key,
-    ])
+    redactor = SecretRedactor(
+        [
+            settings.database_url.get_secret_value(),
+            settings.llm_api_key.get_secret_value(),
+            settings.platform_service_key.get_secret_value(),
+            api_key,
+        ],
+        hide_content=True,
+    )
     client = client_factory(
         api_url=config.endpoint,
         api_key=api_key,

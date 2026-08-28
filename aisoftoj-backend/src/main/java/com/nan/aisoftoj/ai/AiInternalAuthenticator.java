@@ -30,4 +30,9 @@ public class AiInternalAuthenticator {
         }
         return authService.getCurrentUserId(authorization);
     }
+
+    public Integer authenticateAdmin(String serviceKey, String authorization) {
+        authenticate(serviceKey, authorization);
+        return authService.requireAdmin(authorization);
+    }
 }

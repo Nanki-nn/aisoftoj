@@ -184,10 +184,51 @@ export type AIQuota = {
   reset_at: string;
 };
 
+export type AICapability = {
+  ai_enabled: boolean;
+  reason: string | null;
+};
+
+export function fetchAICapability(): Promise<AICapability> {
+  return aiAdminRequest<AICapability>('/api/ai/capability');
+}
+
 export type AIQuotaConfig = {
   daily_token_limit: number;
   updated_by_user_id: number | null;
   updated_at: string | null;
+};
+
+export type AIAccessConfig = {
+  globally_enabled: boolean;
+  rollout_user_count: number;
+  updated_by_user_id: number | null;
+  updated_at: string | null;
+};
+
+export type AdminAIRolloutUser = {
+  user_id: number;
+  login_name: string | null;
+  nick_name: string | null;
+  email: string | null;
+  role: string | null;
+  account_status: 'active' | 'disabled' | 'deleted' | 'missing';
+  created_by_user_id: number;
+  updated_by_user_id: number;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AdminAIRolloutUserPage = {
+  records: AdminAIRolloutUser[];
+  total: number;
+  page: number;
+  page_size: number;
+};
+
+export type AdminAIRolloutStatusBatch = {
+  globally_enabled: boolean;
+  statuses: Record<string, boolean>;
 };
 
 export type AdminAIQuotaUsage = {
@@ -234,6 +275,43 @@ export function updateAIQuotaConfig(dailyTokenLimit: number): Promise<AIQuotaCon
     method: 'PATCH',
     body: JSON.stringify({ daily_token_limit: dailyTokenLimit }),
   });
+}
+
+export function getAIAccessConfig(): Promise<AIAccessConfig> {
+  return aiAdminRequest('/api/ai/admin/access-config');
+}
+
+export function updateAIAccessConfig(globallyEnabled: boolean): Promise<AIAccessConfig> {
+  return aiAdminRequest('/api/ai/admin/access-config', {
+    method: 'PATCH',
+    body: JSON.stringify({ globally_enabled: globallyEnabled }),
+  });
+}
+
+export function listAdminAIRolloutUsers(
+  page = 1,
+  pageSize = 20,
+): Promise<AdminAIRolloutUserPage> {
+  return aiAdminRequest(
+    `/api/ai/admin/rollout-users?page=${page}&page_size=${pageSize}`,
+  );
+}
+
+export function getAdminAIRolloutStatuses(
+  userIds: number[],
+): Promise<AdminAIRolloutStatusBatch> {
+  return aiAdminRequest('/api/ai/admin/rollout-user-status:batch-get', {
+    method: 'POST',
+    body: JSON.stringify({ user_ids: userIds }),
+  });
+}
+
+export function enableAdminAIRolloutUser(userId: number): Promise<{ user_id: number; enabled: true }> {
+  return aiAdminRequest(`/api/ai/admin/rollout-users/${userId}`, { method: 'PUT' });
+}
+
+export function disableAdminAIRolloutUser(userId: number): Promise<{ user_id: number; enabled: false }> {
+  return aiAdminRequest(`/api/ai/admin/rollout-users/${userId}`, { method: 'DELETE' });
 }
 
 export function listAdminAIQuotaUsage(params: {

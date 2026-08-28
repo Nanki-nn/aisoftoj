@@ -5,6 +5,7 @@ import com.nan.aisoftoj.dto.ai.AiPaperDTO;
 import com.nan.aisoftoj.dto.ai.AiQuestionDTO;
 import com.nan.aisoftoj.dto.ai.AiPracticeHistoryPageDTO;
 import com.nan.aisoftoj.dto.ai.AiWrongQuestionReviewDTO;
+import com.nan.aisoftoj.dto.ai.AiAdminUserBatchDTO;
 
 import java.util.List;
 
@@ -20,4 +21,6 @@ public interface AiPlatformReadService {
     AiWrongQuestionReviewDTO reviewWrongQuestion(Integer userId, Long wrongQuestionId);
 
     AiPracticeHistoryPageDTO listPracticeHistory(Integer userId, Integer page, Integer pageSize);
+
+    AiAdminUserBatchDTO listAdminUsers(List<Integer> userIds);
 }

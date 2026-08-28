@@ -6,6 +6,8 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.responses import JSONResponse
 
 from app.lifespan import lifespan
+from app.routers.access_admin import router as access_admin_router
+from app.routers.capability import router as capability_router
 from app.routers.health import router as health_router
 from app.routers.quota import router as quota_router
 from app.routers.runs import router as runs_router
@@ -21,10 +23,12 @@ from packages.harness.aisoftoj_agent.quota import (
 def create_app() -> FastAPI:
     application = FastAPI(title="aisoftoj AI", version="0.1.0", lifespan=lifespan)
     application.include_router(health_router)
+    application.include_router(capability_router)
     application.include_router(threads_router)
     application.include_router(runs_router)
     application.include_router(skills_router)
     application.include_router(quota_router)
+    application.include_router(access_admin_router)
 
     @application.exception_handler(DailyTokenQuotaUnavailable)
     async def quota_unavailable(request: Request, _exc: Exception) -> JSONResponse:

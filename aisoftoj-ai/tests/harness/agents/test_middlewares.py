@@ -12,6 +12,11 @@ from langchain_core.language_models.fake_chat_models import FakeMessagesListChat
 from langchain_core.messages import AIMessage, HumanMessage, SystemMessage, ToolMessage
 from langgraph.runtime import Runtime
 
+from packages.harness.aisoftoj_agent.access_control import AiAccessDenied
+from packages.harness.aisoftoj_agent.agents.context import AgentContext
+from packages.harness.aisoftoj_agent.agents.middlewares.access_control import (
+    AccessControlMiddleware,
+)
 from packages.harness.aisoftoj_agent.agents.middlewares.daily_token_quota import (
     DailyTokenQuotaMiddleware,
 )
@@ -67,6 +72,37 @@ async def test_token_budget_fails_before_an_unbounded_model_call() -> None:
         await middleware.awrap_model_call(
             model_request([HumanMessage(content="123456789012")]), handler
         )
+
+
+async def test_access_control_rechecks_before_each_model_call() -> None:
+    calls: list[tuple[int, str]] = []
+
+    class AccessService:
+        async def require_allowed(self, user_id: int, role: str) -> None:
+            calls.append((user_id, role))
+            raise AiAccessDenied("AI_GLOBALLY_DISABLED")
+
+    context = AgentContext(
+        user_id=7,
+        username="reader",
+        nickname=None,
+        thread_id="thread-1",
+        run_id="run-1",
+        bearer_token="jwt",
+        role="USER",
+    )
+    request = model_request(
+        [HumanMessage(content="hello")],
+        runtime=Runtime(context=context),
+    )
+    middleware = AccessControlMiddleware(AccessService())  # type: ignore[arg-type]
+
+    async def handler(_request: ModelRequest[Any]) -> ModelResponse[Any]:
+        raise AssertionError("denied calls must not reach the model")
+
+    with pytest.raises(AiAccessDenied, match="AI_GLOBALLY_DISABLED"):
+        await middleware.awrap_model_call(request, handler)
+    assert calls == [(7, "USER")]
 
 
 async def test_daily_quota_reserves_and_settles_provider_usage() -> None:
