@@ -12,6 +12,7 @@ public class AdminUserDTO {
     private String email;
     private String phone;
     private String avatar;
+    private String role;
     private Boolean isEnabled;
     private Date createTime;
     private Date updateTime;
