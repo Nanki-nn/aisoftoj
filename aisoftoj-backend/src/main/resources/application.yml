@@ -7,7 +7,8 @@ spring:
   datasource:
     url: ${DB_URL:jdbc:mysql://127.0.0.1:3306/aisoftoj?useUnicode=true&characterEncoding=UTF-8&serverTimezone=Asia/Shanghai}
     username: ${DB_USERNAME:root}
-    password: ${DB_PASSWORD:}
+    # Local development fallback only. Production requires DB_PASSWORD.
+    password: ${DB_PASSWORD:abc123456}
     driver-class-name: com.mysql.cj.jdbc.Driver
   mail:
     host: ${MAIL_HOST:}
@@ -52,7 +53,8 @@ auth:
     secret: ${AUTH_JWT_SECRET:dev-only-change-me}
     expire-hours: ${AUTH_JWT_EXPIRE_HOURS:168}
   email:
-    code-secret: ${AUTH_EMAIL_CODE_SECRET:dev-only-email-code-secret}
+    # Local development fallback only. Production overrides this without a default.
+    code-secret: ${AUTH_EMAIL_CODE_SECRET:dev-only-email-code-secret-change-me-32-bytes}
     from: ${MAIL_FROM:}
     from-name: ${MAIL_FROM_NAME:知构软考}
     worker-delay-ms: ${AUTH_EMAIL_WORKER_DELAY_MS:1000}
