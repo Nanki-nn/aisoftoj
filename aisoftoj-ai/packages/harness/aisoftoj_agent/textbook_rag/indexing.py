@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import asyncio
+import logging
 from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
@@ -21,6 +22,8 @@ from .extractor import PyMuPDFTextbookExtractor
 from .hashing import catalog_content_hash
 from .models import PageText, TextbookChunk
 from .qdrant import QdrantClient, QdrantError
+
+logger = logging.getLogger(__name__)
 
 
 class TextbookIndexingError(RuntimeError):
@@ -62,6 +65,8 @@ class TextbookIndexer:
         try:
             downloaded = await self.downloader.download(str(catalog.official_url))
             catalog_hash = catalog_content_hash(catalog)
+            reused_response: dict[str, Any] | None = None
+            retired_index_version: str | None = None
             async with self.session_factory.begin() as session:
                 repository = TextbookIndexRepository(session)
                 reusable = await repository.get_reusable(
@@ -72,24 +77,37 @@ class TextbookIndexer:
                     self.settings.textbook_retrieval_profile_version,
                 )
                 if reusable is not None:
-                    if reusable.status != "ACTIVE":
-                        await repository.activate(reusable, reusable.chunk_count)
-                    return _index_response(reusable, reused=True)
-                version = _index_version(downloaded.sha256)
-                index_item = await repository.create_building(
-                    textbook_id=textbook_id,
-                    index_version=version,
-                    source_hash=downloaded.sha256,
-                    catalog_hash=catalog_hash,
-                    retrieval_profile_version=(
-                        self.settings.textbook_retrieval_profile_version
-                    ),
-                    parser_name=self.extractor.name,
-                    parser_version=self.extractor.version,
-                    embedding_model=self.settings.textbook_embedding_model,
-                    reranker_model="dense-lexical-v1",
-                    collection_name=self.settings.qdrant_collection,
-                )
+                    point_count = await self.qdrant_client.count_index_points(
+                        reusable.textbook_id, reusable.index_version
+                    )
+                    if reusable.chunk_count > 0 and point_count == reusable.chunk_count:
+                        current = await repository.get_active(textbook_id)
+                        if current is not None and current.id != reusable.id:
+                            retired_index_version = current.index_version
+                        if reusable.status != "ACTIVE":
+                            await repository.activate(reusable, reusable.chunk_count)
+                        reused_response = _index_response(reusable, reused=True)
+                if reused_response is None:
+                    version = _index_version(downloaded.sha256)
+                    index_item = await repository.create_building(
+                        textbook_id=textbook_id,
+                        index_version=version,
+                        source_hash=downloaded.sha256,
+                        catalog_hash=catalog_hash,
+                        retrieval_profile_version=(
+                            self.settings.textbook_retrieval_profile_version
+                        ),
+                        parser_name=self.extractor.name,
+                        parser_version=self.extractor.version,
+                        embedding_model=self.settings.textbook_embedding_model,
+                        reranker_model="dense-lexical-v1",
+                        collection_name=self.settings.qdrant_collection,
+                    )
+            if reused_response is not None:
+                if retired_index_version is not None:
+                    await self._delete_index_points(textbook_id, retired_index_version)
+                return reused_response
+            assert index_item is not None
 
             pages = await asyncio.to_thread(self.extractor.extract, downloaded.path)
             chunks = build_chunks(
@@ -112,12 +130,19 @@ class TextbookIndexer:
                 self.settings.textbook_embedding_dimensions
             )
             await self.qdrant_client.upsert(chunks, vectors)
+            retired_index_version = None
             async with self.session_factory.begin() as session:
                 stored = await session.get(AiTextbookIndex, index_item.id)
                 if stored is None:
                     raise TextbookIndexingError("INDEX_STATE_MISSING")
-                await TextbookIndexRepository(session).activate(stored, len(chunks))
+                repository = TextbookIndexRepository(session)
+                current = await repository.get_active(textbook_id)
+                if current is not None and current.id != stored.id:
+                    retired_index_version = current.index_version
+                await repository.activate(stored, len(chunks))
                 index_item = stored
+            if retired_index_version is not None:
+                await self._delete_index_points(textbook_id, retired_index_version)
             return _index_response(index_item, reused=False)
         except (TextbookDownloadError, EmbeddingError, QdrantError) as exc:
             code = str(exc) or "INDEX_BUILD_FAILED"
@@ -139,10 +164,23 @@ class TextbookIndexer:
     async def _mark_failed(self, item: AiTextbookIndex | None, error_code: str) -> None:
         if item is None:
             return
+        marked_failed = False
         async with self.session_factory.begin() as session:
             stored = await session.get(AiTextbookIndex, item.id)
             if stored is not None and stored.status == "BUILDING":
                 await TextbookIndexRepository(session).fail(stored, error_code)
+                marked_failed = True
+        if marked_failed:
+            await self._delete_index_points(item.textbook_id, item.index_version)
+
+    async def _delete_index_points(self, textbook_id: int, index_version: str) -> None:
+        try:
+            await self.qdrant_client.delete_index_points(textbook_id, index_version)
+        except QdrantError as exc:
+            logger.warning(
+                "event=textbook_index_cleanup_failed error_code=%s",
+                str(exc) or "VECTOR_STORE_UNAVAILABLE",
+            )
 
 
 class TextbookIndexTaskManager:

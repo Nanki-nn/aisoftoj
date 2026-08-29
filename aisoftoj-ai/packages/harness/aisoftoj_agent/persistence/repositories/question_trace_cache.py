@@ -55,21 +55,40 @@ class QuestionTraceCacheRepository:
         result: dict[str, Any],
         expires_at: datetime | None = None,
     ) -> AiQuestionTraceCache:
-        item = AiQuestionTraceCache(
-            id=str(uuid4()),
-            question_id=question_id,
-            question_content_hash=question_content_hash,
-            textbook_id=textbook_id,
-            index_version=index_version,
-            retrieval_profile_version=retrieval_profile_version,
-            status=status,
-            primary_knowledge_point_id=primary_knowledge_point_id,
-            secondary_knowledge_point_ids_json=secondary_knowledge_point_ids,
-            source_chunk_ids_json=source_chunk_ids,
-            confidence=confidence,
-            result_json=result,
-            expires_at=expires_at,
+        existing = await self.session.execute(
+            select(AiQuestionTraceCache).where(
+                AiQuestionTraceCache.question_id == question_id,
+                AiQuestionTraceCache.question_content_hash == question_content_hash,
+                AiQuestionTraceCache.textbook_id == textbook_id,
+                AiQuestionTraceCache.index_version == index_version,
+                AiQuestionTraceCache.retrieval_profile_version == retrieval_profile_version,
+            )
         )
-        self.session.add(item)
+        item = existing.scalar_one_or_none()
+        if item is None:
+            item = AiQuestionTraceCache(
+                id=str(uuid4()),
+                question_id=question_id,
+                question_content_hash=question_content_hash,
+                textbook_id=textbook_id,
+                index_version=index_version,
+                retrieval_profile_version=retrieval_profile_version,
+                status=status,
+                primary_knowledge_point_id=primary_knowledge_point_id,
+                secondary_knowledge_point_ids_json=secondary_knowledge_point_ids,
+                source_chunk_ids_json=source_chunk_ids,
+                confidence=confidence,
+                result_json=result,
+                expires_at=expires_at,
+            )
+            self.session.add(item)
+        else:
+            item.status = status
+            item.primary_knowledge_point_id = primary_knowledge_point_id
+            item.secondary_knowledge_point_ids_json = secondary_knowledge_point_ids
+            item.source_chunk_ids_json = source_chunk_ids
+            item.confidence = confidence
+            item.result_json = result
+            item.expires_at = expires_at
         await self.session.flush()
         return item

@@ -45,6 +45,7 @@ class Settings(BaseModel):
     textbook_retrieval_sources: int = Field(default=3, ge=1, le=10)
     textbook_retrieval_min_score: float = Field(default=0.55, ge=0, le=1)
     textbook_retrieval_profile_version: str = Field(default="textbook-rag-v1", min_length=1)
+    textbook_negative_cache_ttl_seconds: int = Field(default=3600, ge=60, le=604_800)
 
     llm_base_url: HttpUrl
     llm_endpoint_mode: Literal["openai_base", "direct_endpoint"] = "openai_base"

@@ -70,6 +70,9 @@ class FakeRepository:
     async def interrupt_unfinished(self) -> None:
         pass
 
+    async def fail_unfinished(self) -> int:
+        return 0
+
 
 async def test_lifespan_injects_and_closes_langsmith_tracing(
     monkeypatch: Any,
@@ -123,6 +126,7 @@ async def test_lifespan_injects_and_closes_langsmith_tracing(
 
     monkeypatch.setattr(lifespan_module, "Worker", build_worker)
     monkeypatch.setattr(lifespan_module, "RunRepository", FakeRepository)
+    monkeypatch.setattr(lifespan_module, "TextbookIndexRepository", FakeRepository)
     monkeypatch.setattr(
         lifespan_module.DailyTokenQuotaService,
         "recover_unsettled",

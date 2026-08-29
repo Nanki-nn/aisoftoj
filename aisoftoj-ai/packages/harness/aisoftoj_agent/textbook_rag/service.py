@@ -1,10 +1,11 @@
 from __future__ import annotations
 
+import logging
 from collections import defaultdict
+from datetime import UTC, datetime, timedelta
 from typing import Any
 from urllib.parse import urlsplit
 
-from sqlalchemy.exc import IntegrityError
 from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
 
 from config import Settings
@@ -22,6 +23,8 @@ from .hashing import catalog_content_hash, question_content_hash, question_retri
 from .models import RetrievedChunk
 from .qdrant import QdrantClient, QdrantError
 from .reranker import lexical_overlap, rerank
+
+logger = logging.getLogger(__name__)
 
 
 class TextbookTraceService:
@@ -41,15 +44,15 @@ class TextbookTraceService:
         self.qdrant_client = qdrant_client
 
     async def trace(self, bearer_token: str, question_id: int) -> dict[str, Any]:
-        question = await self.platform_client.get_textbook_trace_question(
-            bearer_token, question_id
-        )
         if (
             not self.settings.textbook_rag_enabled
             or self.embedding_client is None
             or self.qdrant_client is None
         ):
             return _unavailable(question_id, "feature_disabled")
+        question = await self.platform_client.get_textbook_trace_question(
+            bearer_token, question_id
+        )
         try:
             catalog = await self.platform_client.get_active_textbook_catalog(
                 bearer_token, question.subject_name
@@ -129,6 +132,11 @@ class TextbookTraceService:
         primary = result.get("primaryKnowledgePoint")
         secondary = result.get("secondaryKnowledgePoints", [])
         sources = result.get("sources", [])
+        expires_at = None
+        if result.get("status") == "insufficient_evidence":
+            expires_at = datetime.now(UTC).replace(tzinfo=None) + timedelta(
+                seconds=self.settings.textbook_negative_cache_ttl_seconds
+            )
         try:
             async with self.session_factory.begin() as session:
                 await QuestionTraceCacheRepository(session).put(
@@ -149,10 +157,15 @@ class TextbookTraceService:
                     ],
                     confidence=float(result.get("confidence", 0.0)),
                     result=result,
+                    expires_at=expires_at,
                 )
-        except IntegrityError:
-            # Concurrent first reads may race on the cache key; either fact is equivalent.
-            return
+        except Exception as exc:
+            # The cache is an optimization; a transient write failure must not discard
+            # a retrieval result that already passed deterministic citation validation.
+            logger.warning(
+                "event=textbook_trace_cache_write_failed error_type=%s",
+                type(exc).__name__,
+            )
 
 
 def _validated_candidates(

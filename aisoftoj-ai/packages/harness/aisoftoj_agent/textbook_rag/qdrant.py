@@ -95,12 +95,7 @@ class QdrantClient:
                     "vector": vector,
                     "limit": limit,
                     "with_payload": True,
-                    "filter": {
-                        "must": [
-                            {"key": "textbookId", "match": {"value": textbook_id}},
-                            {"key": "indexVersion", "match": {"value": index_version}},
-                        ]
-                    },
+                    "filter": _index_filter(textbook_id, index_version),
                 },
             )
             response.raise_for_status()
@@ -110,6 +105,37 @@ class QdrantClient:
                 raise ValueError("invalid search result")
             return [self._to_retrieved(item) for item in records]
         except (httpx.HTTPError, TypeError, ValueError, KeyError) as exc:
+            raise QdrantError("VECTOR_STORE_UNAVAILABLE") from exc
+
+    async def count_index_points(self, textbook_id: int, index_version: str) -> int:
+        try:
+            response = await self._client.post(
+                f"/collections/{self.collection}/points/count",
+                json={
+                    "filter": _index_filter(textbook_id, index_version),
+                    "exact": True,
+                },
+            )
+            if response.status_code == 404:
+                return 0
+            response.raise_for_status()
+            body: Any = response.json()
+            value = body.get("result", {}).get("count") if isinstance(body, dict) else None
+            if not isinstance(value, int) or value < 0:
+                raise ValueError("invalid point count")
+            return value
+        except (httpx.HTTPError, TypeError, ValueError) as exc:
+            raise QdrantError("VECTOR_STORE_UNAVAILABLE") from exc
+
+    async def delete_index_points(self, textbook_id: int, index_version: str) -> None:
+        try:
+            response = await self._client.post(
+                f"/collections/{self.collection}/points/delete",
+                params={"wait": "true"},
+                json={"filter": _index_filter(textbook_id, index_version)},
+            )
+            response.raise_for_status()
+        except httpx.HTTPError as exc:
             raise QdrantError("VECTOR_STORE_UNAVAILABLE") from exc
 
     def _to_retrieved(self, item: Any) -> RetrievedChunk:
@@ -135,6 +161,15 @@ class QdrantClient:
             text=str(payload["text"]),
         )
         return RetrievedChunk(chunk=chunk, dense_score=float(item.get("score", 0.0)))
+
+
+def _index_filter(textbook_id: int, index_version: str) -> dict[str, object]:
+    return {
+        "must": [
+            {"key": "textbookId", "match": {"value": textbook_id}},
+            {"key": "indexVersion", "match": {"value": index_version}},
+        ]
+    }
 
 
 def _collection_vector_size(payload: Any) -> int | None:

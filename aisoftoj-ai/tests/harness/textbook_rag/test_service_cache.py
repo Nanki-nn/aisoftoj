@@ -1,16 +1,31 @@
 from __future__ import annotations
 
+from datetime import datetime
 from typing import Any
 
+import pytest
 from pydantic import HttpUrl
-from sqlalchemy.ext.asyncio import async_sessionmaker, create_async_engine
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import (
+    AsyncEngine,
+    AsyncSession,
+    async_sessionmaker,
+    create_async_engine,
+)
 
 from config import Settings
 from packages.harness.aisoftoj_agent.integrations.aisoftoj.models import (
     QuestionOption,
     TextbookTraceQuestion,
 )
-from packages.harness.aisoftoj_agent.persistence.models import AiTextbookIndex, Base
+from packages.harness.aisoftoj_agent.persistence.models import (
+    AiQuestionTraceCache,
+    AiTextbookIndex,
+    Base,
+)
+from packages.harness.aisoftoj_agent.persistence.repositories.question_trace_cache import (
+    QuestionTraceCacheRepository,
+)
 from packages.harness.aisoftoj_agent.textbook_rag.hashing import catalog_content_hash
 from packages.harness.aisoftoj_agent.textbook_rag.models import RetrievedChunk, TextbookChunk
 from packages.harness.aisoftoj_agent.textbook_rag.service import TextbookTraceService
@@ -68,7 +83,12 @@ class FakeQdrant:
         return [RetrievedChunk(chunk=chunk, dense_score=0.92)]
 
 
-def settings() -> Settings:
+class EmptyQdrant:
+    async def search(self, **_kwargs: object) -> list[RetrievedChunk]:
+        return []
+
+
+def settings(*, enabled: bool = True) -> Settings:
     return Settings.model_validate(
         {
             "database_url": "mysql+asyncmy://user:secret@127.0.0.1/aisoftoj_test",
@@ -76,14 +96,17 @@ def settings() -> Settings:
             "llm_base_url": "https://gateway.example/v1",
             "llm_api_key": "llm-secret",
             "llm_default_model": "model-name",
-            "textbook_rag_enabled": True,
-            "textbook_allowed_hosts": ["books.example.com"],
+            "textbook_rag_enabled": enabled,
+            "textbook_allowed_hosts": ["books.example.com"] if enabled else [],
             "textbook_retrieval_min_score": 0.5,
+            "textbook_negative_cache_ttl_seconds": 60,
         }
     )
 
 
-async def test_first_read_retrieves_and_second_read_uses_versioned_fact_cache() -> None:
+async def database_with_active_index() -> tuple[
+    AsyncEngine, async_sessionmaker[AsyncSession]
+]:
     engine = create_async_engine("sqlite+aiosqlite:///:memory:")
     async with engine.begin() as connection:
         await connection.run_sync(Base.metadata.create_all)
@@ -106,6 +129,11 @@ async def test_first_read_retrieves_and_second_read_uses_versioned_fact_cache() 
                 status="ACTIVE",
             )
         )
+    return engine, session_factory
+
+
+async def test_first_read_retrieves_and_second_read_uses_versioned_fact_cache() -> None:
+    engine, session_factory = await database_with_active_index()
     platform = FakePlatform()
     embeddings = FakeEmbeddings()
     service = TextbookTraceService(
@@ -129,3 +157,72 @@ async def test_first_read_retrieves_and_second_read_uses_versioned_fact_cache() 
     assert second["sources"][0]["officialUrl"] == "https://books.example.com/current.pdf"
     assert embeddings.calls == 1
     assert platform.question_calls == 2
+
+
+async def test_disabled_feature_returns_before_platform_io() -> None:
+    engine = create_async_engine("sqlite+aiosqlite:///:memory:")
+    session_factory = async_sessionmaker(engine, expire_on_commit=False)
+    platform = FakePlatform()
+    service = TextbookTraceService(
+        settings=settings(enabled=False),
+        session_factory=session_factory,
+        platform_client=platform,  # type: ignore[arg-type]
+        embedding_client=None,
+        qdrant_client=None,
+    )
+
+    result = await service.trace("jwt", 7)
+    await engine.dispose()
+
+    assert result["status"] == "unavailable"
+    assert result["reason"] == "feature_disabled"
+    assert platform.question_calls == 0
+
+
+async def test_cache_write_failure_does_not_discard_valid_retrieval(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    async def fail_cache_write(*_args: object, **_kwargs: object) -> None:
+        raise RuntimeError("database unavailable")
+
+    monkeypatch.setattr(QuestionTraceCacheRepository, "put", fail_cache_write)
+    engine, session_factory = await database_with_active_index()
+    service = TextbookTraceService(
+        settings=settings(),
+        session_factory=session_factory,
+        platform_client=FakePlatform(),  # type: ignore[arg-type]
+        embedding_client=FakeEmbeddings(),  # type: ignore[arg-type]
+        qdrant_client=FakeQdrant(),  # type: ignore[arg-type]
+    )
+
+    result = await service.trace("jwt", 7)
+    await engine.dispose()
+
+    assert result["status"] == "found"
+    assert result["cacheStatus"] == "miss"
+
+
+async def test_insufficient_evidence_uses_short_negative_cache_ttl() -> None:
+    engine, session_factory = await database_with_active_index()
+    service = TextbookTraceService(
+        settings=settings(),
+        session_factory=session_factory,
+        platform_client=FakePlatform(),  # type: ignore[arg-type]
+        embedding_client=FakeEmbeddings(),  # type: ignore[arg-type]
+        qdrant_client=EmptyQdrant(),  # type: ignore[arg-type]
+    )
+
+    result = await service.trace("jwt", 7)
+    async with session_factory.begin() as session:
+        cached = (await session.execute(select(AiQuestionTraceCache))).scalar_one()
+        cached.expires_at = datetime(2000, 1, 1)
+    refreshed = await service.trace("jwt", 7)
+    async with session_factory() as session:
+        rows = list((await session.execute(select(AiQuestionTraceCache))).scalars())
+    await engine.dispose()
+
+    assert result["status"] == "insufficient_evidence"
+    assert refreshed["cacheStatus"] == "miss"
+    assert len(rows) == 1
+    assert rows[0].expires_at is not None
+    assert rows[0].expires_at > datetime(2000, 1, 1)
