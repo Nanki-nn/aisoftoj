@@ -37,7 +37,6 @@ import { AI_ASSISTANT_ENABLED } from '../lib/aiAvailability';
 interface AppHeaderProps {
   onShowAuth: () => void;
   onShowProfile: () => void;
-  aiAssistantDisabled?: boolean;
 }
 
 const EXAM_START_AT = new Date('2026-10-24T00:00:00+08:00').getTime();
@@ -76,7 +75,6 @@ function isCurrentRoute(currentPath: string, path: string) {
 export function AppHeader({
   onShowAuth,
   onShowProfile,
-  aiAssistantDisabled = false,
 }: AppHeaderProps) {
   const { user, logout, isAuthenticated } = useAuth();
   const { isOpen: isAgentOpen, toggle: toggleAgent } = useAgentPanel();
@@ -102,9 +100,7 @@ export function AppHeader({
     return () => { active = false; };
   }, [isAuthenticated, user?.id]);
 
-  const aiUnavailableReason = aiAssistantDisabled
-    ? '考试模式下 AI 助手不可用'
-    : !AI_ASSISTANT_ENABLED
+  const aiUnavailableReason = !AI_ASSISTANT_ENABLED
       ? 'AI 助手线上请求暂未开放'
       : !isAuthenticated
         ? '登录后可使用 AI 助手'

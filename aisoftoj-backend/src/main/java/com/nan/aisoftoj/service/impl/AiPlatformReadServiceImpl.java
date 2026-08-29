@@ -182,8 +182,7 @@ public class AiPlatformReadServiceImpl implements AiPlatformReadService {
         if (userId == null || userId <= 0) {
             throw new IllegalArgumentException("userId 必须为正整数");
         }
-        Long activeExamCount = practiceSessionMapper.countActiveExamSessionsByUserId(userId);
-        return activeExamCount == null || activeExamCount == 0;
+        return true;
     }
 
     @Override
