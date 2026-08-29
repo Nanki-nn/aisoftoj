@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 import logging
+from datetime import datetime, timedelta, timezone
 from types import SimpleNamespace
 from typing import Any
 
@@ -16,6 +17,10 @@ from packages.harness.aisoftoj_agent.access_control import AiAccessDenied
 from packages.harness.aisoftoj_agent.agents.context import AgentContext
 from packages.harness.aisoftoj_agent.agents.middlewares.access_control import (
     AccessControlMiddleware,
+)
+from packages.harness.aisoftoj_agent.agents.middlewares.current_time import (
+    CurrentTimeMiddleware,
+    format_current_time,
 )
 from packages.harness.aisoftoj_agent.agents.middlewares.daily_token_quota import (
     DailyTokenQuotaMiddleware,
@@ -231,6 +236,83 @@ async def test_daily_quota_releases_on_definitive_provider_rejection() -> None:
     with pytest.raises(httpx.HTTPStatusError):
         await middleware.awrap_model_call(request, handler)
     assert released == [11]
+
+
+def fixed_clock() -> Any:
+    return lambda: datetime(2025, 6, 1, 14, 30, 5, tzinfo=timezone(timedelta(hours=8)))
+
+
+async def test_current_time_middleware_injects_time_into_system_message() -> None:
+    middleware = CurrentTimeMiddleware(clock=fixed_clock())
+    request = model_request(
+        [HumanMessage(content="hello")], SystemMessage(content="基础提示")
+    )
+    captured: list[ModelRequest[Any]] = []
+
+    async def handler(value: ModelRequest[Any]) -> ModelResponse[Any]:
+        captured.append(value)
+        return ModelResponse(result=[AIMessage(content="ok")])
+
+    await middleware.awrap_model_call(request, handler)
+    prepared = captured[-1]
+    assert prepared.system_message is not None
+    content = str(prepared.system_message.content)
+    assert "<aisoftoj-current-time>" in content
+    assert "当前时间：2025年06月01日 14:30:05" in content
+    assert "星期日" in content
+    assert "UTC+08:00" in content
+    assert content.endswith("基础提示")
+
+
+async def test_current_time_middleware_creates_system_message_when_missing() -> None:
+    middleware = CurrentTimeMiddleware(clock=fixed_clock())
+    request = model_request([HumanMessage(content="hello")])
+    captured: list[ModelRequest[Any]] = []
+
+    async def handler(value: ModelRequest[Any]) -> ModelResponse[Any]:
+        captured.append(value)
+        return ModelResponse(result=[AIMessage(content="ok")])
+
+    await middleware.awrap_model_call(request, handler)
+    prepared = captured[-1]
+    assert prepared.system_message is not None
+    assert "当前时间：2025年06月01日" in str(prepared.system_message.content)
+
+
+async def test_current_time_middleware_never_duplicates_the_time_block() -> None:
+    middleware = CurrentTimeMiddleware(clock=fixed_clock())
+    stale = (
+        "<aisoftoj-current-time>\n旧时间\n</aisoftoj-current-time>\n\n"
+        "基础提示\n\n<aisoftoj-current-time>\n更旧时间\n</aisoftoj-current-time>"
+    )
+    request = model_request([HumanMessage(content="hello")], SystemMessage(content=stale))
+    captured: list[ModelRequest[Any]] = []
+
+    async def handler(value: ModelRequest[Any]) -> ModelResponse[Any]:
+        captured.append(value)
+        return ModelResponse(result=[AIMessage(content="ok")])
+
+    await middleware.awrap_model_call(request, handler)
+    prepared = captured[-1]
+    assert prepared.system_message is not None
+    content = str(prepared.system_message.content)
+    assert content.count("<aisoftoj-current-time>") == 1
+    assert content.count("</aisoftoj-current-time>") == 1
+    assert "旧时间" not in content
+    assert "更旧时间" not in content
+    assert "当前时间：2025年06月01日 14:30:05" in content
+    assert content.endswith("基础提示")
+
+    await middleware.awrap_model_call(prepared, handler)
+    assert captured[-1].system_message is not None
+    content_after_second_pass = str(captured[-1].system_message.content)
+    assert content_after_second_pass.count("<aisoftoj-current-time>") == 1
+
+
+def test_format_current_time_outputs_weekday_and_utc_offset() -> None:
+    now = datetime(2025, 6, 1, 14, 30, 5, tzinfo=timezone(timedelta(hours=8)))
+    formatted = format_current_time(now)
+    assert formatted == "2025年06月01日 14:30:05（星期日，UTC+08:00）"
 
 
 def skill_registry(tmp_path: Any) -> SkillRegistry:

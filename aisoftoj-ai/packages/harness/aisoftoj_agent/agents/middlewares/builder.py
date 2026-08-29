@@ -11,6 +11,7 @@ from ...integrations.aisoftoj.client import PlatformClient
 from ...quota import DailyTokenQuotaService
 from ...skills import SkillRegistry
 from .access_control import AccessControlMiddleware
+from .current_time import CurrentTimeMiddleware
 from .daily_token_quota import DailyTokenQuotaMiddleware
 from .exam_access import ExamAccessMiddleware
 from .loop_detection import LoopDetectionMiddleware
@@ -34,6 +35,7 @@ def build_middlewares(
     if access_control_service is not None:
         middlewares.append(AccessControlMiddleware(access_control_service))
     middlewares.extend([
+        CurrentTimeMiddleware(),
         ExamAccessMiddleware(platform_client),
         PersistentSummaryMiddleware(),
         SkillActivationMiddleware(skill_registry),

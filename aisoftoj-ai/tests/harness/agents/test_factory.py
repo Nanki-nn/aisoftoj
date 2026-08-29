@@ -127,6 +127,44 @@ async def test_model_sees_exactly_seven_read_only_tools() -> None:
     }
 
 
+async def test_model_sees_current_time_in_system_prompt() -> None:
+    model = TwoCallCapturingModel()
+    registry = SkillRegistry.empty()
+    agent = build_agent_graph(
+        settings(),
+        Mock(),
+        skill_registry=registry,
+        skill_tools=build_skill_tools(registry),
+        model=model,
+    )
+    context = AgentContext(
+        user_id=7,
+        username="reader",
+        nickname=None,
+        thread_id="thread",
+        run_id="run",
+        bearer_token="jwt-secret",
+    )
+
+    await agent.graph.ainvoke(
+        {"messages": [HumanMessage(content="今天适合学什么")], "todos": [], "files": {}},
+        context=context,
+        config={"configurable": {"thread_id": "run"}},
+    )
+
+    assert len(model.seen_messages) >= 1
+    for messages in model.seen_messages:
+        system_text = "\n".join(
+            str(message.content)
+            for message in messages
+            if isinstance(message, SystemMessage)
+        )
+        assert "<aisoftoj-current-time>" in system_text
+        assert "当前时间：" in system_text
+        assert "以该时间为准" in system_text
+        assert "## 内部信息隐藏" in system_text
+
+
 async def test_slash_skill_stays_single_across_tool_followup(tmp_path: Any) -> None:
     skill = Skill(
         name="question-explanation",
