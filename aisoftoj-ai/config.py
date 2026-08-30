@@ -47,12 +47,31 @@ class Settings(BaseModel):
     textbook_retrieval_profile_version: str = Field(default="textbook-rag-v1", min_length=1)
     textbook_negative_cache_ttl_seconds: int = Field(default=3600, ge=60, le=604_800)
 
+    knowledge_rag_enabled: bool = False
+    knowledge_qdrant_collection: str = Field(default="aisoftoj_knowledge", min_length=1)
+    knowledge_embedding_base_url: HttpUrl | None = None
+    knowledge_embedding_api_key: SecretStr | None = None
+    knowledge_embedding_model: str = Field(default="text-embedding-3-small", min_length=1)
+    knowledge_embedding_dimensions: int = Field(default=1536, gt=0)
+    knowledge_embedding_batch_size: int = Field(default=32, ge=1, le=256)
+    knowledge_bm25_model: str = Field(default="Qdrant/bm25", min_length=1)
+    knowledge_chunk_target_chars: int = Field(default=1_200, ge=200, le=8_000)
+    knowledge_chunk_overlap_chars: int = Field(default=160, ge=0, le=2_000)
+    knowledge_retrieval_candidates: int = Field(default=8, ge=1, le=30)
+    knowledge_retrieval_min_score: float = Field(default=0, ge=0, le=1)
+    knowledge_retrieval_query_variants: int = Field(default=3, ge=1, le=5)
+    knowledge_retrieval_fusion_k: int = Field(default=60, ge=1, le=200)
+    knowledge_mineru_poll_seconds: float = Field(default=3, ge=1, le=30)
+    knowledge_mineru_max_wait_seconds: int = Field(default=1_800, ge=60, le=14_400)
+
     llm_base_url: HttpUrl
     llm_endpoint_mode: Literal["openai_base", "direct_endpoint"] = "openai_base"
     llm_api_key: SecretStr
     llm_default_model: str = Field(min_length=1)
     llm_request_timeout_seconds: float = Field(default=60, gt=0)
     llm_max_retries: int = Field(default=1, ge=0, le=3)
+
+    mineru_api_key: SecretStr | None = None
 
     agent_max_run_tokens: int = Field(default=32_000, gt=0)
     agent_max_output_tokens: int = Field(default=2_048, gt=0)
@@ -130,6 +149,8 @@ class Settings(BaseModel):
             raise ValueError("textbook chunk overlap must be below target size")
         if self.textbook_retrieval_sources > self.textbook_retrieval_candidates:
             raise ValueError("textbook source count cannot exceed candidate count")
+        if self.knowledge_chunk_overlap_chars >= self.knowledge_chunk_target_chars:
+            raise ValueError("knowledge chunk overlap must be below target size")
         if self.textbook_rag_enabled and not self.textbook_allowed_hosts:
             raise ValueError("textbook_allowed_hosts is required when textbook RAG is enabled")
         if (
@@ -139,6 +160,16 @@ class Settings(BaseModel):
         ):
             raise ValueError(
                 "textbook_embedding_base_url is required with direct_endpoint mode"
+            )
+        if self.knowledge_rag_enabled and self.mineru_api_key is None:
+            raise ValueError("mineru_api_key is required when knowledge RAG is enabled")
+        if (
+            self.knowledge_rag_enabled
+            and self.llm_endpoint_mode == "direct_endpoint"
+            and self.knowledge_embedding_base_url is None
+        ):
+            raise ValueError(
+                "knowledge_embedding_base_url is required with direct_endpoint mode"
             )
         return self
 
@@ -165,6 +196,17 @@ class Settings(BaseModel):
         return value.get_secret_value()
 
     @property
+    def resolved_knowledge_embedding_base_url(self) -> str:
+        value = self.knowledge_embedding_base_url or self.llm_base_url
+        return str(value).rstrip("/")
+
+    @property
+    def resolved_knowledge_embedding_api_key(self) -> str:
+        if self.knowledge_embedding_api_key is None:
+            return ""
+        return self.knowledge_embedding_api_key.get_secret_value()
+
+    @property
     def resolved_skills_root(self) -> Path:
         return PROJECT_ROOT / self.skills_root
 
@@ -181,6 +223,7 @@ class Settings(BaseModel):
             "database_url": os.environ.get("AI_DATABASE_URL"),
             "platform_service_key": os.environ.get("AI_INTERNAL_SERVICE_KEY"),
             "llm_api_key": os.environ.get("LLM_API_KEY"),
+            "mineru_api_key": os.environ.get("MINERU_API_KEY"),
             "rollout_allowed_user_ids": os.environ.get("AI_ROLLOUT_ALLOWED_USER_IDS"),
         }
         payload.update({key: value for key, value in overrides.items() if value is not None})

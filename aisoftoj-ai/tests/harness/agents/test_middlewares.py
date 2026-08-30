@@ -560,6 +560,33 @@ def test_tool_event_sanitizers_are_strict_and_bounded() -> None:
             "sources": [{"evidence": "must-not-pass"}],
         },
     ) == {"status": "found", "cache_status": "hit"}
+    knowledge_summary = safe_tool_summary(
+        "search_knowledge",
+        {
+            "status": "found",
+            "sources": [{
+                "documentId": "internal-id",
+                "title": "系统架构设计教程",
+                "headingPath": ["第 1 章", "架构基础"],
+                "pageStart": 12,
+                "pageEnd": 13,
+                "evidence": "原文片段\n包含关键结论",
+                "score": 0.99,
+            }],
+        },
+    )
+    assert knowledge_summary == {
+        "status": "found",
+        "source_count": 1,
+        "sources": [{
+            "title": "系统架构设计教程",
+            "heading_path": ["第 1 章", "架构基础"],
+            "page_start": 12,
+            "page_end": 13,
+            "evidence": "原文片段 包含关键结论",
+        }],
+    }
+    assert "internal-id" not in json.dumps(knowledge_summary)
 
 
 class LogCapture(logging.Handler):

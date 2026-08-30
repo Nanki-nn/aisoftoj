@@ -26,6 +26,7 @@ import { AdminOssUpload } from './components/admin/AdminOssUpload';
 import { AdminRouteGuard } from './components/admin/AdminRouteGuard';
 import { AdminAISettings } from './components/admin/AdminAISettings';
 import { AdminTokenUsage } from './components/admin/AdminTokenUsage';
+import { AdminKnowledgeDocuments } from './components/admin/AdminKnowledgeDocuments';
 import { useExamSession } from './hooks/useExamSession';
 import { useAuth } from './hooks/useAuth';
 import { useAgentPanel } from './hooks/useAgentPanel';
@@ -643,6 +644,16 @@ export default function App() {
             <AdminRouteGuard>
               <AdminLayout>
                 <AdminOssUpload />
+              </AdminLayout>
+            </AdminRouteGuard>
+          }
+        />
+        <Route
+          path="/admin/knowledge"
+          element={
+            <AdminRouteGuard>
+              <AdminLayout>
+                <AdminKnowledgeDocuments />
               </AdminLayout>
             </AdminRouteGuard>
           }

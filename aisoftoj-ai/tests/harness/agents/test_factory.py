@@ -123,6 +123,7 @@ async def test_model_sees_exactly_eight_read_only_tools() -> None:
         "review_wrong_question",
         "list_practice_history",
         "trace_question_to_textbook",
+        "search_knowledge",
         "describe_skill",
         "load_skill",
     }

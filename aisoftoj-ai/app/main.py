@@ -9,6 +9,7 @@ from app.lifespan import lifespan
 from app.routers.access_admin import router as access_admin_router
 from app.routers.capability import router as capability_router
 from app.routers.health import router as health_router
+from app.routers.knowledge_documents import router as knowledge_documents_router
 from app.routers.quota import router as quota_router
 from app.routers.runs import router as runs_router
 from app.routers.skills import router as skills_router
@@ -31,6 +32,7 @@ def create_app() -> FastAPI:
     application.include_router(quota_router)
     application.include_router(access_admin_router)
     application.include_router(textbook_indexes_router)
+    application.include_router(knowledge_documents_router)
 
     @application.exception_handler(DailyTokenQuotaUnavailable)
     async def quota_unavailable(request: Request, _exc: Exception) -> JSONResponse:

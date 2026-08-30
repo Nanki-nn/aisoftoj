@@ -11,7 +11,16 @@ from app.logging_config import configure_application_logging
 from config import Settings, load_settings
 from packages.harness.aisoftoj_agent.access_control import AiAccessControlService
 from packages.harness.aisoftoj_agent.agents.factory import AgentGraph, build_agent_graph
+from packages.harness.aisoftoj_agent.agents.models import build_chat_model
 from packages.harness.aisoftoj_agent.integrations.aisoftoj.client import PlatformClient
+from packages.harness.aisoftoj_agent.integrations.mineru import MineruClient
+from packages.harness.aisoftoj_agent.knowledge_rag import (
+    Bm25Encoder,
+    KnowledgeIndexer,
+    KnowledgeSearchService,
+    LlmQueryRewriter,
+    MineruKnowledgeTaskManager,
+)
 from packages.harness.aisoftoj_agent.observability import (
     LangSmithTracing,
     build_langsmith_tracing,
@@ -53,6 +62,8 @@ class AppState:
     textbook_trace_service: TextbookTraceService | None = None
     textbook_indexer: TextbookIndexer | None = None
     textbook_index_tasks: TextbookIndexTaskManager | None = None
+    knowledge_search_service: KnowledgeSearchService | None = None
+    knowledge_task_manager: MineruKnowledgeTaskManager | None = None
     skill_registry: SkillRegistry = field(default_factory=SkillRegistry.empty)
     langsmith_tracing: LangSmithTracing = field(
         default_factory=LangSmithTracing.disabled
@@ -83,11 +94,18 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     )
     quota_service = DailyTokenQuotaService(session_factory)
     access_control_service = AiAccessControlService(session_factory)
+    agent_model = build_chat_model(settings)
     embedding_client: EmbeddingClient | None = None
     qdrant_client: QdrantClient | None = None
     downloader: SecureTextbookDownloader | None = None
     textbook_indexer: TextbookIndexer | None = None
     textbook_index_tasks: TextbookIndexTaskManager | None = None
+    knowledge_embedding_client: EmbeddingClient | None = None
+    knowledge_qdrant_client: QdrantClient | None = None
+    knowledge_bm25_encoder: Bm25Encoder | None = None
+    mineru_client: MineruClient | None = None
+    knowledge_task_manager: MineruKnowledgeTaskManager | None = None
+    query_rewriter: LlmQueryRewriter | None = None
     if settings.textbook_rag_enabled:
         embedding_client = EmbeddingClient(
             base_url=settings.resolved_textbook_embedding_base_url,
@@ -121,6 +139,47 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
             qdrant_client=qdrant_client,
         )
         textbook_index_tasks = TextbookIndexTaskManager(textbook_indexer)
+    if settings.knowledge_rag_enabled:
+        assert settings.mineru_api_key is not None
+        query_rewriter = LlmQueryRewriter(agent_model)
+        knowledge_embedding_client = EmbeddingClient(
+            base_url=settings.resolved_knowledge_embedding_base_url,
+            api_key=settings.resolved_knowledge_embedding_api_key,
+            model=settings.knowledge_embedding_model,
+            batch_size=settings.knowledge_embedding_batch_size,
+            timeout_seconds=settings.llm_request_timeout_seconds,
+        )
+        knowledge_qdrant_client = QdrantClient(
+            base_url=str(settings.qdrant_url).rstrip("/"),
+            collection=settings.knowledge_qdrant_collection,
+            api_key=(
+                settings.qdrant_api_key.get_secret_value()
+                if settings.qdrant_api_key is not None
+                else None
+            ),
+        )
+        mineru_client = MineruClient(token=settings.mineru_api_key.get_secret_value())
+        knowledge_bm25_encoder = Bm25Encoder(settings.knowledge_bm25_model)
+        knowledge_indexer = KnowledgeIndexer(
+            settings=settings,
+            embedding_client=knowledge_embedding_client,
+            bm25_encoder=knowledge_bm25_encoder,
+            qdrant_client=knowledge_qdrant_client,
+        )
+        knowledge_task_manager = MineruKnowledgeTaskManager(
+            settings=settings,
+            session_factory=session_factory,
+            mineru_client=mineru_client,
+            indexer=knowledge_indexer,
+        )
+    knowledge_search_service = KnowledgeSearchService(
+        settings=settings,
+        session_factory=session_factory,
+        embedding_client=knowledge_embedding_client,
+        bm25_encoder=knowledge_bm25_encoder,
+        qdrant_client=knowledge_qdrant_client,
+        query_rewriter=query_rewriter,
+    )
     textbook_trace_service = TextbookTraceService(
         settings=settings,
         session_factory=session_factory,
@@ -136,6 +195,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         quota_service=quota_service,
         access_control_service=access_control_service,
         textbook_trace_service=textbook_trace_service,
+        knowledge_search_service=knowledge_search_service,
+        model=agent_model,
     )
     langsmith_tracing = build_langsmith_tracing(settings)
     stream_bridge = StreamBridge()
@@ -156,6 +217,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         await RunRepository(session).interrupt_unfinished()
         await TextbookIndexRepository(session).fail_unfinished()
     await quota_service.recover_unsettled()
+    if knowledge_task_manager is not None:
+        await knowledge_task_manager.resume_pending()
     container = AppState(
         settings=settings,
         ready=True,
@@ -171,6 +234,8 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         textbook_trace_service=textbook_trace_service,
         textbook_indexer=textbook_indexer,
         textbook_index_tasks=textbook_index_tasks,
+        knowledge_search_service=knowledge_search_service,
+        knowledge_task_manager=knowledge_task_manager,
         skill_registry=skill_registry,
         langsmith_tracing=langsmith_tracing,
     )
@@ -183,12 +248,20 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         await run_manager.shutdown(settings.shutdown_drain_seconds)
         if textbook_index_tasks is not None:
             await textbook_index_tasks.shutdown()
+        if knowledge_task_manager is not None:
+            await knowledge_task_manager.shutdown()
         await langsmith_tracing.aclose()
         if downloader is not None:
             await downloader.close()
         if qdrant_client is not None:
             await qdrant_client.close()
+        if knowledge_qdrant_client is not None:
+            await knowledge_qdrant_client.close()
         if embedding_client is not None:
             await embedding_client.close()
+        if knowledge_embedding_client is not None:
+            await knowledge_embedding_client.close()
+        if mineru_client is not None:
+            await mineru_client.close()
         await platform_client.close()
         await engine.dispose()

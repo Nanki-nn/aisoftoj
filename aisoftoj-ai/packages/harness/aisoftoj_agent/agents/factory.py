@@ -25,6 +25,7 @@ from .middlewares import build_middlewares
 from .models import build_chat_model
 from .prompt import SYSTEM_PROMPT
 from .tools import build_agent_tools
+from .tools.knowledge_search import KnowledgeSearch
 from .tools.textbook_trace import TraceService
 
 EXCLUDED_TOOLS = frozenset(
@@ -58,13 +59,19 @@ def build_agent_graph(
     quota_service: DailyTokenQuotaService | None = None,
     access_control_service: AiAccessControlService | None = None,
     textbook_trace_service: TraceService | None = None,
+    knowledge_search_service: KnowledgeSearch | None = None,
     model: BaseChatModel | None = None,
 ) -> AgentGraph:
     register_read_only_harness_profile()
     checkpointer = InMemorySaver()
     graph = create_deep_agent(
         model=model or build_chat_model(settings),
-        tools=build_agent_tools(platform_client, skill_tools, textbook_trace_service),
+        tools=build_agent_tools(
+            platform_client,
+            skill_tools,
+            textbook_trace_service,
+            knowledge_search_service,
+        ),
         system_prompt=SYSTEM_PROMPT,
         middleware=build_middlewares(
             settings,

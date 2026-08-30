@@ -1,4 +1,5 @@
 .venv/
+storage/
 config.yaml
 .pytest_cache/
 .mypy_cache/

@@ -83,4 +83,40 @@ describe('AIMessageList', () => {
     expect(screen.getByText('读取 Skill 参考资料')).toBeTruthy();
     expect(screen.getByText('Skill 资料已加载')).toBeTruthy();
   });
+
+  it('renders retrieved knowledge sources in the tool process', () => {
+    const groups: MessageGroup[] = [{
+      type: 'assistant:processing',
+      key: 'run-1:processing',
+      run: {
+        ...createRunViewState('run-1'),
+        phase: 'completed',
+        tools: [{
+          callId: 'call-1',
+          toolName: 'search_knowledge',
+          input: {},
+          status: 'completed',
+          sequence: 2,
+          summary: {
+            status: 'found',
+            source_count: 1,
+            sources: [{
+              title: '系统架构设计教程',
+              heading_path: ['第 1 章', '架构基础'],
+              page_start: 12,
+              page_end: 13,
+              evidence: '架构设计用于平衡质量属性。',
+            }],
+          },
+        }],
+      },
+    }];
+
+    render(<AIMessageList groups={groups} onRetry={vi.fn()} />);
+    fireEvent.click(screen.getByRole('button', { name: /完成 1 个步骤/ }));
+    expect(screen.getByText('检索学习资料')).toBeTruthy();
+    fireEvent.click(screen.getByRole('button', { name: '查看 1 个命中片段' }));
+    expect(screen.getByText('系统架构设计教程')).toBeTruthy();
+    expect(screen.getByText('架构设计用于平衡质量属性。')).toBeTruthy();
+  });
 });

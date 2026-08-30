@@ -31,12 +31,34 @@ textbook_retrieval_min_score: 0.55
 textbook_retrieval_profile_version: textbook-rag-v1
 textbook_negative_cache_ttl_seconds: 3600
 
+# MinerU VLM parses imported documents once; normal agent requests only query Qdrant.
+# Requires Qdrant 1.10+ for named vectors and RRF fusion.
+knowledge_rag_enabled: false
+knowledge_qdrant_collection: aisoftoj_knowledge
+# Leave blank when the embedding server has no authentication.
+knowledge_embedding_base_url: https://api.openai.com/v1
+knowledge_embedding_api_key:
+knowledge_embedding_model: text-embedding-3-small
+knowledge_embedding_dimensions: 1536
+knowledge_embedding_batch_size: 32
+knowledge_bm25_model: Qdrant/bm25
+knowledge_chunk_target_chars: 1200
+knowledge_chunk_overlap_chars: 160
+knowledge_retrieval_candidates: 8
+knowledge_retrieval_min_score: 0
+knowledge_retrieval_query_variants: 3
+knowledge_retrieval_fusion_k: 60
+knowledge_mineru_poll_seconds: 3
+knowledge_mineru_max_wait_seconds: 1800
+
 llm_base_url: https://api.openai.com/v1
 llm_endpoint_mode: openai_base
 llm_api_key: change-me
 llm_default_model: gpt-5-mini
 llm_request_timeout_seconds: 60
 llm_max_retries: 1
+
+mineru_api_key: change-me
 
 agent_max_run_tokens: 32000
 agent_max_output_tokens: 2048

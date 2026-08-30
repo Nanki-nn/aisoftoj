@@ -27,6 +27,7 @@ _QUESTION_TYPES = {
 _DIFFICULTIES = {"easy", "medium", "hard", "unknown"}
 _TRACE_STATUSES = {"found", "insufficient_evidence", "unavailable"}
 _CACHE_STATUSES = {"hit", "miss", "bypass"}
+_KNOWLEDGE_RETRIEVAL_STATUSES = {"found", "not_found", "unavailable"}
 _PLATFORM_ERROR_CODES = {
     "AUTH_EXPIRED",
     "PLATFORM_FORBIDDEN",
@@ -91,6 +92,27 @@ def _enum(value: object, allowed: set[str]) -> str:
     return value if isinstance(value, str) and value in allowed else "unknown"
 
 
+def _knowledge_source(value: object) -> dict[str, object] | None:
+    source = value if isinstance(value, dict) else {}
+    title = source.get("title")
+    evidence = source.get("evidence")
+    if not isinstance(title, str) or not title.strip() or not isinstance(evidence, str):
+        return None
+    headings = source.get("headingPath")
+    heading_path = [
+        item[:160] for item in headings[:8] if isinstance(item, str) and item.strip()
+    ] if isinstance(headings, list) else []
+    page_start = source.get("pageStart")
+    page_end = source.get("pageEnd")
+    return {
+        "title": title.strip()[:256],
+        "heading_path": heading_path,
+        "page_start": page_start if isinstance(page_start, int) and page_start > 0 else None,
+        "page_end": page_end if isinstance(page_end, int) and page_end > 0 else None,
+        "evidence": " ".join(evidence.split())[:600],
+    }
+
+
 def safe_tool_summary(tool_name: str, value: object) -> dict[str, object]:
     data = value if isinstance(value, dict) else {}
     if tool_name == "get_my_profile":
@@ -109,6 +131,19 @@ def safe_tool_summary(tool_name: str, value: object) -> dict[str, object]:
         return {
             "status": _enum(data.get("status"), _TRACE_STATUSES),
             "cache_status": _enum(data.get("cacheStatus"), _CACHE_STATUSES),
+        }
+    if tool_name == "search_knowledge":
+        raw_sources = data.get("sources")
+        raw_items = raw_sources[:6] if isinstance(raw_sources, list) else []
+        sources = [
+            source
+            for item in raw_items
+            if (source := _knowledge_source(item)) is not None
+        ]
+        return {
+            "status": _enum(data.get("status"), _KNOWLEDGE_RETRIEVAL_STATUSES),
+            "source_count": len(sources),
+            "sources": sources,
         }
     if tool_name == "review_wrong_question":
         importance = data.get("importance")

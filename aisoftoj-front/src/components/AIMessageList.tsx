@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react';
 import {
   AlertCircle,
+  BookOpen,
   Check,
   ChevronDown,
   Circle,
@@ -47,6 +48,76 @@ function integer(summary: Record<string, unknown> | undefined, key: string): num
   return typeof value === 'number' && Number.isFinite(value) ? value : 0;
 }
 
+type KnowledgeSource = {
+  title: string;
+  headingPath: string[];
+  pageStart?: number;
+  pageEnd?: number;
+  evidence: string;
+};
+
+function knowledgeSources(summary: Record<string, unknown> | undefined): KnowledgeSource[] {
+  const sources = summary?.sources;
+  if (!Array.isArray(sources)) return [];
+  return sources.flatMap((value) => {
+    if (!value || typeof value !== 'object' || Array.isArray(value)) return [];
+    const source = value as Record<string, unknown>;
+    if (typeof source.title !== 'string' || typeof source.evidence !== 'string') return [];
+    const headingPath = Array.isArray(source.heading_path)
+      ? source.heading_path.filter((item): item is string => typeof item === 'string')
+      : [];
+    return [{
+      title: source.title,
+      headingPath,
+      pageStart: typeof source.page_start === 'number' ? source.page_start : undefined,
+      pageEnd: typeof source.page_end === 'number' ? source.page_end : undefined,
+      evidence: source.evidence,
+    }];
+  });
+}
+
+function KnowledgeSources({ summary }: { summary: Record<string, unknown> | undefined }) {
+  const sources = knowledgeSources(summary);
+  const [open, setOpen] = useState(false);
+  if (!sources.length) return null;
+  return (
+    <div className="mt-2">
+      <button
+        type="button"
+        onClick={() => setOpen(value => !value)}
+        className="inline-flex items-center gap-1.5 text-xs font-medium text-blue-700 hover:text-blue-900"
+        aria-expanded={open}
+      >
+        <BookOpen className="h-3.5 w-3.5" aria-hidden="true" />
+        {open ? '收起命中片段' : `查看 ${sources.length} 个命中片段`}
+        <ChevronDown className={`h-3.5 w-3.5 transition-transform ${open ? 'rotate-180' : ''}`} aria-hidden="true" />
+      </button>
+      {open && (
+        <div className="mt-2 space-y-2 border-l-2 border-blue-100 pl-3">
+          {sources.map((source, index) => {
+            const page = source.pageStart
+              ? source.pageEnd && source.pageEnd !== source.pageStart
+                ? `第 ${source.pageStart}-${source.pageEnd} 页`
+                : `第 ${source.pageStart} 页`
+              : '';
+            return (
+              <div key={`${source.title}-${index}`} className="rounded-md bg-slate-50 px-3 py-2.5">
+                <div className="text-xs font-medium text-slate-700">{source.title}</div>
+                {(source.headingPath.length > 0 || page) && (
+                  <div className="mt-0.5 text-xs text-slate-500">
+                    {[source.headingPath.join(' / '), page].filter(Boolean).join(' · ')}
+                  </div>
+                )}
+                <p className="mt-1 whitespace-pre-wrap break-words text-xs leading-5 text-slate-600">{source.evidence}</p>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 function toolCopy(tool: ToolStepState): { title: string; detail: string } {
   if (tool.status === 'failed') {
     const titles: Record<string, string> = {
@@ -58,6 +129,7 @@ function toolCopy(tool: ToolStepState): { title: string; detail: string } {
       describe_skill: '检索可用 Skill',
       load_skill: '读取 Skill 参考资料',
       trace_question_to_textbook: '查找教材出处',
+      search_knowledge: '检索学习资料',
     };
     return { title: titles[tool.toolName] || '执行数据查询', detail: '该步骤未完成' };
   }
@@ -130,6 +202,18 @@ function toolCopy(tool: ToolStepState): { title: string; detail: string } {
       detail: tool.status === 'running' ? '正在检索教材' : (details[status] || '教材出处查询完成'),
     };
   }
+  if (tool.toolName === 'search_knowledge') {
+    const status = String(tool.summary?.status || 'unknown');
+    const details: Record<string, string> = {
+      found: `命中 ${integer(tool.summary, 'source_count')} 个资料片段`,
+      not_found: '未找到相关资料片段',
+      unavailable: '知识库暂不可用',
+    };
+    return {
+      title: '检索学习资料',
+      detail: tool.status === 'running' ? '正在检索知识库' : (details[status] || '检索已完成'),
+    };
+  }
   return {
     title: '执行数据查询',
     detail: tool.status === 'running' ? suffix : '查询已完成',
@@ -174,7 +258,7 @@ function ToolStep({ tool }: { tool: ToolStepState }) {
           ? <span className="h-2 w-2 rounded-full bg-blue-500" aria-hidden="true" />
           : <StatusIcon className="h-3.5 w-3.5" aria-hidden="true" />}
       </span>
-      <span className="min-w-0">
+      <div className="min-w-0">
         <span className={`block text-sm font-medium ${tool.status === 'running' ? 'ai-sweep-text' : 'text-slate-800'}`}>
           {copy.title}
         </span>
@@ -182,7 +266,10 @@ function ToolStep({ tool }: { tool: ToolStepState }) {
           {copy.detail}
           {tool.durationMs !== undefined && tool.status !== 'running' ? ` · ${tool.durationMs} ms` : ''}
         </span>
-      </span>
+        {tool.toolName === 'search_knowledge' && tool.status === 'completed' && (
+          <KnowledgeSources summary={tool.summary} />
+        )}
+      </div>
     </div>
   );
 }
