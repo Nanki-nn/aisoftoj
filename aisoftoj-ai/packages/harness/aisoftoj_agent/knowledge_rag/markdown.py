@@ -14,6 +14,22 @@ _PAGE_MARKER = re.compile(
 )
 
 
+def offset_page_markers(markdown: str, page_offset: int) -> str:
+    """Adjust MinerU page markers after combining split PDF results."""
+    if page_offset <= 0:
+        return markdown
+    marker = re.compile(
+        r"^(?P<prefix><!--\s*(?:page_idx|page(?:\s+number)?)\s*[:=]\s*)(?P<value>\d+)(?P<suffix>\s*-->)$",
+        re.IGNORECASE,
+    )
+
+    def replace(match: re.Match[str]) -> str:
+        value = int(match.group("value")) + page_offset
+        return f"{match.group('prefix')}{value}{match.group('suffix')}"
+
+    return "\n".join(marker.sub(replace, line) for line in markdown.split("\n"))
+
+
 @dataclass(frozen=True, slots=True)
 class _Block:
     text: str

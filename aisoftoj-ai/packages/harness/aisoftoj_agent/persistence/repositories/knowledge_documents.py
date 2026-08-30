@@ -3,7 +3,7 @@ from __future__ import annotations
 from datetime import UTC, datetime
 from uuid import uuid4
 
-from sqlalchemy import desc, func, select
+from sqlalchemy import ColumnElement, desc, func, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from ..models import AiKnowledgeDocument
@@ -56,7 +56,7 @@ class KnowledgeDocumentRepository:
         query = select(AiKnowledgeDocument)
         count_query = select(func.count()).select_from(AiKnowledgeDocument)
         if keyword:
-            condition = AiKnowledgeDocument.title.ilike(f"%{keyword}%")
+            condition: ColumnElement[bool] = AiKnowledgeDocument.title.ilike(f"%{keyword}%")
             query = query.where(condition)
             count_query = count_query.where(condition)
         if status:
@@ -99,7 +99,7 @@ class KnowledgeDocumentRepository:
     async def set_indexing(
         self,
         item: AiKnowledgeDocument,
-        markdown_url: str,
+        markdown_url: str | None,
         source_hash: str,
         parsed_markdown_path: str,
     ) -> None:

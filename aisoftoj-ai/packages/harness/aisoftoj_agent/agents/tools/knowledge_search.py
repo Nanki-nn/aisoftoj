@@ -19,7 +19,13 @@ def build_search_knowledge_tool(service: KnowledgeSearch | None) -> BaseTool:
         query: Annotated[str, Field(min_length=1, max_length=2_000)],
         runtime: ToolRuntime[AgentContext],
     ) -> dict[str, Any]:
-        """检索管理员已导入的知识库，返回可引用的文档段落和标题路径。"""
+        """检索管理员已导入的学习资料。
+
+        当用户的问题涉及已上传的教材、讲义、课程资料或其具体表述时使用。
+        传入贴近用户原意的完整问题或核心短句，不要只截取一个孤立词；服务端会自动
+        生成关键词和术语变体并执行多路混合检索。结果会返回可用于回答的文档标题、
+        章节、页码和原文片段。只能依据实际命中内容回答，不得补写未命中的资料内容。
+        """
         del runtime
         if service is None:
             return {"status": "unavailable", "reason": "feature_disabled", "sources": []}

@@ -181,6 +181,7 @@ async def delete_knowledge_document(
         local_path = item.local_path
         parsed_markdown_path = item.parsed_markdown_path
     await container.knowledge_task_manager.cancel(document_id)
+    await container.knowledge_task_manager.cleanup_parts(document_id)
     try:
         await container.knowledge_task_manager.delete_index(document_id, index_version)
     except Exception as exc:

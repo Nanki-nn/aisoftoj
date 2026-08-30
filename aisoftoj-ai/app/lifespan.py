@@ -11,12 +11,14 @@ from app.logging_config import configure_application_logging
 from config import Settings, load_settings
 from packages.harness.aisoftoj_agent.access_control import AiAccessControlService
 from packages.harness.aisoftoj_agent.agents.factory import AgentGraph, build_agent_graph
+from packages.harness.aisoftoj_agent.agents.models import build_chat_model
 from packages.harness.aisoftoj_agent.integrations.aisoftoj.client import PlatformClient
 from packages.harness.aisoftoj_agent.integrations.mineru import MineruClient
 from packages.harness.aisoftoj_agent.knowledge_rag import (
     Bm25Encoder,
     KnowledgeIndexer,
     KnowledgeSearchService,
+    LlmQueryRewriter,
     MineruKnowledgeTaskManager,
 )
 from packages.harness.aisoftoj_agent.observability import (
@@ -92,6 +94,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     )
     quota_service = DailyTokenQuotaService(session_factory)
     access_control_service = AiAccessControlService(session_factory)
+    agent_model = build_chat_model(settings)
     embedding_client: EmbeddingClient | None = None
     qdrant_client: QdrantClient | None = None
     downloader: SecureTextbookDownloader | None = None
@@ -102,6 +105,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
     knowledge_bm25_encoder: Bm25Encoder | None = None
     mineru_client: MineruClient | None = None
     knowledge_task_manager: MineruKnowledgeTaskManager | None = None
+    query_rewriter: LlmQueryRewriter | None = None
     if settings.textbook_rag_enabled:
         embedding_client = EmbeddingClient(
             base_url=settings.resolved_textbook_embedding_base_url,
@@ -137,6 +141,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         textbook_index_tasks = TextbookIndexTaskManager(textbook_indexer)
     if settings.knowledge_rag_enabled:
         assert settings.mineru_api_key is not None
+        query_rewriter = LlmQueryRewriter(agent_model)
         knowledge_embedding_client = EmbeddingClient(
             base_url=settings.resolved_knowledge_embedding_base_url,
             api_key=settings.resolved_knowledge_embedding_api_key,
@@ -173,6 +178,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         embedding_client=knowledge_embedding_client,
         bm25_encoder=knowledge_bm25_encoder,
         qdrant_client=knowledge_qdrant_client,
+        query_rewriter=query_rewriter,
     )
     textbook_trace_service = TextbookTraceService(
         settings=settings,
@@ -190,6 +196,7 @@ async def lifespan(app: FastAPI) -> AsyncIterator[None]:
         access_control_service=access_control_service,
         textbook_trace_service=textbook_trace_service,
         knowledge_search_service=knowledge_search_service,
+        model=agent_model,
     )
     langsmith_tracing = build_langsmith_tracing(settings)
     stream_bridge = StreamBridge()

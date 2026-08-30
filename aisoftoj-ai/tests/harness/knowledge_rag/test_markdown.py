@@ -1,6 +1,9 @@
 from __future__ import annotations
 
-from packages.harness.aisoftoj_agent.knowledge_rag.markdown import build_markdown_chunks
+from packages.harness.aisoftoj_agent.knowledge_rag.markdown import (
+    build_markdown_chunks,
+    offset_page_markers,
+)
 
 
 def test_markdown_chunks_keep_heading_path_and_stable_document_metadata() -> None:
@@ -31,3 +34,11 @@ def test_mineru_page_markers_are_converted_to_one_based_ranges() -> None:
     assert len(chunks) == 1
     assert chunks[0].page_start == 1
     assert chunks[0].page_end == 2
+
+
+def test_split_markdown_page_markers_receive_continuous_offset() -> None:
+    markdown = "<!-- page_idx: 0 -->\n第二卷第一页\n<!-- page_idx: 1 -->\n第二卷第二页"
+
+    assert offset_page_markers(markdown, 200) == (
+        "<!-- page_idx: 200 -->\n第二卷第一页\n<!-- page_idx: 201 -->\n第二卷第二页"
+    )

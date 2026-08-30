@@ -59,6 +59,8 @@ class Settings(BaseModel):
     knowledge_chunk_overlap_chars: int = Field(default=160, ge=0, le=2_000)
     knowledge_retrieval_candidates: int = Field(default=8, ge=1, le=30)
     knowledge_retrieval_min_score: float = Field(default=0, ge=0, le=1)
+    knowledge_retrieval_query_variants: int = Field(default=3, ge=1, le=5)
+    knowledge_retrieval_fusion_k: int = Field(default=60, ge=1, le=200)
     knowledge_mineru_poll_seconds: float = Field(default=3, ge=1, le=30)
     knowledge_mineru_max_wait_seconds: int = Field(default=1_800, ge=60, le=14_400)
 

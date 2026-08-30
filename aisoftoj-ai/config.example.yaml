@@ -46,6 +46,8 @@ knowledge_chunk_target_chars: 1200
 knowledge_chunk_overlap_chars: 160
 knowledge_retrieval_candidates: 8
 knowledge_retrieval_min_score: 0
+knowledge_retrieval_query_variants: 3
+knowledge_retrieval_fusion_k: 60
 knowledge_mineru_poll_seconds: 3
 knowledge_mineru_max_wait_seconds: 1800
 
