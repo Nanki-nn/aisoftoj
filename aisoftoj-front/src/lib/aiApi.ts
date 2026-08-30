@@ -345,6 +345,106 @@ export function restoreAdminAIUserQuota(userId: number): Promise<AdminAIUserQuot
   });
 }
 
+export type KnowledgeDocumentStatus = 'queued' | 'parsing' | 'indexing' | 'active' | 'failed';
+
+export type KnowledgeDocument = {
+  documentId: string;
+  title: string;
+  sourceUrl: string;
+  localPath: string | null;
+  mineruBatchId: string | null;
+  markdownAvailable: boolean;
+  indexVersion: string;
+  collectionName: string;
+  embeddingModel: string;
+  isOcr: boolean;
+  status: KnowledgeDocumentStatus;
+  chunkCount: number;
+  errorCode: string | null;
+  createdAt: string | null;
+  updatedAt: string | null;
+  activatedAt: string | null;
+};
+
+export type KnowledgeDocumentPage = {
+  records: KnowledgeDocument[];
+  total: number;
+  page: number;
+  pageSize: number;
+};
+
+export function listKnowledgeDocuments(params: {
+  page?: number;
+  pageSize?: number;
+  keyword?: string;
+  status?: KnowledgeDocumentStatus;
+} = {}): Promise<KnowledgeDocumentPage> {
+  const query = new URLSearchParams({
+    page: String(params.page ?? 1),
+    page_size: String(params.pageSize ?? 20),
+  });
+  if (params.keyword) query.set('keyword', params.keyword);
+  if (params.status) query.set('status', params.status);
+  return aiAdminRequest(`/api/ai/admin/knowledge-documents?${query.toString()}`);
+}
+
+export function getKnowledgeDocument(documentId: string): Promise<KnowledgeDocument> {
+  return aiAdminRequest(`/api/ai/admin/knowledge-documents/${encodeURIComponent(documentId)}`);
+}
+
+export function updateKnowledgeDocument(documentId: string, title: string): Promise<KnowledgeDocument> {
+  return aiAdminRequest(`/api/ai/admin/knowledge-documents/${encodeURIComponent(documentId)}`, {
+    method: 'PATCH',
+    body: JSON.stringify({ title }),
+  });
+}
+
+export async function deleteKnowledgeDocument(documentId: string): Promise<void> {
+  const headers = authHeaders();
+  const response = await fetch(
+    `${AI_API_BASE_URL}/api/ai/admin/knowledge-documents/${encodeURIComponent(documentId)}`,
+    { method: 'DELETE', headers },
+  );
+  if (!response.ok) {
+    const payload = await response.json().catch(() => null) as { detail?: string } | null;
+    throw new AIApiError(payload?.detail || `删除失败 (${response.status})`, response.status);
+  }
+}
+
+export type KnowledgeDocumentContent = {
+  content: string;
+  offset: number;
+  nextOffset: number | null;
+  totalChars: number;
+};
+
+export function getKnowledgeDocumentContent(
+  documentId: string,
+  offset = 0,
+  limit = 12_000,
+): Promise<KnowledgeDocumentContent> {
+  const query = new URLSearchParams({ offset: String(offset), limit: String(limit) });
+  return aiAdminRequest(
+    `/api/ai/admin/knowledge-documents/${encodeURIComponent(documentId)}/content?${query.toString()}`,
+  );
+}
+
+export async function uploadKnowledgeFile(file: File, isOcr = false): Promise<KnowledgeDocument> {
+  const headers = authHeaders();
+  const form = new FormData();
+  form.append('file', file);
+  const response = await fetch(`${AI_API_BASE_URL}/api/ai/admin/knowledge-documents/upload-local?is_ocr=${isOcr}`, {
+    method: 'POST',
+    headers,
+    body: form,
+  });
+  const payload = await response.json().catch(() => null) as KnowledgeDocument | { detail?: string } | null;
+  if (!response.ok) {
+    throw new AIApiError((payload as { detail?: string } | null)?.detail || `文件上传失败 (${response.status})`, response.status);
+  }
+  return payload as KnowledgeDocument;
+}
+
 export function createAIThread(title?: string): Promise<AIThread> {
   return aiRequest('/api/ai/threads', {
     method: 'POST',

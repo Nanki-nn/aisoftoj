@@ -56,6 +56,109 @@ class QdrantClient:
         except (httpx.HTTPError, TypeError, ValueError) as exc:
             raise QdrantError("VECTOR_STORE_UNAVAILABLE") from exc
 
+    async def ensure_hybrid_collection(self, dimensions: int) -> None:
+        """Create the named dense+sparse schema used by the MinerU knowledge base."""
+        try:
+            response = await self._client.get(f"/collections/{self.collection}")
+            if response.status_code == 404:
+                response = await self._client.put(
+                    f"/collections/{self.collection}",
+                    json={
+                        "vectors": {"dense": {"size": dimensions, "distance": "Cosine"}},
+                        "sparse_vectors": {"bm25": {}},
+                    },
+                )
+                if response.status_code == 409:
+                    response = await self._client.get(f"/collections/{self.collection}")
+                else:
+                    response.raise_for_status()
+                    response = await self._client.get(f"/collections/{self.collection}")
+            response.raise_for_status()
+            payload = response.json()
+            configured_size = _named_collection_vector_size(payload, "dense")
+            if configured_size is not None and configured_size != dimensions:
+                raise ValueError("collection vector size mismatch")
+            if not _has_sparse_vector(payload, "bm25"):
+                raise ValueError("collection does not support sparse vectors")
+            await self._ensure_payload_indexes({"documentId": "keyword", "indexVersion": "keyword"})
+        except (httpx.HTTPError, TypeError, ValueError) as exc:
+            raise QdrantError("VECTOR_STORE_UNAVAILABLE") from exc
+
+    async def upsert_hybrid(
+        self,
+        points: list[dict[str, Any]],
+        *,
+        batch_size: int = 64,
+    ) -> None:
+        for offset in range(0, len(points), batch_size):
+            try:
+                response = await self._client.put(
+                    f"/collections/{self.collection}/points",
+                    params={"wait": "true"},
+                    json={"points": points[offset : offset + batch_size]},
+                )
+                response.raise_for_status()
+            except httpx.HTTPError as exc:
+                raise QdrantError("VECTOR_STORE_UNAVAILABLE") from exc
+
+    async def hybrid_search(
+        self,
+        *,
+        dense_vector: list[float],
+        sparse_vector: dict[str, list[int] | list[float]],
+        limit: int,
+    ) -> list[dict[str, Any]]:
+        try:
+            response = await self._client.post(
+                f"/collections/{self.collection}/points/query",
+                json={
+                    "prefetch": [
+                        {"query": dense_vector, "using": "dense", "limit": limit},
+                        {"query": sparse_vector, "using": "bm25", "limit": limit},
+                    ],
+                    "query": {"fusion": "rrf"},
+                    "limit": limit,
+                    "with_payload": True,
+                },
+            )
+            response.raise_for_status()
+            body: Any = response.json()
+            records = body.get("result", {}).get("points") if isinstance(body, dict) else None
+            if not isinstance(records, list):
+                raise ValueError("invalid hybrid search result")
+            return records
+        except (httpx.HTTPError, TypeError, ValueError) as exc:
+            raise QdrantError("VECTOR_STORE_UNAVAILABLE") from exc
+
+    async def delete_hybrid_index(self, document_id: str, index_version: str) -> None:
+        try:
+            response = await self._client.post(
+                f"/collections/{self.collection}/points/delete",
+                params={"wait": "true"},
+                json={
+                    "filter": {
+                        "must": [
+                            {"key": "documentId", "match": {"value": document_id}},
+                            {"key": "indexVersion", "match": {"value": index_version}},
+                        ]
+                    }
+                },
+            )
+            if response.status_code == 404:
+                return
+            response.raise_for_status()
+        except httpx.HTTPError as exc:
+            raise QdrantError("VECTOR_STORE_UNAVAILABLE") from exc
+
+    async def _ensure_payload_indexes(self, fields: dict[str, str]) -> None:
+        for field_name, field_schema in fields.items():
+            response = await self._client.put(
+                f"/collections/{self.collection}/index",
+                params={"wait": "true"},
+                json={"field_name": field_name, "field_schema": field_schema},
+            )
+            response.raise_for_status()
+
     async def upsert(
         self, chunks: list[TextbookChunk], vectors: list[list[float]], batch_size: int = 64
     ) -> None:
@@ -180,3 +283,24 @@ def _collection_vector_size(payload: Any) -> int | None:
     if isinstance(vectors, dict) and isinstance(vectors.get("size"), int):
         return int(vectors["size"])
     return None
+
+
+def _named_collection_vector_size(payload: Any, name: str) -> int | None:
+    try:
+        vectors = payload["result"]["config"]["params"]["vectors"]
+    except (KeyError, TypeError):
+        return None
+    if not isinstance(vectors, dict):
+        return None
+    value = vectors.get(name)
+    if not isinstance(value, dict) or not isinstance(value.get("size"), int):
+        return None
+    return int(value["size"])
+
+
+def _has_sparse_vector(payload: Any, name: str) -> bool:
+    try:
+        sparse = payload["result"]["config"]["params"]["sparse_vectors"]
+    except (KeyError, TypeError):
+        return False
+    return isinstance(sparse, dict) and name in sparse

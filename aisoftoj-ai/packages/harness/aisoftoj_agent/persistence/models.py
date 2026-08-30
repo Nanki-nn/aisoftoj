@@ -343,3 +343,36 @@ class AiQuestionTraceCache(Base):
         DateTime, server_default=func.now(), nullable=False
     )
     expires_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+
+class AiKnowledgeDocument(Base):
+    __tablename__ = "ai_knowledge_documents"
+    __mapper_args__ = {"eager_defaults": True}
+    __table_args__ = (
+        UniqueConstraint("index_version", name="uq_ai_knowledge_documents_index_version"),
+        Index("ix_ai_knowledge_documents_status", "status", "created_at"),
+    )
+
+    id: Mapped[str] = mapped_column(CHAR(36), primary_key=True)
+    title: Mapped[str] = mapped_column(String(256), nullable=False)
+    source_url: Mapped[str] = mapped_column(String(2048), nullable=False)
+    local_path: Mapped[str | None] = mapped_column(String(2048))
+    is_ocr: Mapped[bool] = mapped_column(Boolean, nullable=False, default=False)
+    mineru_task_id: Mapped[str | None] = mapped_column(String(128))
+    mineru_batch_id: Mapped[str | None] = mapped_column(String(128))
+    markdown_url: Mapped[str | None] = mapped_column(String(2048))
+    parsed_markdown_path: Mapped[str | None] = mapped_column(String(2048))
+    source_hash: Mapped[str | None] = mapped_column(CHAR(64))
+    index_version: Mapped[str] = mapped_column(String(64), nullable=False)
+    embedding_model: Mapped[str] = mapped_column(String(128), nullable=False)
+    collection_name: Mapped[str] = mapped_column(String(128), nullable=False)
+    chunk_count: Mapped[int] = mapped_column(Integer, nullable=False, default=0)
+    status: Mapped[str] = mapped_column(String(16), nullable=False)
+    error_code: Mapped[str | None] = mapped_column(String(64))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), nullable=False
+    )
+    updated_at: Mapped[datetime] = mapped_column(
+        DateTime, server_default=func.now(), onupdate=func.now(), nullable=False
+    )
+    activated_at: Mapped[datetime | None] = mapped_column(DateTime)

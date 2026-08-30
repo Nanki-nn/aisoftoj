@@ -17,9 +17,10 @@ def test_metadata_contains_only_ai_runtime_tables() -> None:
         "ai_user_quota_overrides",
         "ai_daily_token_usage",
         "ai_token_reservations",
-        "ai_textbook_indexes",
-        "ai_question_trace_cache",
-    }
+            "ai_textbook_indexes",
+            "ai_question_trace_cache",
+            "ai_knowledge_documents",
+        }
 
 
 def test_active_run_uses_generated_marker_unique_constraint() -> None:

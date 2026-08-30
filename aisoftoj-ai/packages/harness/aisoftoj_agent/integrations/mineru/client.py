@@ -1,10 +1,10 @@
 from __future__ import annotations
 
 from collections.abc import AsyncIterable, Sequence
-from typing import Any
+from typing import Any, TypeVar
 
 import httpx
-from pydantic import ValidationError
+from pydantic import BaseModel, ValidationError
 
 from .contracts import (
     MineruBatchRef,
@@ -17,6 +17,8 @@ from .contracts import (
     MineruUrlFile,
 )
 from .errors import MineruError, envelope_error, json_object
+
+T = TypeVar("T", bound=BaseModel)
 
 
 class MineruClient:
@@ -160,11 +162,11 @@ class MineruClient:
         except (httpx.TimeoutException, httpx.TransportError) as exc:
             raise MineruError("DOWNLOAD_UNAVAILABLE", "MinerU result endpoint unavailable") from exc
 
-    async def _post_model(self, path: str, payload: dict[str, Any], model: type[Any]) -> Any:
+    async def _post_model(self, path: str, payload: dict[str, Any], model: type[T]) -> T:
         response = await self._request_api("POST", path, json=payload)
         return self._parse_envelope(response, model)
 
-    async def _get_model(self, path: str, model: type[Any]) -> Any:
+    async def _get_model(self, path: str, model: type[T]) -> T:
         response = await self._request_api("GET", path)
         return self._parse_envelope(response, model)
 
@@ -182,7 +184,7 @@ class MineruClient:
             raise envelope_error(payload, response.status_code)
         return response
 
-    def _parse_envelope(self, response: httpx.Response, model: type[Any]) -> Any:
+    def _parse_envelope(self, response: httpx.Response, model: type[T]) -> T:
         try:
             payload = response.json()
         except ValueError as exc:

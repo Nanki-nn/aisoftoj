@@ -50,3 +50,34 @@ async def test_missing_collection_has_zero_reusable_points() -> None:
     await client.close()
 
     assert count == 0
+
+
+async def test_hybrid_search_uses_qdrant_rrf_fusion() -> None:
+    requests: list[httpx.Request] = []
+
+    async def handler(request: httpx.Request) -> httpx.Response:
+        requests.append(request)
+        assert request.url.path.endswith("/points/query")
+        payload = json.loads(request.content)
+        assert payload["prefetch"][0] == {"query": [0.1, 0.2], "using": "dense", "limit": 4}
+        assert payload["prefetch"][1]["using"] == "bm25"
+        assert payload["query"] == {"fusion": "rrf"}
+        return httpx.Response(
+            200,
+            json={"result": {"points": [{"id": "chunk", "score": 0.03, "payload": {}}]}},
+        )
+
+    client = QdrantClient(
+        base_url="http://127.0.0.1:6333",
+        collection="aisoftoj_knowledge",
+        transport=httpx.MockTransport(handler),
+    )
+    result = await client.hybrid_search(
+        dense_vector=[0.1, 0.2],
+        sparse_vector={"indices": [3], "values": [1.0]},
+        limit=4,
+    )
+    await client.close()
+
+    assert result[0]["id"] == "chunk"
+    assert len(requests) == 1

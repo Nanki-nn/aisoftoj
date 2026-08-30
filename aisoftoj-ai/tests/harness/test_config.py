@@ -104,3 +104,11 @@ def test_textbook_rag_resolves_embedding_credentials_without_exposing_them() -> 
     assert settings.textbook_allowed_hosts == ["download.example.com"]
     assert settings.resolved_textbook_embedding_api_key == "embedding-secret"
     assert "embedding-secret" not in repr(settings)
+
+
+def test_knowledge_rag_requires_a_mineru_api_key() -> None:
+    payload = valid_settings()
+    payload["knowledge_rag_enabled"] = True
+
+    with pytest.raises(ValidationError, match="mineru_api_key"):
+        Settings.model_validate(payload)

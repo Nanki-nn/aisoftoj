@@ -22,12 +22,15 @@ class EmbeddingClient:
     ) -> None:
         self.model = model
         self.batch_size = batch_size
+        headers = {"Accept": "application/json"}
+        if api_key:
+            headers["Authorization"] = f"Bearer {api_key}"
         self._client = httpx.AsyncClient(
             base_url=f"{base_url.rstrip('/')}/",
             timeout=timeout_seconds,
             transport=transport,
             trust_env=False,
-            headers={"Authorization": f"Bearer {api_key}", "Accept": "application/json"},
+            headers=headers,
         )
 
     async def close(self) -> None:
