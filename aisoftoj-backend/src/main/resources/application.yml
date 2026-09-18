@@ -74,9 +74,6 @@ management:
       probes:
         enabled: true
 
-claude:
-  api-key: ${CLAUDE_API_KEY:}
-  model: claude-sonnet-4-6
 
 aliyun:
   oss:
@@ -87,6 +84,3 @@ aliyun:
     base-url: ${OSS_BASE_URL:}
     dir-prefix: ${OSS_DIR_PREFIX:aisoftoj/}
 
-ai:
-  internal:
-    service-key: ${AI_INTERNAL_SERVICE_KEY:dev-only-ai-service-key}
