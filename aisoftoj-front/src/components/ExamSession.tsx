@@ -1,6 +1,5 @@
-import React, { useCallback, useState, useEffect, useRef } from 'react';
+﻿import React, { useCallback, useState, useEffect, useRef } from 'react';
 import { useBlocker, useNavigate, useSearchParams } from 'react-router-dom';
-import { useAgentPanel } from '../hooks/useAgentPanel';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import rehypeRaw from 'rehype-raw';
@@ -122,7 +121,6 @@ export function ExamSession({
   onPauseOnPageHide,
   onResumeAfterPageShow,
 }: ExamSessionProps) {
-  const { publishQuestion, clearQuestion } = useAgentPanel();
   const questionCardRef = useRef<HTMLDivElement | null>(null);
   const hasMountedRef = useRef(false);
   const completionInFlightRef = useRef(false);
@@ -152,9 +150,7 @@ export function ExamSession({
     if (session.examMode === 'exam' && !session.isCompleted) return;
     const questionId = Number(currentQuestion?.id);
     if (!Number.isSafeInteger(questionId) || questionId <= 0) return;
-    publishQuestion(questionId);
-    return () => clearQuestion(questionId);
-  }, [clearQuestion, currentQuestion?.id, publishQuestion, session.examMode, session.isCompleted]);
+  }, [currentQuestion?.id, session.examMode, session.isCompleted]);
   const isReadOnly = session.isCompleted;
   isReadOnlyRef.current = isReadOnly;
   pauseOnUnmountRef.current = onPause;

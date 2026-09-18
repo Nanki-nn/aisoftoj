@@ -3,7 +3,6 @@
   import { createBrowserRouter, RouterProvider } from "react-router-dom";
   import App from "./App.tsx";
   import { AuthProvider } from "./hooks/useAuth";
-  import { AgentPanelProvider } from "./hooks/useAgentPanel";
   import { ThemeProvider } from "./hooks/useTheme";
   import "./index.css";
 
@@ -13,9 +12,7 @@
       element: (
       <ThemeProvider>
         <AuthProvider>
-          <AgentPanelProvider>
-            <App />
-          </AgentPanelProvider>
+          <App />
         </AuthProvider>
       </ThemeProvider>
       ),

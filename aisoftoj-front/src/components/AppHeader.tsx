@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+﻿import React, { useEffect, useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import {
   BookOpenCheck,
@@ -9,7 +9,6 @@ import {
   LogOut,
   Menu,
   Shield,
-  Sparkles,
   User,
 } from 'lucide-react';
 import { Avatar, AvatarFallback, AvatarImage } from './ui/avatar';
@@ -30,9 +29,6 @@ import {
 } from './ui/dialog';
 import { useAuth } from '../hooks/useAuth';
 import { CommunityQrHoverCard } from './CommunityQrHoverCard';
-import { useAgentPanel } from '../hooks/useAgentPanel';
-import { AICapability, fetchAICapability } from '../lib/aiApi';
-import { AI_ASSISTANT_ENABLED } from '../lib/aiAvailability';
 
 interface AppHeaderProps {
   onShowAuth: () => void;
@@ -77,43 +73,12 @@ export function AppHeader({
   onShowProfile,
 }: AppHeaderProps) {
   const { user, logout, isAuthenticated } = useAuth();
-  const { isOpen: isAgentOpen, toggle: toggleAgent } = useAgentPanel();
-  const [aiCapability, setAICapability] = useState<AICapability | null>(null);
   const navigate = useNavigate();
   const location = useLocation();
   const [mobileOpen, setMobileOpen] = useState(false);
   const [now, setNow] = useState(() => Date.now());
 
-  useEffect(() => {
-    let active = true;
-    if (!isAuthenticated || !AI_ASSISTANT_ENABLED) {
-      setAICapability(null);
-      return () => { active = false; };
-    }
-    fetchAICapability()
-      .then(value => {
-        if (active) setAICapability(value);
-      })
-      .catch(() => {
-        if (active) setAICapability({ ai_enabled: false, reason: 'SERVICE_UNAVAILABLE' });
-      });
-    return () => { active = false; };
-  }, [isAuthenticated, user?.id]);
 
-  const aiUnavailableReason = !AI_ASSISTANT_ENABLED
-      ? 'AI 助手线上请求暂未开放'
-      : !isAuthenticated
-        ? '登录后可使用 AI 助手'
-        : aiCapability === null
-          ? '正在检查 AI 助手权限'
-          : aiCapability.ai_enabled
-            ? null
-            : aiCapability.reason === 'AI_GLOBALLY_DISABLED'
-              ? 'AI 助手当前已由管理员关闭'
-              : aiCapability.reason === 'AI_ROLLOUT_NOT_ENABLED'
-                ? 'AI 助手当前仅对内测用户开放'
-                : 'AI 助手暂时不可用';
-  const isAIAssistantUnavailable = aiUnavailableReason !== null;
   useEffect(() => {
     const syncNow = () => setNow(Date.now());
     const intervalId = window.setInterval(syncNow, STATUS_REFRESH_INTERVAL_MS);

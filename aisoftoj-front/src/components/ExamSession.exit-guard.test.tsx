@@ -1,9 +1,8 @@
-// @vitest-environment jsdom
+﻿// @vitest-environment jsdom
 
 import React from 'react';
 import { fireEvent, render, screen, waitFor } from '@testing-library/react';
 import { createMemoryRouter, RouterProvider } from 'react-router-dom';
-import { AgentPanelProvider } from '../hooks/useAgentPanel';
 import { ExamSession as ExamSessionType } from '../types/exam';
 import { ExamSession } from './ExamSession';
 
@@ -49,8 +48,7 @@ function renderSession({
   let router: ReturnType<typeof createMemoryRouter>;
   const completeExam = onCompleteExam ?? vi.fn().mockResolvedValue(false);
   const element = (
-    <AgentPanelProvider>
-      <ExamSession
+    <ExamSession
         session={session}
         onUpdateAnswer={vi.fn()}
         onConfirmAnswer={vi.fn().mockResolvedValue(undefined)}
@@ -60,7 +58,6 @@ function renderSession({
         onPauseOnPageHide={() => onPauseOnPageHide()}
         onResumeAfterPageShow={() => onResumeAfterPageShow()}
       />
-    </AgentPanelProvider>
   );
   router = createMemoryRouter([
     { path: '/exam/session/:sessionId', element },

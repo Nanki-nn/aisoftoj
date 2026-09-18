@@ -1,4 +1,4 @@
-import React, { useEffect, useRef, useState } from 'react';
+﻿import React, { useEffect, useRef, useState } from 'react';
 import { Navigate, Route, Routes, useLocation, useNavigate, useParams } from 'react-router-dom';
 import { LearningLanding } from './components/LearningLanding';
 import { FoundationPage } from './components/FoundationPage';
@@ -17,18 +17,14 @@ import { EssayEditor } from './components/EssayEditor';
 import { EssayResult } from './components/EssayResult';
 import { EssayHistory } from './components/EssayHistory';
 import { AppHeader } from './components/AppHeader';
-import { AIAgentPanel } from './components/AIAgentPanel';
 import { AdminLayout } from './components/admin/AdminLayout';
 import { AdminDashboard } from './components/admin/AdminDashboard';
 import { AdminUsers } from './components/admin/AdminUsers';
 import { AdminQuestions } from './components/admin/AdminQuestions';
 import { AdminOssUpload } from './components/admin/AdminOssUpload';
 import { AdminRouteGuard } from './components/admin/AdminRouteGuard';
-import { AdminAISettings } from './components/admin/AdminAISettings';
-import { AdminTokenUsage } from './components/admin/AdminTokenUsage';
 import { useExamSession } from './hooks/useExamSession';
 import { useAuth } from './hooks/useAuth';
-import { useAgentPanel } from './hooks/useAgentPanel';
 import { ExamConfig as ExamConfigType, ExamPaper } from './types/exam';
 import { PracticeRecord, PracticeSessionRecord } from './types/record';
 import {
@@ -41,8 +37,6 @@ import {
   submitPracticeSession,
   updatePracticeQuestionRecord,
 } from './lib/api';
-import { fetchAICapability } from './lib/aiApi';
-import { AI_ASSISTANT_ENABLED } from './lib/aiAvailability';
 
 const ROUTES = {
   home: '/',
@@ -249,45 +243,19 @@ export default function App() {
     setSession,
   } = useExamSession();
   const { checkAuthStatus, user } = useAuth();
-  const [aiCapabilityEnabled, setAiCapabilityEnabled] = useState(false);
-  const { isOpen: isAgentOpen, close: closeAgent } = useAgentPanel();
   const navigate = useNavigate();
   const location = useLocation();
   currentSessionRef.current = currentSession;
   activeExamSessionIdRef.current = location.pathname.startsWith(`${ROUTES.examSessionBase}/`)
     ? currentSession?.id ?? null
     : null;
-  const agentVisibleOnRoute = aiCapabilityEnabled
-    && !location.pathname.startsWith('/admin')
-    && location.pathname !== ROUTES.auth
-    && location.pathname !== ROUTES.forgotPassword;
 
   // 检查用户登录状态
   useEffect(() => {
     checkAuthStatus();
   }, [checkAuthStatus]);
 
-  useEffect(() => {
-    let active = true;
-    if (!user || !AI_ASSISTANT_ENABLED) {
-      setAiCapabilityEnabled(false);
-      return () => { active = false; };
-    }
-    fetchAICapability()
-      .then((value) => {
-        if (active) setAiCapabilityEnabled(value.ai_enabled);
-      })
-      .catch(() => {
-        if (active) setAiCapabilityEnabled(false);
-      });
-    return () => { active = false; };
-  }, [user?.id]);
 
-  useEffect(() => {
-    if (!agentVisibleOnRoute && isAgentOpen) {
-      closeAgent();
-    }
-  }, [agentVisibleOnRoute, closeAgent, isAgentOpen]);
 
   const handleStartPaper = async (paper: ExamPaper, mode: 'practice' | 'exam') => {
     try {
@@ -647,29 +615,8 @@ export default function App() {
             </AdminRouteGuard>
           }
         />
-        <Route
-          path="/admin/ai"
-          element={
-            <AdminRouteGuard>
-              <AdminLayout>
-                <AdminAISettings />
-              </AdminLayout>
-            </AdminRouteGuard>
-          }
-        />
-        <Route
-          path="/admin/token-usage"
-          element={
-            <AdminRouteGuard>
-              <AdminLayout>
-                <AdminTokenUsage />
-              </AdminLayout>
-            </AdminRouteGuard>
-          }
-        />
         <Route path="*" element={<Navigate to={ROUTES.home} replace />} />
       </Routes>
-      {agentVisibleOnRoute && <AIAgentPanel />}
     </div>
   );
 }

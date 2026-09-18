@@ -1,11 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
+﻿import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Badge } from './ui/badge';
 import { GraduationCap, FileText, ArrowLeft, Clock, Save, Loader2, CheckCircle } from 'lucide-react';
 import { getEssayQuestions, submitEssay, EssayQuestion } from '../lib/api';
-import { useAgentPanel } from '../hooks/useAgentPanel';
 
 function formatTime(seconds: number): string {
   const mm = Math.floor(seconds / 60)
@@ -28,7 +27,6 @@ function getContentBadgeStyle(count: number): { background: string; color: strin
 }
 
 export function EssayEditor() {
-  const { publishQuestion, clearQuestion } = useAgentPanel();
   const navigate = useNavigate();
   const { questionId } = useParams<{ questionId: string }>();
 
@@ -46,9 +44,7 @@ export function EssayEditor() {
 
   useEffect(() => {
     if (!Number.isSafeInteger(parsedId) || parsedId <= 0) return;
-    publishQuestion(parsedId);
-    return () => clearQuestion(parsedId);
-  }, [clearQuestion, parsedId, publishQuestion]);
+  }, [parsedId]);
 
   // Fetch question data from API
   useEffect(() => {
