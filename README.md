@@ -8,7 +8,7 @@
 
 ![GitHub Stars](https://img.shields.io/github/stars/Nanki-nn/aisoftoj?style=social)
 ![GitHub Forks](https://img.shields.io/github/forks/Nanki-nn/aisoftoj?style=social)
-[![License](https://img.shields.io/badge/license-MIT-blue)](LICENSE)
+[![License](https://img.shields.io/badge/license-AGPL--3.0-blue)](LICENSE)
 ![Java](https://img.shields.io/badge/Java-8-orange)
 ![Spring Boot](https://img.shields.io/badge/Spring%20Boot-2.7-brightgreen)
 ![MyBatis-Plus](https://img.shields.io/badge/MyBatis--Plus-3.5-red)
@@ -118,7 +118,9 @@
 
 ## 📄 License
 
-本项目采用 MIT 协议开源，详见 LICENSE 文件。
+本项目采用 **AGPL-3.0** 协议开源，详见 LICENSE 文件。
+
+> **重要说明**：AGPL-3.0 协议要求——如果你修改了本项目的代码并通过网络提供服务（如部署为网站、SaaS 等），**必须公开你修改后的全部源代码**。商业使用请联系作者获取商业授权。
 
 ---
 
