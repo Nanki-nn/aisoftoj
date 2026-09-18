@@ -1,7 +1,6 @@
 package com.nan.aisoftoj.crypto;
 
 import com.nan.aisoftoj.controller.AdminController;
-import com.nan.aisoftoj.controller.EssayController;
 import com.nan.aisoftoj.controller.PaperController;
 import com.nan.aisoftoj.controller.PracticeSessionController;
 import com.nan.aisoftoj.controller.QuestionController;
@@ -26,8 +25,6 @@ class EncryptedEndpointCoverageTest {
                 "PracticeSessionController#startPracticeSession",
                 "PracticeSessionController#getPracticeSessionDetail",
                 "PracticeSessionController#getPracticeSessionResult",
-                "EssayController#getHistory",
-                "EssayController#getQuestions",
                 "UserStatsController#getWrongQuestions",
                 "AdminController#listQuestions",
                 "AdminController#createQuestion",
@@ -38,7 +35,6 @@ class EncryptedEndpointCoverageTest {
                         PaperController.class,
                         QuestionController.class,
                         PracticeSessionController.class,
-                        EssayController.class,
                         UserStatsController.class,
                         AdminController.class)
                 .stream()

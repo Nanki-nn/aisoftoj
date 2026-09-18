@@ -64,17 +64,6 @@ public interface QuestionMapper extends BaseMapper<Question> {
             "WHERE question_id = #{questionId} AND is_deleted = 0")
     int countSessionQuestionRecords(@Param("questionId") Integer questionId);
 
-    @Select("SELECT q.id, q.name, q.intro, " +
-            "MAX(p.paper_year) AS year, MAX(p.subject_name) AS subjectName " +
-            "FROM question q " +
-            "LEFT JOIN paper_question_relation pqr ON q.id = pqr.question_id " +
-            "LEFT JOIN paper p ON pqr.paper_id = p.id " +
-            "WHERE q.question_type = 6 AND q.is_deleted = 0 " +
-            "GROUP BY q.id, q.name, q.intro " +
-            "ORDER BY MAX(p.paper_year) DESC " +
-            "LIMIT 201")
-    List<Map<String, Object>> selectEssayQuestionsWithPaper();
-
     /**
      * 查询题目关联的最新试卷的科目和年份（用于 admin 列表展示）
      * 返回 Map: questionId -> {subjectName, paperYear}
